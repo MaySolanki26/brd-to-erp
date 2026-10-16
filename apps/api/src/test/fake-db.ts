@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { NotFoundError } from '../errors/app-error.js';
 import type { AuditEntry } from '../modules/audit/audit.repository.js';
 import type { NewSession, SessionRecord } from '../modules/auth/auth.repository.js';
 
@@ -38,21 +40,87 @@ export interface FakeMember {
   createdAt: Date;
 }
 
+export type SourceStatusValue = 'UPLOADED' | 'PROCESSING' | 'PROCESSED' | 'FAILED';
+
+export interface FakeDocument {
+  id: string;
+  title: string;
+  fileName: string;
+  mimeType: string;
+  status: SourceStatusValue;
+  errorMessage: string | null;
+  projectId: string;
+  organizationId: string;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}
+
+export interface FakeVersion {
+  id: string;
+  documentId: string;
+  organizationId: string;
+  createdById: string;
+  versionNumber: number;
+  fileKey: string;
+  contentHash: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: Date;
+}
+
+export interface FakeNote {
+  id: string;
+  title: string;
+  body: string;
+  status: SourceStatusValue;
+  errorMessage: string | null;
+  projectId: string;
+  organizationId: string;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FakeChunk {
+  id: string;
+  chunkIndex: number;
+  headingPath: string[];
+  content: string;
+  documentVersionId: string | null;
+  contextNoteId: string | null;
+  projectId: string;
+  organizationId: string;
+}
+
 interface FakeSession extends SessionRecord {
   tokenHash: string;
 }
+
+/** In-memory stand-in for the storage driver; tests put bytes here to simulate an upload. */
+export const storageFiles = new Map<string, Buffer>();
 
 export const db = {
   users: new Map<string, FakeUser>(),
   projects: new Map<string, FakeProject>(),
   members: new Map<string, FakeMember>(),
   sessions: new Map<string, FakeSession>(),
+  documents: new Map<string, FakeDocument>(),
+  versions: new Map<string, FakeVersion>(),
+  notes: new Map<string, FakeNote>(),
+  chunks: new Map<string, FakeChunk>(),
   audit: [] as AuditEntry[],
   reset(): void {
     this.users.clear();
     this.projects.clear();
     this.members.clear();
     this.sessions.clear();
+    this.documents.clear();
+    this.versions.clear();
+    this.notes.clear();
+    this.chunks.clear();
+    storageFiles.clear();
     this.audit.length = 0;
   },
 };
@@ -334,6 +402,313 @@ export const usersRepositoryModule = {
   countActiveAdmins: async (organizationId: string): Promise<number> =>
     activeUsers().filter((u) => u.organizationId === organizationId && u.orgRole === 'ORG_ADMIN')
       .length,
+};
+
+function person(userId: string): { id: string; name: string } {
+  return { id: userId, name: db.users.get(userId)?.name ?? 'Unknown' };
+}
+
+function inProject(
+  d: { organizationId: string; projectId: string; deletedAt?: Date | null },
+  organizationId: string,
+  projectId: string,
+): boolean {
+  return d.organizationId === organizationId && d.projectId === projectId && !d.deletedAt;
+}
+
+function versionsOf(documentId: string): FakeVersion[] {
+  return [...db.versions.values()]
+    .filter((v) => v.documentId === documentId)
+    .sort((a, b) => b.versionNumber - a.versionNumber);
+}
+
+function versionRecord(v: FakeVersion) {
+  return {
+    id: v.id,
+    versionNumber: v.versionNumber,
+    mimeType: v.mimeType,
+    sizeBytes: v.sizeBytes,
+    contentHash: v.contentHash,
+    createdAt: v.createdAt,
+    createdBy: person(v.createdById),
+  };
+}
+
+function documentRecord(d: FakeDocument) {
+  const versions = versionsOf(d.id);
+  return {
+    id: d.id,
+    title: d.title,
+    fileName: d.fileName,
+    status: d.status,
+    errorMessage: d.errorMessage,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
+    createdBy: person(d.createdById),
+    _count: { versions: versions.length },
+    versions: versions.slice(0, 1).map(versionRecord),
+  };
+}
+
+function noteRecord(n: FakeNote) {
+  return {
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    status: n.status,
+    errorMessage: n.errorMessage,
+    createdAt: n.createdAt,
+    updatedAt: n.updatedAt,
+    createdBy: person(n.createdById),
+  };
+}
+
+export const storageModule = {
+  storageService: {
+    createUploadUrl: async (_contentType: string) => ({
+      url: 'http://storage.test/upload',
+      fileKey: randomUUID(),
+      expiresAt: new Date(Date.now() + 300_000),
+    }),
+    confirmUpload: async (fileKey: string): Promise<void> => {
+      if (!storageFiles.has(fileKey)) throw new NotFoundError(`File not found: ${fileKey}`);
+    },
+    getDownloadStream: async (fileKey: string): Promise<Readable> => {
+      const file = storageFiles.get(fileKey);
+      if (!file) throw new NotFoundError(`File not found: ${fileKey}`);
+      return Readable.from([file]);
+    },
+    delete: async (fileKey: string): Promise<void> => {
+      storageFiles.delete(fileKey);
+    },
+  },
+};
+
+export const documentsRepositoryModule = {
+  listDocuments: async (p: {
+    organizationId: string;
+    projectId: string;
+    page: number;
+    pageSize: number;
+  }) => {
+    const all = [...db.documents.values()]
+      .filter((d) => inProject(d, p.organizationId, p.projectId))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const start = (p.page - 1) * p.pageSize;
+    return { items: all.slice(start, start + p.pageSize).map(documentRecord), total: all.length };
+  },
+  findDocument: async (organizationId: string, projectId: string, documentId: string) => {
+    const d = db.documents.get(documentId);
+    return d && inProject(d, organizationId, projectId) ? documentRecord(d) : null;
+  },
+  listVersions: async (organizationId: string, projectId: string, documentId: string) => {
+    const d = db.documents.get(documentId);
+    return d && inProject(d, organizationId, projectId)
+      ? versionsOf(documentId).map(versionRecord)
+      : [];
+  },
+  findVersionForDownload: async (
+    organizationId: string,
+    projectId: string,
+    documentId: string,
+    versionId: string,
+  ) => {
+    const d = db.documents.get(documentId);
+    const v = db.versions.get(versionId);
+    if (!d || !v || v.documentId !== documentId || !inProject(d, organizationId, projectId)) {
+      return null;
+    }
+    return {
+      id: v.id,
+      fileKey: v.fileKey,
+      mimeType: v.mimeType,
+      versionNumber: v.versionNumber,
+      document: { fileName: d.fileName },
+    };
+  },
+  countChunksByVersion: async (_org: string, _project: string, versionIds: string[]) => {
+    const counts = new Map<string, number>();
+    for (const c of db.chunks.values()) {
+      if (c.documentVersionId && versionIds.includes(c.documentVersionId)) {
+        counts.set(c.documentVersionId, (counts.get(c.documentVersionId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  },
+  listChunks: async (p: { versionId: string; page: number; pageSize: number }) => {
+    const all = [...db.chunks.values()]
+      .filter((c) => c.documentVersionId === p.versionId)
+      .sort((a, b) => a.chunkIndex - b.chunkIndex);
+    const start = (p.page - 1) * p.pageSize;
+    return { items: all.slice(start, start + p.pageSize), total: all.length };
+  },
+  findDuplicate: async (organizationId: string, projectId: string, contentHash: string) => {
+    for (const v of db.versions.values()) {
+      const d = db.documents.get(v.documentId);
+      if (d && v.contentHash === contentHash && inProject(d, organizationId, projectId)) {
+        return { id: d.id, title: d.title };
+      }
+    }
+    return null;
+  },
+  fileKeyUsed: async (fileKey: string): Promise<boolean> =>
+    [...db.versions.values()].some((v) => v.fileKey === fileKey),
+  createDocument: async (data: {
+    title: string;
+    fileName: string;
+    mimeType: string;
+    projectId: string;
+    organizationId: string;
+    createdById: string;
+    version: { fileKey: string; contentHash: string; mimeType: string; sizeBytes: number };
+  }) => {
+    const now = new Date();
+    const doc: FakeDocument = {
+      id: randomUUID(),
+      title: data.title,
+      fileName: data.fileName,
+      mimeType: data.mimeType,
+      status: 'UPLOADED',
+      errorMessage: null,
+      projectId: data.projectId,
+      organizationId: data.organizationId,
+      createdById: data.createdById,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+    };
+    db.documents.set(doc.id, doc);
+    const version: FakeVersion = {
+      id: randomUUID(),
+      documentId: doc.id,
+      organizationId: data.organizationId,
+      createdById: data.createdById,
+      versionNumber: 1,
+      createdAt: now,
+      ...data.version,
+    };
+    db.versions.set(version.id, version);
+    return { id: doc.id, versionId: version.id };
+  },
+  lockDocument: async (organizationId: string, projectId: string, documentId: string) => {
+    const d = db.documents.get(documentId);
+    return d !== undefined && inProject(d, organizationId, projectId);
+  },
+  nextVersionNumber: async (documentId: string): Promise<number> =>
+    (versionsOf(documentId)[0]?.versionNumber ?? 0) + 1,
+  createVersion: async (data: Omit<FakeVersion, 'id' | 'createdAt'>) => {
+    const version: FakeVersion = { id: randomUUID(), createdAt: new Date(), ...data };
+    db.versions.set(version.id, version);
+    return { id: version.id };
+  },
+  markUploaded: async (documentId: string, data: { fileName: string; mimeType: string }) => {
+    const d = db.documents.get(documentId);
+    if (d) Object.assign(d, data, { status: 'UPLOADED', errorMessage: null });
+  },
+  requeue: async (organizationId: string, projectId: string, documentId: string) => {
+    const d = db.documents.get(documentId);
+    if (!d || !inProject(d, organizationId, projectId)) return false;
+    if (d.status !== 'FAILED' && d.status !== 'PROCESSED') return false;
+    d.status = 'UPLOADED';
+    d.errorMessage = null;
+    return true;
+  },
+  failDocument: async (organizationId: string, documentId: string, reason: string) => {
+    const d = db.documents.get(documentId);
+    if (d && d.organizationId === organizationId && d.status === 'UPLOADED') {
+      d.status = 'FAILED';
+      d.errorMessage = reason;
+    }
+  },
+};
+
+export const notesRepositoryModule = {
+  listNotes: async (p: {
+    organizationId: string;
+    projectId: string;
+    page: number;
+    pageSize: number;
+  }) => {
+    const all = [...db.notes.values()]
+      .filter((n) => inProject(n, p.organizationId, p.projectId))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const start = (p.page - 1) * p.pageSize;
+    return { items: all.slice(start, start + p.pageSize).map(noteRecord), total: all.length };
+  },
+  findNote: async (organizationId: string, projectId: string, noteId: string) => {
+    const n = db.notes.get(noteId);
+    return n && inProject(n, organizationId, projectId) ? noteRecord(n) : null;
+  },
+  countChunksByNote: async (_org: string, _project: string, noteIds: string[]) => {
+    const counts = new Map<string, number>();
+    for (const c of db.chunks.values()) {
+      if (c.contextNoteId && noteIds.includes(c.contextNoteId)) {
+        counts.set(c.contextNoteId, (counts.get(c.contextNoteId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  },
+  createNote: async (data: {
+    title: string;
+    body: string;
+    projectId: string;
+    organizationId: string;
+    createdById: string;
+  }) => {
+    const now = new Date();
+    const note: FakeNote = {
+      id: randomUUID(),
+      status: 'UPLOADED',
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      ...data,
+    };
+    db.notes.set(note.id, note);
+    return noteRecord(note);
+  },
+  updateNote: async (noteId: string, data: { title?: string; body?: string }) => {
+    const n = db.notes.get(noteId);
+    if (!n) throw new Error('note missing');
+    Object.assign(n, data, { status: 'UPLOADED', errorMessage: null, updatedAt: new Date() });
+    return noteRecord(n);
+  },
+  failNote: async (organizationId: string, noteId: string, reason: string) => {
+    const n = db.notes.get(noteId);
+    if (n && n.organizationId === organizationId && n.status === 'UPLOADED') {
+      n.status = 'FAILED';
+      n.errorMessage = reason;
+    }
+  },
+};
+
+export const sourcesRepositoryModule = {
+  countDocumentsByStatus: async (organizationId: string, projectId: string) => {
+    const counts = new Map<SourceStatusValue, number>();
+    for (const d of db.documents.values()) {
+      if (inProject(d, organizationId, projectId))
+        counts.set(d.status, (counts.get(d.status) ?? 0) + 1);
+    }
+    return [...counts].map(([status, count]) => ({ status, count }));
+  },
+  countNotesByStatus: async (organizationId: string, projectId: string) => {
+    const counts = new Map<SourceStatusValue, number>();
+    for (const n of db.notes.values()) {
+      if (inProject(n, organizationId, projectId))
+        counts.set(n.status, (counts.get(n.status) ?? 0) + 1);
+    }
+    return [...counts].map(([status, count]) => ({ status, count }));
+  },
+  listActiveDocuments: async (organizationId: string, projectId: string) =>
+    [...db.documents.values()]
+      .filter((d) => inProject(d, organizationId, projectId))
+      .filter((d) => d.status === 'UPLOADED' || d.status === 'PROCESSING')
+      .map((d) => ({ id: d.id, title: d.title, status: d.status })),
+  listActiveNotes: async (organizationId: string, projectId: string) =>
+    [...db.notes.values()]
+      .filter((n) => inProject(n, organizationId, projectId))
+      .filter((n) => n.status === 'UPLOADED' || n.status === 'PROCESSING')
+      .map((n) => ({ id: n.id, title: n.title, status: n.status })),
 };
 
 export const auditRepositoryModule = {

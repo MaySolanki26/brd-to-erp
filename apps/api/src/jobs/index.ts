@@ -1,9 +1,10 @@
 import type PgBoss from 'pg-boss';
 import { JobName } from '@brd/shared';
-import { handleProcessDocument } from './process-document.handler.js';
+import { logger } from '../lib/logger.js';
+import { handleProcessSource } from './process-source.handler.js';
 
 export async function registerAllHandlers(boss: PgBoss): Promise<void> {
-  await boss.work(JobName.PROCESS_DOCUMENT, handleProcessDocument);
+  await boss.work(JobName.PROCESS_SOURCE, { includeMetadata: true }, handleProcessSource);
 
-  console.log('[worker] Registered handler: process-document');
+  logger.info({ job: JobName.PROCESS_SOURCE }, 'Registered worker handler');
 }

@@ -1,17 +1,22 @@
 export const JobName = {
-  PROCESS_DOCUMENT: 'process-document',
+  PROCESS_SOURCE: 'process-source',
 } as const;
 
 export type JobName = (typeof JobName)[keyof typeof JobName];
 
-export interface ProcessDocumentPayload {
-  documentId: string;
-  documentVersionId: string;
+/** The worker re-verifies every id against the database before doing any work. */
+export interface ProcessSourcePayload {
   organizationId: string;
+  projectId: string;
+  sourceType: 'document' | 'note';
+  /** Document id or context note id. */
+  sourceId: string;
+  /** Required for documents: the version to parse. */
+  versionId?: string;
 }
 
 export interface JobPayloadMap {
-  [JobName.PROCESS_DOCUMENT]: ProcessDocumentPayload;
+  [JobName.PROCESS_SOURCE]: ProcessSourcePayload;
 }
 
 export const DEFAULT_BACKOFF = {

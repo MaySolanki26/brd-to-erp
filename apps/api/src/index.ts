@@ -4,6 +4,7 @@ import { env } from './config/env.js';
 import { createApp } from './app.js';
 import { logger } from './lib/logger.js';
 import { disconnectPrisma } from './lib/prisma.js';
+import { stopQueue } from './services/queue.service.js';
 
 const app = createApp();
 
@@ -22,6 +23,12 @@ async function shutdown(signal: string): Promise<void> {
   server.close(() => {
     logger.info('HTTP server closed');
   });
+
+  try {
+    await stopQueue();
+  } catch (err) {
+    logger.error({ err }, 'Error stopping job queue');
+  }
 
   try {
     await disconnectPrisma();

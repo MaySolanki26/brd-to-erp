@@ -6,7 +6,10 @@ export type ApiErrorCode =
   | 'CONFLICT'
   | 'INTERNAL_SERVER_ERROR'
   | 'RATE_LIMIT_EXCEEDED'
-  | 'CSRF_INVALID';
+  | 'CSRF_INVALID'
+  | 'BAD_REQUEST'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'SERVICE_UNAVAILABLE';
 
 export interface ApiErrorEnvelope {
   error: {

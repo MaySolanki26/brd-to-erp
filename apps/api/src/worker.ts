@@ -1,6 +1,7 @@
 import './config/env.js';
 
-import { createBoss } from './lib/boss.js';
+import { createBoss, ensureQueues } from './lib/boss.js';
+import { logger } from './lib/logger.js';
 import { disconnectPrisma } from './lib/prisma.js';
 import { registerAllHandlers } from './jobs/index.js';
 
@@ -8,26 +9,27 @@ async function main(): Promise<void> {
   const boss = createBoss();
 
   await boss.start();
-  console.log('[worker] pg-boss started');
+  await ensureQueues(boss);
+  logger.info('Worker: pg-boss started');
 
   await registerAllHandlers(boss);
-  console.log('[worker] Ready — waiting for jobs');
+  logger.info('Worker ready, waiting for jobs');
 
   const shutdown = async (signal: string): Promise<void> => {
-    console.log(`[worker] Received ${signal}, shutting down gracefully...`);
+    logger.info({ signal }, 'Worker shutting down gracefully');
 
     try {
       await boss.stop({ graceful: true, timeout: 30_000 });
-      console.log('[worker] pg-boss stopped');
+      logger.info('Worker: pg-boss stopped');
     } catch (err) {
-      console.error('[worker] Error stopping pg-boss:', err);
+      logger.error({ err }, 'Worker: error stopping pg-boss');
     }
 
     try {
       await disconnectPrisma();
-      console.log('[worker] Prisma disconnected');
+      logger.info('Worker: Prisma disconnected');
     } catch (err) {
-      console.error('[worker] Error disconnecting Prisma:', err);
+      logger.error({ err }, 'Worker: error disconnecting Prisma');
     }
 
     process.exit(0);
@@ -38,6 +40,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error('[worker] Fatal error:', err);
+  logger.error({ err }, 'Worker: fatal error');
   process.exit(1);
 });

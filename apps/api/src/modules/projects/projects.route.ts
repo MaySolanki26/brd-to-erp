@@ -11,7 +11,10 @@ import { requireAuth } from '../../middleware/require-auth.js';
 import { requireCurrentPassword } from '../../middleware/require-current-password.js';
 import { requireProjectRole } from '../../middleware/require-project-role.js';
 import { validate } from '../../middleware/validate.js';
+import { documentsRouter } from '../documents/documents.route.js';
 import { membersRouter } from '../members/members.route.js';
+import { notesRouter } from '../notes/notes.route.js';
+import { processingStatusController } from '../sources/sources.controller.js';
 import {
   archiveProjectController,
   createProjectController,
@@ -48,3 +51,11 @@ projectsRouter.post(
   archiveProjectController,
 );
 projectsRouter.use('/:id/members', membersRouter);
+projectsRouter.use('/:id/documents', idParams, documentsRouter);
+projectsRouter.use('/:id/notes', idParams, notesRouter);
+projectsRouter.get(
+  '/:id/processing-status',
+  idParams,
+  requireProjectRole(...projectRolesWith(ProjectPermission.READ)),
+  processingStatusController,
+);

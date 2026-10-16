@@ -29,19 +29,3 @@ export async function handleUpload(req: Request, res: Response, next: NextFuncti
     next(err);
   }
 }
-
-export async function handleDownload(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const fileKey = req.params['fileKey'] as string | undefined;
-    if (!fileKey) {
-      throw new ValidationError('Missing fileKey parameter');
-    }
-
-    const stream = await storageService.getDownloadStream(fileKey);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileKey}"`);
-    stream.pipe(res);
-  } catch (err) {
-    next(err);
-  }
-}
