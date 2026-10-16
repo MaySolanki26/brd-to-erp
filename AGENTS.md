@@ -31,3 +31,5 @@ apps/web, apps/api (api + worker entries), packages/ui, packages/shared, package
 - After changes run: pnpm lint && pnpm typecheck && pnpm test && pnpm build. Fix all failures.
 - Do not modify files outside the task scope.
 - Finish with: files changed, what was verified, open risks.
+- Workspace packages must build before apps; always use root scripts (pnpm typecheck/test/build).
+- Every package must declare its own dependencies; never rely on another package's dependency.

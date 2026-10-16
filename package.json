@@ -6,10 +6,12 @@
     "node": ">=20"
   },
   "scripts": {
-    "lint": "pnpm -r run lint",
-    "typecheck": "pnpm -r run typecheck",
-    "build": "pnpm -r run build",
-    "test": "pnpm -r run test",
+    "build:packages": "pnpm --filter \"./packages/**\" build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm build:packages && pnpm -r --filter \"./apps/**\" typecheck",
+    "test": "pnpm build:packages && pnpm -r --filter \"./apps/**\" test",
+    "build": "pnpm -r build",
+    "clean": "pnpm -r clean",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
