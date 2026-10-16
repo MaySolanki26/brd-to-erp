@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppShell,
@@ -6,31 +6,39 @@ import {
   AppSidebarMobile,
   AppHeader,
   ErrorBoundary,
+  PageLoader,
   TooltipProvider,
   useSidebarState,
   type NavItem,
   type BreadcrumbItem,
   type AppShellUser,
-  Badge,
 } from '@brd/ui';
-import { LayoutDashboard, FileText, Users, Settings, Component } from 'lucide-react';
+import { FolderKanban, KeyRound, LayoutDashboard, Users } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 
 const NAV_ITEMS: NavItem[] = [
   { key: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { key: '/documents', label: 'Documents', icon: FileText },
-  { key: '/team', label: 'Team', icon: Users },
-  { key: '/settings', label: 'Settings', icon: Settings },
-  { key: '/dev/showcase', label: 'Showcase', icon: Component, badge: <Badge variant="outline" className="text-[10px] px-1.5 py-0">Dev</Badge> },
+  { key: '/projects', label: 'Projects', icon: FolderKanban },
 ];
+
+const ADMIN_NAV_ITEMS: NavItem[] = [{ key: '/team', label: 'Team', icon: Users }];
 
 const BREADCRUMB_MAP: Record<string, BreadcrumbItem[]> = {
   '/': [{ label: 'Dashboard' }],
-  '/documents': [{ label: 'Documents' }],
+  '/projects': [{ label: 'Projects' }],
   '/team': [{ label: 'Team' }],
-  '/settings': [{ label: 'Settings' }],
-  '/dev/showcase': [{ label: 'Dev' }, { label: 'Showcase' }],
 };
+
+function isActivePath(key: string, pathname: string): boolean {
+  return key === '/' ? pathname === '/' : pathname === key || pathname.startsWith(`${key}/`);
+}
+
+function breadcrumbsFor(pathname: string): BreadcrumbItem[] {
+  if (pathname.startsWith('/projects/')) {
+    return [{ label: 'Projects' }, { label: 'Project' }];
+  }
+  return BREADCRUMB_MAP[pathname] ?? [{ label: 'Home' }];
+}
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -39,9 +47,12 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeKey = NAV_ITEMS.find((item) => item.key === location.pathname)?.key ?? '/';
+  const visibleItems =
+    user?.orgRole === 'ORG_ADMIN' ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
+  const activeKey =
+    visibleItems.find((item) => isActivePath(item.key, location.pathname))?.key ?? '/';
 
-  const navItems: NavItem[] = NAV_ITEMS.map((item) => ({
+  const navItems: NavItem[] = visibleItems.map((item) => ({
     ...item,
     onClick: () => {
       navigate(item.key);
@@ -53,7 +64,7 @@ export function AppLayout() {
     ? { name: user.name, email: user.email, role: user.role.name }
     : undefined;
 
-  const breadcrumbs = BREADCRUMB_MAP[location.pathname] ?? [{ label: 'Home' }];
+  const breadcrumbs = breadcrumbsFor(location.pathname);
 
   const branding = collapsed ? (
     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xl font-bold">
@@ -106,13 +117,20 @@ export function AppLayout() {
           onLogout={logout}
           onMobileMenuOpen={() => setMobileOpen(true)}
           userMenuActions={[
-            { key: 'settings', label: 'Settings', icon: Settings, onClick: () => navigate('/settings') },
+            {
+              key: 'change-password',
+              label: 'Change password',
+              icon: KeyRound,
+              onClick: () => navigate('/change-password'),
+            },
           ]}
         />
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <ErrorBoundary>
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </main>
       </AppShell>

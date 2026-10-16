@@ -1,6 +1,6 @@
 import type { ApiErrorCode, ApiErrorEnvelope } from '@brd/shared';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? '';
+const BASE_URL = `${import.meta.env.VITE_API_URL ?? ''}/api`;
 
 export class ApiClientError extends Error {
   public readonly code: ApiErrorCode;
@@ -17,6 +17,15 @@ export class ApiClientError extends Error {
 }
 
 let refreshPromise: Promise<void> | null = null;
+
+const LOGIN_PATH = '/login';
+
+// Reloading while already on the login page would restart the session check and loop forever.
+function redirectToLogin(): void {
+  if (window.location.pathname !== LOGIN_PATH) {
+    window.location.href = LOGIN_PATH;
+  }
+}
 
 async function silentRefresh(): Promise<void> {
   const res = await fetch(`${BASE_URL}/auth/refresh`, {
@@ -62,12 +71,10 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
       );
     } catch (err) {
       refreshPromise = null;
+      redirectToLogin();
       if (err instanceof ApiClientError) {
-        // Redirect to login on auth failure
-        window.location.href = '/login';
         throw err;
       }
-      window.location.href = '/login';
       throw new ApiClientError(401, 'UNAUTHORIZED', 'Session expired');
     }
   }
