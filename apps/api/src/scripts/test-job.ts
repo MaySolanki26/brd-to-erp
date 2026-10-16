@@ -1,3 +1,5 @@
+import '../config/env.js';
+
 import { prisma, disconnectPrisma } from '../lib/prisma.js';
 import { createBoss } from '../lib/boss.js';
 import { enqueue } from '../services/queue.service.js';

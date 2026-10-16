@@ -1,3 +1,5 @@
+import './config/env.js';
+
 import { createBoss } from './lib/boss.js';
 import { disconnectPrisma } from './lib/prisma.js';
 import { registerAllHandlers } from './jobs/index.js';
