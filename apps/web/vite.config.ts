@@ -6,7 +6,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@brd/ui': resolve(__dirname, '../../packages/ui/src/index.ts'),
       '@': resolve(__dirname, 'src'),
     },
+    dedupe: ['react', 'react-dom'],
+  },
+  optimizeDeps: {
+    entries: ['src/main.tsx'],
   },
 });
