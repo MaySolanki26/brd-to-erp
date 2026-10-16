@@ -4,14 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/index.ts",
     "build": "tsc --project tsconfig.build.json",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "echo \"No tests yet\"",
     "clean": "rm -rf dist",
-    "worker": "tsx --env-file=../../.env src/worker.ts",
-    "worker:test": "tsx --env-file=../../.env src/scripts/test-job.ts",
+    "worker": "tsx src/worker.ts",
+    "worker:test": "tsx src/scripts/test-job.ts",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio"
@@ -21,6 +23,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
+    "dotenv": "^18.0.8",
     "pg-boss": "^10.1.5"
   },
   "devDependencies": {
