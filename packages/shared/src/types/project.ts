@@ -21,6 +21,12 @@ export interface PagedResult<T> {
   total: number;
 }
 
+export interface MemberCandidateDto {
+  userId: string;
+  name: string;
+  email: string;
+}
+
 export interface MemberDto {
   userId: string;
   name: string;

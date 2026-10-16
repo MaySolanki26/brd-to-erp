@@ -15,6 +15,7 @@ export interface FakeUser {
   orgRole: OrgRole;
   failedLoginCount: number;
   lockedUntil: Date | null;
+  mustChangePassword: boolean;
   deletedAt: Date | null;
 }
 
@@ -65,6 +66,7 @@ export function addUser(
     orgRole: 'MEMBER',
     failedLoginCount: 0,
     lockedUntil: null,
+    mustChangePassword: false,
     deletedAt: null,
     ...partial,
   };
@@ -102,6 +104,18 @@ export function addMembership(project: FakeProject, user: FakeUser, role: Projec
 
 function activeUsers(): FakeUser[] {
   return [...db.users.values()].filter((u) => u.deletedAt === null);
+}
+
+function orgUserRecord(u: FakeUser) {
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    orgRole: u.orgRole,
+    mustChangePassword: u.mustChangePassword,
+    deletedAt: u.deletedAt,
+    createdAt: new Date(0),
+  };
 }
 
 function memberWithUser(m: FakeMember) {
@@ -159,6 +173,24 @@ export const authRepositoryModule = {
   revokeFamily: async (familyId: string, now: Date): Promise<void> => {
     for (const s of db.sessions.values()) {
       if (s.familyId === familyId && !s.revokedAt) s.revokedAt = now;
+    }
+  },
+  updatePassword: async (
+    userId: string,
+    passwordHash: string,
+    mustChangePassword: boolean,
+  ): Promise<void> => {
+    const user = db.users.get(userId);
+    if (user) {
+      user.passwordHash = passwordHash;
+      user.mustChangePassword = mustChangePassword;
+      user.failedLoginCount = 0;
+      user.lockedUntil = null;
+    }
+  },
+  revokeAllSessions: async (userId: string, now: Date): Promise<void> => {
+    for (const s of db.sessions.values()) {
+      if (s.userId === userId && !s.revokedAt) s.revokedAt = now;
     }
   },
 };
@@ -233,6 +265,14 @@ export const membersRepositoryModule = {
     [...db.members.values()]
       .filter((m) => m.organizationId === organizationId && m.projectId === projectId)
       .map(memberWithUser),
+  listCandidates: async (organizationId: string, projectId: string) =>
+    activeUsers()
+      .filter(
+        (u) =>
+          u.organizationId === organizationId &&
+          ![...db.members.values()].some((m) => m.projectId === projectId && m.userId === u.id),
+      )
+      .map((u) => ({ id: u.id, name: u.name, email: u.email })),
   findMember: async (organizationId: string, projectId: string, userId: string) => {
     const m = [...db.members.values()].find(
       (x) =>
@@ -266,6 +306,34 @@ export const membersRepositoryModule = {
       (m) => m.organizationId === organizationId && m.projectId === projectId && m.role === 'OWNER',
     ).length,
   lockProject: async (): Promise<void> => undefined,
+};
+
+export const usersRepositoryModule = {
+  listUsers: async (organizationId: string) =>
+    [...db.users.values()].filter((u) => u.organizationId === organizationId).map(orgUserRecord),
+  findUser: async (organizationId: string, userId: string) => {
+    const user = db.users.get(userId);
+    return user && user.organizationId === organizationId ? orgUserRecord(user) : null;
+  },
+  emailTaken: async (email: string): Promise<boolean> =>
+    [...db.users.values()].some((u) => u.email === email),
+  createUser: async (data: {
+    organizationId: string;
+    email: string;
+    name: string;
+    orgRole: OrgRole;
+    passwordHash: string;
+  }) => orgUserRecord(addUser({ ...data, mustChangePassword: true })),
+  updateUser: async (userId: string, data: { orgRole?: OrgRole; deletedAt?: Date | null }) => {
+    const user = db.users.get(userId);
+    if (!user) throw new Error('user missing');
+    if (data.orgRole !== undefined) user.orgRole = data.orgRole;
+    if (data.deletedAt !== undefined) user.deletedAt = data.deletedAt;
+    return orgUserRecord(user);
+  },
+  countActiveAdmins: async (organizationId: string): Promise<number> =>
+    activeUsers().filter((u) => u.organizationId === organizationId && u.orgRole === 'ORG_ADMIN')
+      .length,
 };
 
 export const auditRepositoryModule = {

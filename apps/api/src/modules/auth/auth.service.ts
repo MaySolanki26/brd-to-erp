@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import type { OrgRole, UserDto } from '@brd/shared';
+import type { ChangePasswordInput, OrgRole, UserDto } from '@brd/shared';
 import { env } from '../../config/env.js';
-import { UnauthorizedError } from '../../errors/app-error.js';
+import { UnauthorizedError, ValidationError } from '../../errors/app-error.js';
 import { signAccessToken } from '../../lib/jwt.js';
-import { verifyAgainstDummy, verifyPassword } from '../../lib/password.js';
+import { hashPassword, verifyAgainstDummy, verifyPassword } from '../../lib/password.js';
 import { generateOpaqueToken, hashToken } from '../../lib/tokens.js';
 import { withTransaction, type DbClient } from '../../lib/transaction.js';
 import { createAuditLog } from '../audit/audit.repository.js';
@@ -33,6 +33,7 @@ export function toUserDto(user: {
   name: string;
   organizationId: string;
   orgRole: OrgRole;
+  mustChangePassword: boolean;
 }): UserDto {
   return {
     id: user.id,
@@ -40,6 +41,7 @@ export function toUserDto(user: {
     name: user.name,
     organizationId: user.organizationId,
     orgRole: user.orgRole,
+    mustChangePassword: user.mustChangePassword,
     role: { id: user.orgRole, name: user.orgRole },
   };
 }
@@ -209,6 +211,51 @@ export async function logout(rawToken: string | undefined): Promise<void> {
       },
       tx,
     );
+  });
+}
+
+/**
+ * Replaces the caller's password. Every existing session is revoked and a fresh one is issued,
+ * so other devices are signed out while the caller stays signed in.
+ */
+export async function changePassword(
+  userId: string,
+  input: ChangePasswordInput,
+  ctx: RequestContext,
+): Promise<AuthResult> {
+  const user = await repo.findUserById(userId);
+  if (!user) {
+    throw new UnauthorizedError('User not found');
+  }
+
+  if (!(await verifyPassword(user.passwordHash, input.currentPassword))) {
+    // Counts toward the lockout so a stolen session cannot guess the current password.
+    await recordFailedLogin(user.email, 'bad_password', ctx, user);
+    throw new ValidationError('Current password is incorrect');
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+  return withTransaction(async (tx) => {
+    await repo.updatePassword(user.id, passwordHash, false, tx);
+    await repo.revokeAllSessions(user.id, new Date(), tx);
+    const result = await issueSession(
+      { ...user, mustChangePassword: false },
+      randomUUID(),
+      ctx,
+      tx,
+    );
+    await createAuditLog(
+      {
+        action: 'UPDATE',
+        entity: 'UserPassword',
+        entityId: user.id,
+        userId: user.id,
+        organizationId: user.organizationId,
+        metadata: { ip: ctx.ip ?? null },
+      },
+      tx,
+    );
+    return result;
   });
 }
 

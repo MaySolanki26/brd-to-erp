@@ -10,6 +10,7 @@ const userSelect = {
   orgRole: true,
   failedLoginCount: true,
   lockedUntil: true,
+  mustChangePassword: true,
   deletedAt: true,
 } as const;
 
@@ -117,6 +118,30 @@ export async function revokeFamily(
 ): Promise<void> {
   await db.refreshSession.updateMany({
     where: { familyId, revokedAt: null },
+    data: { revokedAt: now },
+  });
+}
+
+/** Stores a new password hash and clears any lockout so the user can sign in with it. */
+export async function updatePassword(
+  userId: string,
+  passwordHash: string,
+  mustChangePassword: boolean,
+  db: DbClient = prisma,
+): Promise<void> {
+  await db.user.update({
+    where: { id: userId },
+    data: { passwordHash, mustChangePassword, failedLoginCount: 0, lockedUntil: null },
+  });
+}
+
+export async function revokeAllSessions(
+  userId: string,
+  now: Date,
+  db: DbClient = prisma,
+): Promise<void> {
+  await db.refreshSession.updateMany({
+    where: { userId, revokedAt: null },
     data: { revokedAt: now },
   });
 }

@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { LoginInput } from '@brd/shared';
+import type { ChangePasswordInput, LoginInput } from '@brd/shared';
 import { UnauthorizedError } from '../../errors/app-error.js';
 import {
   REFRESH_COOKIE,
@@ -44,4 +44,14 @@ export async function logoutController(req: Request, res: Response): Promise<voi
   await authService.logout(parseCookie(req.headers.cookie, REFRESH_COOKIE));
   clearAuthCookies(res);
   res.json({ success: true });
+}
+
+export async function changePasswordController(req: Request, res: Response): Promise<void> {
+  const result = await authService.changePassword(
+    getAuthUser(res).id,
+    req.body as ChangePasswordInput,
+    requestContext(req),
+  );
+  setAuthCookies(res, result);
+  res.json({ user: result.user });
 }

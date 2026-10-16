@@ -27,6 +27,7 @@ describe('auth.service', () => {
       name: 'A',
       organizationId: 'o1',
       orgRole: 'ORG_ADMIN',
+      mustChangePassword: false,
       ...{ passwordHash: 'secret' },
     });
     expect(dto).toEqual({
@@ -35,6 +36,7 @@ describe('auth.service', () => {
       name: 'A',
       organizationId: 'o1',
       orgRole: 'ORG_ADMIN',
+      mustChangePassword: false,
       role: { id: 'ORG_ADMIN', name: 'ORG_ADMIN' },
     });
   });

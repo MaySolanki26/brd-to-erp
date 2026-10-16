@@ -42,6 +42,7 @@ const user = (orgRole: 'ORG_ADMIN' | 'MEMBER'): UserDto => ({
   name: 'n',
   organizationId: 'o1',
   orgRole,
+  mustChangePassword: false,
   role: { id: orgRole, name: orgRole },
 });
 

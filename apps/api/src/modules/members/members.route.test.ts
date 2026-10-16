@@ -149,6 +149,23 @@ describe('members API', () => {
       expect(JSON.stringify(list.body)).not.toContain('passwordHash');
     });
 
+    it('lists org users who are not yet members as candidates, never across organizations', async () => {
+      const res = await as(app, owner, 'get', `${members(world.p1.id)}/candidates`);
+      expect(res.status).toBe(200);
+      const emails = (res.body.candidates as { email: string }[]).map((c) => c.email);
+      expect(emails).toContain(world.outsiderA.email);
+      expect(emails).not.toContain(world.analystA.email);
+      expect(emails).not.toContain(world.userB.email);
+      expect(JSON.stringify(res.body)).not.toContain('passwordHash');
+    });
+
+    it('does not let non-managers list candidates', async () => {
+      const analyst = await login(app, world.analystA.email, PASSWORD);
+      expect((await as(app, analyst, 'get', `${members(world.p1.id)}/candidates`)).status).toBe(
+        403,
+      );
+    });
+
     it('returns 409 when the user is already a member', async () => {
       const res = await as(app, owner, 'post', members(world.p1.id)).send({
         userId: world.viewerA.id,

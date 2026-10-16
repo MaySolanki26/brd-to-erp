@@ -13,6 +13,7 @@ import { storageRouter } from './modules/storage/storage.route.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { createAuthRouter } from './modules/auth/auth.route.js';
 import { projectsRouter } from './modules/projects/projects.route.js';
+import { usersRouter } from './modules/users/users.route.js';
 
 export interface AppOptions {
   /** Disable rate limiting (tests only). */
@@ -67,6 +68,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.use('/api', csrfProtection);
   app.use('/api/auth', createAuthRouter({ rateLimit: rateLimitEnabled }));
   app.use('/api/projects', projectsRouter);
+  app.use('/api/users', usersRouter);
   app.use('/storage', storageRouter);
 
   // Fallback handlers

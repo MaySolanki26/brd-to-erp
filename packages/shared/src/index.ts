@@ -30,14 +30,29 @@ export {
   type AddMemberInput,
   type UpdateMemberInput,
 } from './schemas/member.js';
+export {
+  orgRoleSchema,
+  passwordSchema,
+  userParamsSchema,
+  createUserSchema,
+  updateUserSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  type UserParams,
+  type CreateUserInput,
+  type UpdateUserInput,
+  type ResetPasswordInput,
+  type ChangePasswordInput,
+} from './schemas/user.js';
 
 // Types
 export { type ApiErrorCode, type ApiErrorEnvelope } from './types/api.js';
-export { type UserDto } from './types/user.js';
+export { type UserDto, type OrgUserDto } from './types/user.js';
 export {
   type ProjectDto,
   type ProjectStatus,
   type MemberDto,
+  type MemberCandidateDto,
   type PagedResult,
 } from './types/project.js';
 

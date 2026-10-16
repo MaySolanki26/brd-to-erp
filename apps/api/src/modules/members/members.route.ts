@@ -10,6 +10,7 @@ import { requireProjectRole } from '../../middleware/require-project-role.js';
 import { validate } from '../../middleware/validate.js';
 import {
   addMemberController,
+  listCandidatesController,
   listMembersController,
   removeMemberController,
   updateMemberController,
@@ -21,6 +22,7 @@ const manageMembers = requireProjectRole(...projectRolesWith(ProjectPermission.M
 const memberParams = validate(memberParamsSchema, 'params');
 
 membersRouter.get('/', manageMembers, listMembersController);
+membersRouter.get('/candidates', manageMembers, listCandidatesController);
 membersRouter.post('/', manageMembers, validate(addMemberSchema), addMemberController);
 membersRouter.patch(
   '/:userId',

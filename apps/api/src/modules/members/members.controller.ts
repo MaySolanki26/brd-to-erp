@@ -11,6 +11,10 @@ export async function listMembersController(req: Request, res: Response): Promis
   res.json({ members: await service.listMembers(getAuthUser(res), projectIdOf(req)) });
 }
 
+export async function listCandidatesController(req: Request, res: Response): Promise<void> {
+  res.json({ candidates: await service.listCandidates(getAuthUser(res), projectIdOf(req)) });
+}
+
 export async function addMemberController(req: Request, res: Response): Promise<void> {
   const member = await service.addMember(
     getAuthUser(res),

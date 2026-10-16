@@ -101,17 +101,18 @@ model Organization {
 // ─── User (soft delete) ─────────────────────────────────────────────────────
 
 model User {
-  id               String    @id @default(uuid()) @db.Uuid
-  email            String    @unique
-  name             String
-  passwordHash     String
-  organizationId   String    @db.Uuid
-  orgRole          OrgRole   @default(MEMBER)
-  failedLoginCount Int       @default(0)
-  lockedUntil      DateTime?
-  deletedAt        DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                 String    @id @default(uuid()) @db.Uuid
+  email              String    @unique
+  name               String
+  passwordHash       String
+  organizationId     String    @db.Uuid
+  orgRole            OrgRole   @default(MEMBER)
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  mustChangePassword Boolean   @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   organization       Organization     @relation(fields: [organizationId], references: [id])
   answers            Answer[]

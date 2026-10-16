@@ -49,6 +49,28 @@ export async function userExistsInOrg(organizationId: string, userId: string): P
   return user !== null;
 }
 
+export interface MemberCandidateRecord {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/** Active users of the organization who are not yet members of the project. */
+export async function listCandidates(
+  organizationId: string,
+  projectId: string,
+): Promise<MemberCandidateRecord[]> {
+  return prisma.user.findMany({
+    where: {
+      organizationId,
+      deletedAt: null,
+      projectMemberships: { none: { projectId } },
+    },
+    select: { id: true, name: true, email: true },
+    orderBy: [{ name: 'asc' }, { id: 'asc' }],
+  });
+}
+
 export async function addMember(
   data: { organizationId: string; projectId: string; userId: string; role: ProjectRole },
   db: DbClient,

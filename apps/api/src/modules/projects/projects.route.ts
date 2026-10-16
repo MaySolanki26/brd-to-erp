@@ -8,6 +8,7 @@ import {
   updateProjectSchema,
 } from '@brd/shared';
 import { requireAuth } from '../../middleware/require-auth.js';
+import { requireCurrentPassword } from '../../middleware/require-current-password.js';
 import { requireProjectRole } from '../../middleware/require-project-role.js';
 import { validate } from '../../middleware/validate.js';
 import { membersRouter } from '../members/members.route.js';
@@ -23,7 +24,7 @@ export const projectsRouter: RouterType = Router();
 
 const idParams = validate(projectIdParamsSchema, 'params');
 
-projectsRouter.use(requireAuth);
+projectsRouter.use(requireAuth, requireCurrentPassword);
 
 projectsRouter.get('/', validate(listProjectsQuerySchema, 'query'), listProjectsController);
 projectsRouter.post('/', validate(createProjectSchema), createProjectController);

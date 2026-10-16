@@ -1,5 +1,6 @@
 import type {
   AddMemberInput,
+  MemberCandidateDto,
   MemberDto,
   ProjectRole,
   UpdateMemberInput,
@@ -36,6 +37,14 @@ async function assertNotLastOwner(
 export async function listMembers(user: UserDto, projectId: string): Promise<MemberDto[]> {
   const members = await repo.listMembers(user.organizationId, projectId);
   return members.map(toMemberDto);
+}
+
+export async function listCandidates(
+  user: UserDto,
+  projectId: string,
+): Promise<MemberCandidateDto[]> {
+  const candidates = await repo.listCandidates(user.organizationId, projectId);
+  return candidates.map(({ id, name, email }) => ({ userId: id, name, email }));
 }
 
 export async function addMember(

@@ -28,6 +28,7 @@ const actor: UserDto = {
   name: 'n',
   organizationId: 'o1',
   orgRole: 'MEMBER',
+  mustChangePassword: false,
   role: { id: 'MEMBER', name: 'MEMBER' },
 };
 const owner = {

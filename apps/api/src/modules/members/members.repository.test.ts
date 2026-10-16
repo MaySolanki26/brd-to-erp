@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const prismaMock = vi.hoisted(() => ({
   projectMember: { findMany: vi.fn(), findFirst: vi.fn() },
-  user: { findFirst: vi.fn() },
+  user: { findFirst: vi.fn(), findMany: vi.fn() },
 }));
 vi.mock('../../lib/prisma.js', () => ({ prisma: prismaMock }));
 
@@ -11,6 +11,7 @@ import {
   countOwners,
   deleteMember,
   findMember,
+  listCandidates,
   listMembers,
   lockProject,
   updateMemberRole,
@@ -39,6 +40,17 @@ describe('members.repository', () => {
     expect(prismaMock.projectMember.findMany.mock.calls[0]?.[0].select.user).toEqual({
       select: { name: true, email: true },
     });
+  });
+
+  it('lists only active, non-member users of the organization as candidates', async () => {
+    await listCandidates('o1', 'p1');
+    const args = prismaMock.user.findMany.mock.calls[0]?.[0];
+    expect(args.where).toEqual({
+      organizationId: 'o1',
+      deletedAt: null,
+      projectMemberships: { none: { projectId: 'p1' } },
+    });
+    expect(args.select).toEqual({ id: true, name: true, email: true });
   });
 
   it('checks user existence inside the organization, ignoring deleted users', async () => {
