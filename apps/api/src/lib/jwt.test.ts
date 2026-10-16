@@ -1,61 +1,42 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { SignJWT } from 'jose';
 
-vi.mock('../config/env.js', () => ({
-  env: {
-    JWT_ACCESS_SECRET: 'test-access-secret-min-16',
-    JWT_REFRESH_SECRET: 'test-refresh-secret-min-16',
-    JWT_ACCESS_EXPIRY_SECONDS: 900,
-    JWT_REFRESH_EXPIRY_SECONDS: 604800,
-  },
-}));
+vi.mock('../config/env.js', async () => (await import('../test/test-env.js')).envModule);
 
-import {
-  signAccessToken,
-  signRefreshToken,
-  verifyAccessToken,
-  verifyRefreshToken,
-} from './jwt.js';
+import { signAccessToken, verifyAccessToken } from './jwt.js';
 
-describe('JWT helpers', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+const payload = { userId: 'u1', organizationId: 'o1', orgRole: 'ORG_ADMIN' } as const;
+
+describe('access token', () => {
+  it('round-trips the payload', async () => {
+    const token = await signAccessToken(payload);
+    expect(await verifyAccessToken(token)).toMatchObject(payload);
   });
 
-  describe('access token', () => {
-    const payload = { userId: 'u1', organizationId: 'o1', roleName: 'ADMIN' };
-
-    it('signs and verifies a valid access token', async () => {
-      const token = await signAccessToken(payload);
-      const result = await verifyAccessToken(token);
-
-      expect(result.userId).toBe('u1');
-      expect(result.organizationId).toBe('o1');
-      expect(result.roleName).toBe('ADMIN');
-    });
-
-    it('rejects a tampered token', async () => {
-      const token = await signAccessToken(payload);
-      const parts = token.split('.');
-      // Corrupt the signature by reversing it
-      parts[2] = parts[2]!.split('').reverse().join('');
-      const tampered = parts.join('.');
-      await expect(verifyAccessToken(tampered)).rejects.toThrow('Invalid access token');
-    });
+  it('rejects a garbage token', async () => {
+    await expect(verifyAccessToken('garbage')).rejects.toThrow('Invalid access token');
   });
 
-  describe('refresh token', () => {
-    const payload = { userId: 'u1' };
+  it('rejects a token signed with another secret', async () => {
+    const forged = await new SignJWT({ ...payload })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('15m')
+      .sign(new TextEncoder().encode('some-other-secret-value'));
+    await expect(verifyAccessToken(forged)).rejects.toThrow('Invalid access token');
+  });
 
-    it('signs and verifies a valid refresh token', async () => {
-      const token = await signRefreshToken(payload);
-      const result = await verifyRefreshToken(token);
+  it('rejects an unsigned (alg none) token', async () => {
+    const header = Buffer.from('{"alg":"none","typ":"JWT"}').toString('base64url');
+    const body = Buffer.from(JSON.stringify({ ...payload, exp: 9999999999 })).toString('base64url');
+    await expect(verifyAccessToken(`${header}.${body}.`)).rejects.toThrow('Invalid access token');
+  });
 
-      expect(result.userId).toBe('u1');
-    });
-
-    it('rejects an access token used as refresh token', async () => {
-      const accessToken = await signAccessToken({ userId: 'u1', organizationId: 'o1', roleName: 'ADMIN' });
-      await expect(verifyRefreshToken(accessToken)).rejects.toThrow('Invalid refresh token');
-    });
+  it('reports expiry distinctly', async () => {
+    const expired = await new SignJWT({ ...payload })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt(1)
+      .setExpirationTime(2)
+      .sign(new TextEncoder().encode('test-access-secret-min-16'));
+    await expect(verifyAccessToken(expired)).rejects.toThrow('expired');
   });
 });

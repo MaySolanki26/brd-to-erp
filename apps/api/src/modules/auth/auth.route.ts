@@ -1,12 +1,28 @@
 import { Router, type Router as RouterType } from 'express';
 import { loginSchema } from '@brd/shared';
 import { validate } from '../../middleware/validate.js';
-import { authenticate } from '../../middleware/authenticate.js';
-import { loginController, refreshController, meController, logoutController } from './auth.controller.js';
+import { requireAuth } from '../../middleware/require-auth.js';
+import { createLoginRateLimit } from '../../middleware/login-rate-limit.js';
+import {
+  loginController,
+  refreshController,
+  meController,
+  logoutController,
+} from './auth.controller.js';
 
-export const authRouter: RouterType = Router();
+export function createAuthRouter(options: { rateLimit: boolean }): RouterType {
+  const router: RouterType = Router();
 
-authRouter.post('/login', validate(loginSchema), loginController);
-authRouter.post('/refresh', refreshController);
-authRouter.get('/me', authenticate, meController);
-authRouter.post('/logout', logoutController);
+  const loginMiddleware = [
+    ...(options.rateLimit ? [createLoginRateLimit()] : []),
+    validate(loginSchema),
+    loginController,
+  ];
+
+  router.post('/login', ...loginMiddleware);
+  router.post('/refresh', refreshController);
+  router.get('/me', requireAuth, meController);
+  router.post('/logout', logoutController);
+
+  return router;
+}

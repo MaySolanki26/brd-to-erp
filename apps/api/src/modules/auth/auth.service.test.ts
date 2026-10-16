@@ -1,68 +1,53 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('../../config/env.js', async () => (await import('../../test/test-env.js')).envModule);
 vi.mock('../../lib/prisma.js', () => ({ prisma: {} }));
+vi.mock(
+  '../../lib/transaction.js',
+  async () => (await import('../../test/fake-db.js')).transactionModule,
+);
 
-vi.mock('../../config/env.js', () => ({
-  env: {
-    JWT_ACCESS_SECRET: 'test-access-secret-min-16',
-    JWT_REFRESH_SECRET: 'test-refresh-secret-min-16',
-    JWT_ACCESS_EXPIRY_SECONDS: 900,
-    JWT_REFRESH_EXPIRY_SECONDS: 604800,
-  },
-}));
-
-const mockRepo = vi.hoisted(() => ({
-  findUserByEmail: vi.fn(),
+const repo = vi.hoisted(() => ({
   findUserById: vi.fn(),
+  findSessionByTokenHash: vi.fn(),
+  revokeFamily: vi.fn(),
 }));
+vi.mock('./auth.repository.js', () => repo);
+vi.mock('../audit/audit.repository.js', () => ({ createAuditLog: vi.fn() }));
 
-vi.mock('./auth.repository.js', () => mockRepo);
-
-import { login, getMe } from './auth.service.js';
-
-const mockUser = {
-  id: 'u1',
-  email: 'admin@brd.local',
-  name: 'Admin',
-  passwordHash: '$2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012',
-  organizationId: 'o1',
-  deletedAt: null,
-  role: { id: 'r1', name: 'ADMIN' },
-};
+import { getSessionUser, logout, toUserDto } from './auth.service.js';
 
 describe('auth.service', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  beforeEach(() => vi.resetAllMocks());
+
+  it('builds a DTO without credentials and keeps the legacy role shape', () => {
+    const dto = toUserDto({
+      id: 'u1',
+      email: 'a@b.c',
+      name: 'A',
+      organizationId: 'o1',
+      orgRole: 'ORG_ADMIN',
+      ...{ passwordHash: 'secret' },
+    });
+    expect(dto).toEqual({
+      id: 'u1',
+      email: 'a@b.c',
+      name: 'A',
+      organizationId: 'o1',
+      orgRole: 'ORG_ADMIN',
+      role: { id: 'ORG_ADMIN', name: 'ORG_ADMIN' },
+    });
   });
 
-  describe('login', () => {
-    it('throws for unknown email', async () => {
-      mockRepo.findUserByEmail.mockResolvedValue(null);
-      await expect(login('bad@email.com', 'pass')).rejects.toThrow('Invalid email or password');
-    });
-
-    it('throws for wrong password', async () => {
-      mockRepo.findUserByEmail.mockResolvedValue(mockUser);
-      await expect(login('admin@brd.local', 'wrong')).rejects.toThrow('Invalid email or password');
-    });
+  it('rejects a session whose user no longer exists', async () => {
+    repo.findUserById.mockResolvedValue(null);
+    await expect(getSessionUser('gone')).rejects.toMatchObject({ statusCode: 401 });
   });
 
-  describe('getMe', () => {
-    it('returns user DTO when found', async () => {
-      mockRepo.findUserById.mockResolvedValue(mockUser);
-      const result = await getMe('u1');
-      expect(result).toEqual({
-        id: 'u1',
-        email: 'admin@brd.local',
-        name: 'Admin',
-        organizationId: 'o1',
-        role: { id: 'r1', name: 'ADMIN' },
-      });
-    });
-
-    it('throws when user not found', async () => {
-      mockRepo.findUserById.mockResolvedValue(null);
-      await expect(getMe('missing')).rejects.toThrow('User not found');
-    });
+  it('logout is a silent no-op for a missing or unknown token', async () => {
+    await logout(undefined);
+    repo.findSessionByTokenHash.mockResolvedValue(null);
+    await logout('unknown');
+    expect(repo.revokeFamily).not.toHaveBeenCalled();
   });
 });

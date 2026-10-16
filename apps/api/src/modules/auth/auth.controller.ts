@@ -1,91 +1,47 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response } from 'express';
 import type { LoginInput } from '@brd/shared';
-import type { AccessTokenPayload } from '../../lib/jwt.js';
-import { env } from '../../config/env.js';
 import { UnauthorizedError } from '../../errors/app-error.js';
+import {
+  REFRESH_COOKIE,
+  clearAuthCookies,
+  parseCookie,
+  setAuthCookies,
+} from '../../lib/cookies.js';
+import { getAuthUser } from '../../middleware/require-auth.js';
 import * as authService from './auth.service.js';
 
-function parseCookie(header: string | undefined, name: string): string | undefined {
-  if (!header) return undefined;
-  for (const pair of header.split(';')) {
-    const trimmed = pair.trim();
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx === -1) continue;
-    if (trimmed.slice(0, eqIdx).trim() === name) {
-      return trimmed.slice(eqIdx + 1).trim();
-    }
+function requestContext(req: Request): authService.RequestContext {
+  return { ip: req.ip, userAgent: req.get('user-agent') };
+}
+
+export async function loginController(req: Request, res: Response): Promise<void> {
+  const { email, password } = req.body as LoginInput;
+  const result = await authService.login(email, password, requestContext(req));
+  setAuthCookies(res, result);
+  res.json({ user: result.user });
+}
+
+export async function refreshController(req: Request, res: Response): Promise<void> {
+  const token = parseCookie(req.headers.cookie, REFRESH_COOKIE);
+  if (!token) {
+    throw new UnauthorizedError('Missing refresh token');
   }
-  return undefined;
-}
-
-const cookieBase: {
-  httpOnly: boolean;
-  secure: boolean;
-  sameSite: 'lax';
-  path: string;
-} = {
-  httpOnly: true,
-  secure: env.APP_ENV !== 'development',
-  sameSite: 'lax',
-  path: '/',
-};
-
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
-  res.cookie('access_token', accessToken, {
-    ...cookieBase,
-    maxAge: env.JWT_ACCESS_EXPIRY_SECONDS * 1000,
-  });
-  res.cookie('refresh_token', refreshToken, {
-    ...cookieBase,
-    maxAge: env.JWT_REFRESH_EXPIRY_SECONDS * 1000,
-    path: '/auth/refresh',
-  });
-}
-
-export async function loginController(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { email, password } = req.body as LoginInput;
-    const result = await authService.login(email, password);
-
-    setAuthCookies(res, result.accessToken, result.refreshToken);
+    const result = await authService.refresh(token, requestContext(req));
+    setAuthCookies(res, result);
     res.json({ user: result.user });
   } catch (err) {
-    next(err);
+    clearAuthCookies(res);
+    throw err;
   }
 }
 
-export async function refreshController(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const token = parseCookie(req.headers.cookie, 'refresh_token');
-    if (!token) {
-      throw new UnauthorizedError('Missing refresh token');
-    }
-
-    const result = await authService.refresh(token);
-
-    setAuthCookies(res, result.accessToken, result.refreshToken);
-    res.json({ user: result.user });
-  } catch (err) {
-    next(err);
-  }
+export function meController(_req: Request, res: Response): void {
+  res.json({ user: getAuthUser(res) });
 }
 
-export async function meController(_req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const { userId } = res.locals['user'] as AccessTokenPayload;
-    const user = await authService.getMe(userId);
-    res.json({ user });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function logoutController(_req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    res.clearCookie('access_token', { ...cookieBase });
-    res.clearCookie('refresh_token', { ...cookieBase, path: '/auth/refresh' });
-    res.json({ success: true });
-  } catch (err) {
-    next(err);
-  }
+export async function logoutController(req: Request, res: Response): Promise<void> {
+  await authService.logout(parseCookie(req.headers.cookie, REFRESH_COOKIE));
+  clearAuthCookies(res);
+  res.json({ success: true });
 }

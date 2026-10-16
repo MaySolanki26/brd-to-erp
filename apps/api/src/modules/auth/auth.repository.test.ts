@@ -1,60 +1,100 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mockPrisma = vi.hoisted(() => ({
-  user: {
-    findFirst: vi.fn(),
-  },
+const prismaMock = vi.hoisted(() => ({
+  user: { findFirst: vi.fn(), update: vi.fn() },
+  refreshSession: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
 }));
+vi.mock('../../lib/prisma.js', () => ({ prisma: prismaMock }));
 
-vi.mock('../../lib/prisma.js', () => ({ prisma: mockPrisma }));
-
-import { findUserByEmail, findUserById } from './auth.repository.js';
+import {
+  createSession,
+  findSessionByTokenHash,
+  findUserByEmail,
+  findUserById,
+  incrementFailedLogins,
+  lockUser,
+  resetFailedLogins,
+  revokeFamily,
+  revokeSessionIfActive,
+} from './auth.repository.js';
 
 describe('auth.repository', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.resetAllMocks());
 
-  const mockUser = {
-    id: 'u1',
-    email: 'test@example.com',
-    name: 'Test',
-    passwordHash: 'hash',
-    organizationId: 'o1',
-    deletedAt: null,
-    role: { id: 'r1', name: 'ADMIN' },
-  };
-
-  describe('findUserByEmail', () => {
-    it('returns user when found', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
-      const result = await findUserByEmail('test@example.com');
-      expect(result).toEqual(mockUser);
-      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { email: 'test@example.com', deletedAt: null },
-        }),
-      );
+  it('finds only non-deleted users', async () => {
+    await findUserByEmail('a@b.c');
+    await findUserById('u1');
+    expect(prismaMock.user.findFirst.mock.calls[0]?.[0].where).toEqual({
+      email: 'a@b.c',
+      deletedAt: null,
     });
-
-    it('returns null when not found', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue(null);
-      const result = await findUserByEmail('missing@example.com');
-      expect(result).toBeNull();
+    expect(prismaMock.user.findFirst.mock.calls[1]?.[0].where).toEqual({
+      id: 'u1',
+      deletedAt: null,
     });
   });
 
-  describe('findUserById', () => {
-    it('returns user when found', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
-      const result = await findUserById('u1');
-      expect(result).toEqual(mockUser);
+  it('increments failures atomically and returns the new count', async () => {
+    prismaMock.user.update.mockResolvedValue({ failedLoginCount: 3 });
+    expect(await incrementFailedLogins('u1')).toBe(3);
+    expect(prismaMock.user.update.mock.calls[0]?.[0].data).toEqual({
+      failedLoginCount: { increment: 1 },
     });
+  });
 
-    it('returns null when not found', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue(null);
-      const result = await findUserById('missing');
-      expect(result).toBeNull();
+  it('locks and resets', async () => {
+    const until = new Date();
+    await lockUser('u1', until);
+    await resetFailedLogins('u1');
+    expect(prismaMock.user.update.mock.calls[0]?.[0].data).toEqual({
+      lockedUntil: until,
+      failedLoginCount: 0,
+    });
+    expect(prismaMock.user.update.mock.calls[1]?.[0].data).toEqual({
+      failedLoginCount: 0,
+      lockedUntil: null,
+    });
+  });
+
+  it('stores only the token hash for a session', async () => {
+    await createSession({
+      tokenHash: 'h',
+      familyId: 'f',
+      userId: 'u1',
+      organizationId: 'o1',
+      expiresAt: new Date(),
+    });
+    const data = prismaMock.refreshSession.create.mock.calls[0]?.[0].data;
+    expect(data).toMatchObject({ tokenHash: 'h', userAgent: null, ip: null });
+    expect(Object.keys(data)).not.toContain('token');
+  });
+
+  it('looks sessions up by hash', async () => {
+    await findSessionByTokenHash('h');
+    expect(prismaMock.refreshSession.findUnique.mock.calls[0]?.[0].where).toEqual({
+      tokenHash: 'h',
+    });
+  });
+
+  it('revokes a session only if still active and reports whether it won', async () => {
+    prismaMock.refreshSession.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    const now = new Date();
+    expect(await revokeSessionIfActive('s1', now)).toBe(true);
+    expect(await revokeSessionIfActive('s1', now)).toBe(false);
+    expect(prismaMock.refreshSession.updateMany.mock.calls[0]?.[0].where).toEqual({
+      id: 's1',
+      revokedAt: null,
+    });
+  });
+
+  it('revokes every active session in a family', async () => {
+    const now = new Date();
+    await revokeFamily('f1', now);
+    expect(prismaMock.refreshSession.updateMany).toHaveBeenCalledWith({
+      where: { familyId: 'f1', revokedAt: null },
+      data: { revokedAt: now },
     });
   });
 });

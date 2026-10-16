@@ -2,10 +2,9 @@ import type { Request, Response, NextFunction } from 'express';
 import type { z } from 'zod';
 import { ValidationError } from '../errors/app-error.js';
 
-export function validate<T extends z.ZodType>(
-  schema: T,
-  source: 'body' | 'query' | 'params' = 'body',
-) {
+type Source = 'body' | 'query' | 'params';
+
+export function validate<T extends z.ZodType>(schema: T, source: Source = 'body') {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req[source]);
     if (!result.success) {
@@ -13,8 +12,13 @@ export function validate<T extends z.ZodType>(
       next(new ValidationError(message));
       return;
     }
-    // Replace with parsed/typed data
-    (req as unknown as Record<string, unknown>)[source] = result.data;
+    // Express 5 exposes req.query as a getter, so redefine instead of assigning.
+    Object.defineProperty(req, source, {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     next();
   };
 }

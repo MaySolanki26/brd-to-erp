@@ -45,3 +45,17 @@ export class ConflictError extends AppError {
     this.name = 'ConflictError';
   }
 }
+
+export class CsrfError extends AppError {
+  constructor(message = 'Invalid CSRF token') {
+    super(403, 'CSRF_INVALID', message);
+    this.name = 'CsrfError';
+  }
+}
+
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too many requests') {
+    super(429, 'RATE_LIMIT_EXCEEDED', message);
+    this.name = 'TooManyRequestsError';
+  }
+}

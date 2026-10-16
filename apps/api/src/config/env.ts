@@ -23,12 +23,13 @@ const envSchema = z
     // Storage
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
     STORAGE_LOCAL_PATH: z.string().optional(),
-    STORAGE_UPLOAD_TOKEN_SECRET: z.string().min(16, 'STORAGE_UPLOAD_TOKEN_SECRET must be at least 16 characters'),
+    STORAGE_UPLOAD_TOKEN_SECRET: z
+      .string()
+      .min(16, 'STORAGE_UPLOAD_TOKEN_SECRET must be at least 16 characters'),
     STORAGE_UPLOAD_TOKEN_TTL_SECONDS: z.coerce.number().default(300),
 
     // Auth / JWT
     JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET must be at least 16 characters'),
-    JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET must be at least 16 characters'),
     JWT_ACCESS_EXPIRY_SECONDS: z.coerce.number().default(900),
     JWT_REFRESH_EXPIRY_SECONDS: z.coerce.number().default(604800),
   })

@@ -1,0 +1,275 @@
+import { randomUUID } from 'node:crypto';
+import type { AuditEntry } from '../modules/audit/audit.repository.js';
+import type { NewSession, SessionRecord } from '../modules/auth/auth.repository.js';
+
+type OrgRole = 'ORG_ADMIN' | 'MEMBER';
+type ProjectRole = 'OWNER' | 'ANALYST' | 'APPROVER' | 'VIEWER';
+type ProjectStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+
+export interface FakeUser {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash: string;
+  organizationId: string;
+  orgRole: OrgRole;
+  failedLoginCount: number;
+  lockedUntil: Date | null;
+  deletedAt: Date | null;
+}
+
+export interface FakeProject {
+  id: string;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  organizationId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FakeMember {
+  id: string;
+  userId: string;
+  projectId: string;
+  organizationId: string;
+  role: ProjectRole;
+  createdAt: Date;
+}
+
+interface FakeSession extends SessionRecord {
+  tokenHash: string;
+}
+
+export const db = {
+  users: new Map<string, FakeUser>(),
+  projects: new Map<string, FakeProject>(),
+  members: new Map<string, FakeMember>(),
+  sessions: new Map<string, FakeSession>(),
+  audit: [] as AuditEntry[],
+  reset(): void {
+    this.users.clear();
+    this.projects.clear();
+    this.members.clear();
+    this.sessions.clear();
+    this.audit.length = 0;
+  },
+};
+
+export function addUser(
+  partial: Partial<FakeUser> & Pick<FakeUser, 'email' | 'passwordHash' | 'organizationId'>,
+): FakeUser {
+  const user: FakeUser = {
+    id: randomUUID(),
+    name: partial.email.split('@')[0] ?? 'user',
+    orgRole: 'MEMBER',
+    failedLoginCount: 0,
+    lockedUntil: null,
+    deletedAt: null,
+    ...partial,
+  };
+  db.users.set(user.id, user);
+  return user;
+}
+
+export function addProject(organizationId: string, name: string): FakeProject {
+  const now = new Date();
+  const project: FakeProject = {
+    id: randomUUID(),
+    name,
+    description: null,
+    status: 'ACTIVE',
+    organizationId,
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.projects.set(project.id, project);
+  return project;
+}
+
+export function addMembership(project: FakeProject, user: FakeUser, role: ProjectRole): FakeMember {
+  const member: FakeMember = {
+    id: randomUUID(),
+    userId: user.id,
+    projectId: project.id,
+    organizationId: project.organizationId,
+    role,
+    createdAt: new Date(),
+  };
+  db.members.set(member.id, member);
+  return member;
+}
+
+function activeUsers(): FakeUser[] {
+  return [...db.users.values()].filter((u) => u.deletedAt === null);
+}
+
+function memberWithUser(m: FakeMember) {
+  const user = db.users.get(m.userId);
+  return { ...m, user: { name: user?.name ?? '', email: user?.email ?? '' } };
+}
+
+export const transactionModule = {
+  withTransaction: <T>(fn: (tx: object) => Promise<T>): Promise<T> => fn({}),
+};
+
+export const authRepositoryModule = {
+  findUserByEmail: async (email: string) => activeUsers().find((u) => u.email === email) ?? null,
+  findUserById: async (id: string) => activeUsers().find((u) => u.id === id) ?? null,
+  incrementFailedLogins: async (userId: string): Promise<number> => {
+    const user = db.users.get(userId);
+    if (!user) throw new Error('user missing');
+    user.failedLoginCount += 1;
+    return user.failedLoginCount;
+  },
+  lockUser: async (userId: string, until: Date): Promise<void> => {
+    const user = db.users.get(userId);
+    if (user) {
+      user.lockedUntil = until;
+      user.failedLoginCount = 0;
+    }
+  },
+  resetFailedLogins: async (userId: string): Promise<void> => {
+    const user = db.users.get(userId);
+    if (user) {
+      user.failedLoginCount = 0;
+      user.lockedUntil = null;
+    }
+  },
+  createSession: async (data: NewSession): Promise<void> => {
+    const id = randomUUID();
+    db.sessions.set(id, {
+      id,
+      tokenHash: data.tokenHash,
+      familyId: data.familyId,
+      userId: data.userId,
+      organizationId: data.organizationId,
+      expiresAt: data.expiresAt,
+      revokedAt: null,
+    });
+  },
+  findSessionByTokenHash: async (tokenHash: string): Promise<SessionRecord | null> =>
+    [...db.sessions.values()].find((s) => s.tokenHash === tokenHash) ?? null,
+  revokeSessionIfActive: async (sessionId: string, now: Date): Promise<boolean> => {
+    const session = db.sessions.get(sessionId);
+    if (!session || session.revokedAt) return false;
+    session.revokedAt = now;
+    return true;
+  },
+  revokeFamily: async (familyId: string, now: Date): Promise<void> => {
+    for (const s of db.sessions.values()) {
+      if (s.familyId === familyId && !s.revokedAt) s.revokedAt = now;
+    }
+  },
+};
+
+export const accessRepositoryModule = {
+  projectSelect: {},
+  findProjectInOrg: async (organizationId: string, projectId: string) => {
+    const project = db.projects.get(projectId);
+    return project && project.organizationId === organizationId ? project : null;
+  },
+  findMembershipRole: async (organizationId: string, projectId: string, userId: string) =>
+    [...db.members.values()].find(
+      (m) =>
+        m.organizationId === organizationId && m.projectId === projectId && m.userId === userId,
+    )?.role ?? null,
+};
+
+export const projectsRepositoryModule = {
+  listProjects: async (p: {
+    organizationId: string;
+    userId: string;
+    allInOrg: boolean;
+    includeArchived: boolean;
+    page: number;
+    pageSize: number;
+  }) => {
+    const mine = [...db.projects.values()]
+      .filter((x) => x.organizationId === p.organizationId)
+      .filter((x) => p.includeArchived || x.status !== 'ARCHIVED')
+      .map((x) => ({
+        ...x,
+        myRole:
+          [...db.members.values()].find((m) => m.projectId === x.id && m.userId === p.userId)
+            ?.role ?? null,
+      }))
+      .filter((x) => p.allInOrg || x.myRole !== null);
+    const start = (p.page - 1) * p.pageSize;
+    return { items: mine.slice(start, start + p.pageSize), total: mine.length };
+  },
+  createProject: async (data: { name: string; description?: string; organizationId: string }) => {
+    const project = addProject(data.organizationId, data.name);
+    project.description = data.description ?? null;
+    return project;
+  },
+  addOwner: async (data: {
+    projectId: string;
+    userId: string;
+    organizationId: string;
+  }): Promise<void> => {
+    const project = db.projects.get(data.projectId);
+    const user = db.users.get(data.userId);
+    if (project && user) addMembership(project, user, 'OWNER');
+  },
+  updateProject: async (
+    organizationId: string,
+    projectId: string,
+    data: { name?: string; description?: string | null; status?: ProjectStatus },
+  ) => {
+    const project = db.projects.get(projectId);
+    if (!project || project.organizationId !== organizationId) return null;
+    Object.assign(
+      project,
+      Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)),
+    );
+    project.updatedAt = new Date();
+    return project;
+  },
+};
+
+export const membersRepositoryModule = {
+  listMembers: async (organizationId: string, projectId: string) =>
+    [...db.members.values()]
+      .filter((m) => m.organizationId === organizationId && m.projectId === projectId)
+      .map(memberWithUser),
+  findMember: async (organizationId: string, projectId: string, userId: string) => {
+    const m = [...db.members.values()].find(
+      (x) =>
+        x.organizationId === organizationId && x.projectId === projectId && x.userId === userId,
+    );
+    return m ? memberWithUser(m) : null;
+  },
+  userExistsInOrg: async (organizationId: string, userId: string): Promise<boolean> =>
+    activeUsers().some((u) => u.id === userId && u.organizationId === organizationId),
+  addMember: async (data: {
+    organizationId: string;
+    projectId: string;
+    userId: string;
+    role: ProjectRole;
+  }) => {
+    const member: FakeMember = { id: randomUUID(), createdAt: new Date(), ...data };
+    db.members.set(member.id, member);
+    return memberWithUser(member);
+  },
+  updateMemberRole: async (memberId: string, role: ProjectRole) => {
+    const member = db.members.get(memberId);
+    if (!member) throw new Error('member missing');
+    member.role = role;
+    return memberWithUser(member);
+  },
+  deleteMember: async (memberId: string): Promise<void> => {
+    db.members.delete(memberId);
+  },
+  countOwners: async (organizationId: string, projectId: string): Promise<number> =>
+    [...db.members.values()].filter(
+      (m) => m.organizationId === organizationId && m.projectId === projectId && m.role === 'OWNER',
+    ).length,
+  lockProject: async (): Promise<void> => undefined,
+};
+
+export const auditRepositoryModule = {
+  createAuditLog: async (entry: AuditEntry): Promise<void> => {
+    db.audit.push(entry);
+  },
+};

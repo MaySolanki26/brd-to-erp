@@ -10,9 +10,17 @@ import { notFound } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './modules/health/health.route.js';
 import { storageRouter } from './modules/storage/storage.route.js';
-import { authRouter } from './modules/auth/auth.route.js';
+import { csrfProtection } from './middleware/csrf.js';
+import { createAuthRouter } from './modules/auth/auth.route.js';
+import { projectsRouter } from './modules/projects/projects.route.js';
 
-export function createApp(): express.Express {
+export interface AppOptions {
+  /** Disable rate limiting (tests only). */
+  rateLimit?: boolean;
+}
+
+export function createApp(options: AppOptions = {}): express.Express {
+  const rateLimitEnabled = options.rateLimit ?? true;
   const app = express();
 
   // Security
@@ -25,15 +33,17 @@ export function createApp(): express.Express {
   );
 
   // Rate limiting
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      limit: 100,
-      standardHeaders: 'draft-7',
-      legacyHeaders: false,
-      message: { error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests' } },
-    }),
-  );
+  if (rateLimitEnabled) {
+    app.use(
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: 100,
+        standardHeaders: 'draft-7',
+        legacyHeaders: false,
+        message: { error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests' } },
+      }),
+    );
+  }
 
   // Body parsing
   app.use(express.json({ limit: '1mb' }));
@@ -54,7 +64,9 @@ export function createApp(): express.Express {
 
   // Routes
   app.use('/health', healthRouter);
-  app.use('/auth', authRouter);
+  app.use('/api', csrfProtection);
+  app.use('/api/auth', createAuthRouter({ rateLimit: rateLimitEnabled }));
+  app.use('/api/projects', projectsRouter);
   app.use('/storage', storageRouter);
 
   // Fallback handlers
