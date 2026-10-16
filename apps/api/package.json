@@ -1,0 +1,35 @@
+{
+  "name": "@brd/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests yet\"",
+    "clean": "rm -rf dist",
+    "worker": "tsx --env-file=../../.env src/worker.ts",
+    "worker:test": "tsx --env-file=../../.env src/scripts/test-job.ts",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "prisma db seed",
+    "prisma:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "pg-boss": "^10.1.5"
+  },
+  "devDependencies": {
+    "@brd/config": "workspace:*",
+    "@brd/shared": "workspace:*",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.17.0",
+    "prisma": "^6.2.1",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.2"
+  }
+}

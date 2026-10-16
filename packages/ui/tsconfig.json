@@ -1,0 +1,10 @@
+{
+  "extends": "@brd/config/tsconfig/react.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

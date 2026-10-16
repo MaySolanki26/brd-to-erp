@@ -1,0 +1,414 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum RequirementStatus {
+  CONFIRMED
+  ASSUMED
+  OPEN
+  RECOMMENDED
+}
+
+enum QuestionStatus {
+  OPEN
+  ANSWERED
+  DISMISSED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReportType {
+  GAP_ANALYSIS
+  REQUIREMENTS_SPEC
+  MODULE_MAPPING
+  CUSTOM
+}
+
+enum ReportStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  EXPORT
+}
+
+// ─── Organization ───────────────────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  projects  Project[]
+  modules   Module[]
+  auditLogs AuditLog[]
+  llmUsages LlmUsage[]
+
+  @@map("organizations")
+}
+
+// ─── Role (system-level, not tenant-scoped) ─────────────────────────────────
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+
+  @@map("roles")
+}
+
+// ─── User (soft delete) ─────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(uuid()) @db.Uuid
+  email          String    @unique
+  name           String
+  passwordHash   String
+  organizationId String    @db.Uuid
+  roleId         String    @db.Uuid
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  role         Role         @relation(fields: [roleId], references: [id])
+  answers      Answer[]
+  approvals    Approval[]
+  auditLogs    AuditLog[]
+  llmUsages    LlmUsage[]
+
+  @@index([organizationId])
+  @@index([roleId])
+  @@map("users")
+}
+
+// ─── Project ────────────────────────────────────────────────────────────────
+
+model Project {
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String
+  description    String?
+  status         ProjectStatus @default(DRAFT)
+  organizationId String        @db.Uuid
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  documents     Document[]
+  requirements  Requirement[]
+  businessRules BusinessRule[]
+  questions     Question[]
+  reports       Report[]
+  approvals     Approval[]
+  llmUsages     LlmUsage[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("projects")
+}
+
+// ─── Document (soft delete) ─────────────────────────────────────────────────
+
+model Document {
+  id             String         @id @default(uuid()) @db.Uuid
+  title          String
+  fileName       String
+  mimeType       String?
+  status         DocumentStatus @default(UPLOADED)
+  errorMessage   String?
+  projectId      String         @db.Uuid
+  organizationId String         @db.Uuid
+  deletedAt      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  project  Project           @relation(fields: [projectId], references: [id])
+  versions DocumentVersion[]
+
+  @@index([projectId])
+  @@index([organizationId])
+  @@index([status])
+  @@map("documents")
+}
+
+// ─── DocumentVersion ────────────────────────────────────────────────────────
+
+model DocumentVersion {
+  id             String   @id @default(uuid()) @db.Uuid
+  versionNumber  Int
+  fileUrl        String
+  sizeBytes      Int?
+  documentId     String   @db.Uuid
+  organizationId String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id])
+  chunks   Chunk[]
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+  @@index([organizationId])
+  @@map("document_versions")
+}
+
+// ─── Chunk ──────────────────────────────────────────────────────────────────
+
+model Chunk {
+  id                String   @id @default(uuid()) @db.Uuid
+  content           String   @db.Text
+  chunkIndex        Int
+  tokenCount        Int?
+  documentVersionId String   @db.Uuid
+  organizationId    String   @db.Uuid
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  documentVersion DocumentVersion @relation(fields: [documentVersionId], references: [id])
+  requirements    Requirement[]
+
+  @@index([documentVersionId])
+  @@index([organizationId])
+  @@map("chunks")
+}
+
+// ─── Requirement (soft delete) ──────────────────────────────────────────────
+
+model Requirement {
+  id             String            @id @default(uuid()) @db.Uuid
+  title          String
+  description    String            @db.Text
+  status         RequirementStatus @default(OPEN)
+  priority       Int?
+  sourceChunkId  String            @db.Uuid
+  moduleId       String?           @db.Uuid
+  projectId      String            @db.Uuid
+  organizationId String            @db.Uuid
+  deletedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  sourceChunk   Chunk          @relation(fields: [sourceChunkId], references: [id])
+  module        Module?        @relation(fields: [moduleId], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id])
+  businessRules BusinessRule[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([sourceChunkId])
+  @@index([moduleId])
+  @@index([organizationId])
+  @@map("requirements")
+}
+
+// ─── BusinessRule ───────────────────────────────────────────────────────────
+
+model BusinessRule {
+  id             String   @id @default(uuid()) @db.Uuid
+  title          String
+  description    String   @db.Text
+  requirementId  String?  @db.Uuid
+  projectId      String   @db.Uuid
+  organizationId String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  requirement Requirement? @relation(fields: [requirementId], references: [id])
+  project     Project      @relation(fields: [projectId], references: [id])
+
+  @@index([requirementId])
+  @@index([projectId])
+  @@index([organizationId])
+  @@map("business_rules")
+}
+
+// ─── Module ─────────────────────────────────────────────────────────────────
+
+model Module {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String
+  code           String
+  description    String?
+  organizationId String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  requirements Requirement[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@map("modules")
+}
+
+// ─── Question ───────────────────────────────────────────────────────────────
+
+model Question {
+  id             String         @id @default(uuid()) @db.Uuid
+  content        String         @db.Text
+  status         QuestionStatus @default(OPEN)
+  projectId      String         @db.Uuid
+  organizationId String         @db.Uuid
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  project Project  @relation(fields: [projectId], references: [id])
+  answers Answer[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([organizationId])
+  @@map("questions")
+}
+
+// ─── Answer ─────────────────────────────────────────────────────────────────
+
+model Answer {
+  id             String   @id @default(uuid()) @db.Uuid
+  content        String   @db.Text
+  questionId     String   @db.Uuid
+  answeredById   String   @db.Uuid
+  organizationId String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  question   Question @relation(fields: [questionId], references: [id])
+  answeredBy User     @relation(fields: [answeredById], references: [id])
+
+  @@index([questionId])
+  @@index([answeredById])
+  @@index([organizationId])
+  @@map("answers")
+}
+
+// ─── Report ─────────────────────────────────────────────────────────────────
+
+model Report {
+  id             String       @id @default(uuid()) @db.Uuid
+  title          String
+  type           ReportType
+  status         ReportStatus @default(GENERATING)
+  content        String?      @db.Text
+  projectId      String       @db.Uuid
+  organizationId String       @db.Uuid
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+  @@index([organizationId])
+  @@map("reports")
+}
+
+// ─── Approval ───────────────────────────────────────────────────────────────
+
+model Approval {
+  id               String         @id @default(uuid()) @db.Uuid
+  status           ApprovalStatus @default(PENDING)
+  baselineSnapshot Json
+  comment          String?
+  projectId        String         @db.Uuid
+  approvedById     String?        @db.Uuid
+  organizationId   String         @db.Uuid
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  project    Project @relation(fields: [projectId], references: [id])
+  approvedBy User?   @relation(fields: [approvedById], references: [id])
+
+  @@index([projectId])
+  @@index([status])
+  @@index([approvedById])
+  @@index([organizationId])
+  @@map("approvals")
+}
+
+// ─── AuditLog (immutable) ───────────────────────────────────────────────────
+
+model AuditLog {
+  id             String      @id @default(uuid()) @db.Uuid
+  action         AuditAction
+  entity         String
+  entityId       String      @db.Uuid
+  metadata       Json?
+  userId         String      @db.Uuid
+  organizationId String      @db.Uuid
+  createdAt      DateTime    @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─── LlmUsage (immutable) ───────────────────────────────────────────────────
+
+model LlmUsage {
+  id               String   @id @default(uuid()) @db.Uuid
+  model            String
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  latencyMs        Int
+  endpoint         String?
+  userId           String?  @db.Uuid
+  projectId        String?  @db.Uuid
+  organizationId   String   @db.Uuid
+  createdAt        DateTime @default(now())
+
+  user         User?         @relation(fields: [userId], references: [id])
+  project      Project?      @relation(fields: [projectId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("llm_usages")
+}

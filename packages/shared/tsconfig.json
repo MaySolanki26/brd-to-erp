@@ -1,0 +1,10 @@
+{
+  "extends": "@brd/config/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}
