@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -33,14 +34,15 @@ async function main(): Promise<void> {
 
   console.log('Organization created:', org.name);
 
-  // Create admin user
+  // Create admin user (dev seed password: admin123)
+  const adminPasswordHash = await bcrypt.hash('admin123', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@brd.local' },
-    update: {},
+    update: { passwordHash: adminPasswordHash },
     create: {
       email: 'admin@brd.local',
       name: 'Admin',
-      passwordHash: '$2b$10$placeholder-hash-replace-in-production',
+      passwordHash: adminPasswordHash,
       organizationId: org.id,
       roleId: adminRole.id,
     },

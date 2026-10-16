@@ -216,4 +216,38 @@ export {
   CardListSkeleton,
   // Scroll
   InfiniteScrollSentinel,
+  // App Shell
+  AppShell,
+  AppSidebar,
+  AppSidebarMobile,
+  AppHeader,
+  Breadcrumbs,
+  UserMenu,
+  useSidebarState,
+  type NavItem,
+  type NavChildItem,
+  type BreadcrumbItem,
+  type AppShellUser,
+  type SidebarState,
+  type UserMenuAction,
+  type AppSidebarProps,
+  type AppHeaderProps,
+  // NoAccess
+  NoAccess,
+  // DataTable
+  DataTable,
+  type DataTableProps,
+  type DataTableColumnDef,
+  type RowAction,
+  type SortState,
+  type SortOrder,
+  type PaginationState,
+  // Page Patterns
+  ListPage,
+  type ListPageProps,
+  DetailPage,
+  type DetailPageProps,
+  type DetailPageTab,
+  FormPage,
+  type FormPageProps,
 } from './composites';

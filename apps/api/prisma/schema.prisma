@@ -62,6 +62,22 @@ enum AuditAction {
   APPROVE
   REJECT
   EXPORT
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  TOKEN_REUSE_DETECTED
+}
+
+enum OrgRole {
+  ORG_ADMIN
+  MEMBER
+}
+
+enum ProjectRole {
+  OWNER
+  ANALYST
+  APPROVER
+  VIEWER
 }
 
 // ─── Organization ───────────────────────────────────────────────────────────
@@ -82,42 +98,30 @@ model Organization {
   @@map("organizations")
 }
 
-// ─── Role (system-level, not tenant-scoped) ─────────────────────────────────
-
-model Role {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users User[]
-
-  @@map("roles")
-}
-
 // ─── User (soft delete) ─────────────────────────────────────────────────────
 
 model User {
-  id             String    @id @default(uuid()) @db.Uuid
-  email          String    @unique
-  name           String
-  passwordHash   String
-  organizationId String    @db.Uuid
-  roleId         String    @db.Uuid
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique
+  name             String
+  passwordHash     String
+  organizationId   String    @db.Uuid
+  orgRole          OrgRole   @default(MEMBER)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  role         Role         @relation(fields: [roleId], references: [id])
-  answers      Answer[]
-  approvals    Approval[]
-  auditLogs    AuditLog[]
-  llmUsages    LlmUsage[]
+  organization       Organization     @relation(fields: [organizationId], references: [id])
+  answers            Answer[]
+  approvals          Approval[]
+  auditLogs          AuditLog[]
+  llmUsages          LlmUsage[]
+  projectMemberships ProjectMember[]
+  refreshSessions    RefreshSession[]
 
   @@index([organizationId])
-  @@index([roleId])
   @@map("users")
 }
 
@@ -132,7 +136,7 @@ model Project {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization  Organization   @relation(fields: [organizationId], references: [id])
+  organization  Organization    @relation(fields: [organizationId], references: [id])
   documents     Document[]
   requirements  Requirement[]
   businessRules BusinessRule[]
@@ -140,10 +144,56 @@ model Project {
   reports       Report[]
   approvals     Approval[]
   llmUsages     LlmUsage[]
+  members       ProjectMember[]
 
   @@index([organizationId])
   @@index([status])
   @@map("projects")
+}
+
+// ─── ProjectMember ──────────────────────────────────────────────────────────
+
+model ProjectMember {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @db.Uuid
+  projectId      String      @db.Uuid
+  organizationId String      @db.Uuid
+  role           ProjectRole
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([role])
+  @@map("project_members")
+}
+
+// ─── RefreshSession ─────────────────────────────────────────────────────────
+
+model RefreshSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  tokenHash      String    @unique
+  familyId       String    @db.Uuid
+  userId         String    @db.Uuid
+  organizationId String    @db.Uuid
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  userAgent      String?
+  ip             String?
+  createdAt      DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([expiresAt])
+  @@map("refresh_sessions")
 }
 
 // ─── Document (soft delete) ─────────────────────────────────────────────────
@@ -371,14 +421,14 @@ model AuditLog {
   id             String      @id @default(uuid()) @db.Uuid
   action         AuditAction
   entity         String
-  entityId       String      @db.Uuid
+  entityId       String?     @db.Uuid
   metadata       Json?
-  userId         String      @db.Uuid
-  organizationId String      @db.Uuid
+  userId         String?     @db.Uuid
+  organizationId String?     @db.Uuid
   createdAt      DateTime    @default(now())
 
-  user         User         @relation(fields: [userId], references: [id])
-  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([userId])
   @@index([entity, entityId])
@@ -402,9 +452,9 @@ model LlmUsage {
   organizationId   String   @db.Uuid
   createdAt        DateTime @default(now())
 
-  user         User?         @relation(fields: [userId], references: [id])
-  project      Project?      @relation(fields: [projectId], references: [id])
-  organization Organization  @relation(fields: [organizationId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
+  project      Project?     @relation(fields: [projectId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([userId])
   @@index([projectId])

@@ -13,13 +13,18 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@brd/shared": "workspace:*",
+    "@hookform/resolvers": "^5.9.1",
+    "@tanstack/react-query": "^5.104.3",
     "lucide-react": "^1.57.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.90.0",
+    "react-router-dom": "^7.18.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@brd/config": "workspace:*",
-    "@brd/shared": "workspace:*",
     "@brd/ui": "workspace:*",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

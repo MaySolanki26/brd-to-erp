@@ -56,3 +56,41 @@ export { CardListSkeleton } from './CardListSkeleton';
 
 // Scroll
 export { InfiniteScrollSentinel } from './InfiniteScrollSentinel';
+
+// App Shell
+export {
+  AppShell,
+  AppSidebar,
+  AppSidebarMobile,
+  AppHeader,
+  Breadcrumbs,
+  UserMenu,
+  useSidebarState,
+  type NavItem,
+  type NavChildItem,
+  type BreadcrumbItem,
+  type AppShellUser,
+  type SidebarState,
+  type UserMenuAction,
+  type AppSidebarProps,
+  type AppHeaderProps,
+} from './app-shell';
+
+// NoAccess
+export { NoAccess } from './NoAccess';
+
+// DataTable
+export {
+  DataTable,
+  type DataTableProps,
+  type DataTableColumnDef,
+  type RowAction,
+  type SortState,
+  type SortOrder,
+  type PaginationState,
+} from './data-table';
+
+// Page Patterns
+export { ListPage, type ListPageProps } from './patterns';
+export { DetailPage, type DetailPageProps, type DetailPageTab } from './patterns';
+export { FormPage, type FormPageProps } from './patterns';

@@ -6,3 +6,47 @@ export {
   type ProcessDocumentPayload,
   type JobPayloadMap,
 } from './jobs.js';
+
+// Schemas
+export { loginSchema, type LoginInput } from './schemas/auth.js';
+export {
+  projectStatusSchema,
+  uuidSchema,
+  projectIdParamsSchema,
+  createProjectSchema,
+  updateProjectSchema,
+  listProjectsQuerySchema,
+  type ProjectIdParams,
+  type CreateProjectInput,
+  type UpdateProjectInput,
+  type ListProjectsQuery,
+} from './schemas/project.js';
+export {
+  projectRoleSchema,
+  memberParamsSchema,
+  addMemberSchema,
+  updateMemberSchema,
+  type MemberParams,
+  type AddMemberInput,
+  type UpdateMemberInput,
+} from './schemas/member.js';
+
+// Types
+export { type ApiErrorCode, type ApiErrorEnvelope } from './types/api.js';
+export { type UserDto } from './types/user.js';
+export {
+  type ProjectDto,
+  type ProjectStatus,
+  type MemberDto,
+  type PagedResult,
+} from './types/project.js';
+
+// Constants
+export {
+  OrgRole,
+  ProjectRole,
+  RoleName,
+  ProjectPermission,
+  PROJECT_PERMISSIONS,
+  projectRolesWith,
+} from './constants/roles.js';

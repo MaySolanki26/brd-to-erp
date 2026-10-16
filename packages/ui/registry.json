@@ -1,3 +1,27 @@
 {
-  "components": ["button"]
+  "primitives": [
+    "accordion", "alert-dialog", "avatar", "badge", "button", "calendar", "card",
+    "checkbox", "collapsible", "command", "context-menu", "dialog", "dropdown-menu",
+    "form", "input", "label", "multi-select", "popover", "progress", "radio-group",
+    "select", "separator", "sheet", "skeleton", "slider", "stepper", "switch", "table",
+    "tabs", "textarea", "toast", "tooltip"
+  ],
+  "composites": [
+    "ActionBar", "AvatarGroup", "CardListSkeleton", "ConfirmDialog", "CopyButton",
+    "DatePicker", "DateRangeControl", "DelayedFallback", "DiscardGuard", "EmptyState",
+    "ErrorBoundary", "FilterButton", "FormDrawer", "InfiniteScrollSentinel",
+    "InformativeBar", "MarkdownContent", "NoAccess", "PageError", "PageLoader",
+    "PageShell", "ProgressRing", "SearchInput", "SettingsSection", "StatCard",
+    "StatusBadge", "SwitcherBar", "TableRowSkeleton", "TableSkeleton", "TruncatedText",
+    "UserAvatar", "ViewToggle"
+  ],
+  "app-shell": [
+    "AppShell", "AppSidebar", "AppSidebarMobile", "AppHeader", "Breadcrumbs", "UserMenu"
+  ],
+  "data-table": ["DataTable"],
+  "patterns": ["ListPage", "DetailPage", "FormPage"],
+  "hooks": [
+    "useSidebarState", "useDiscardGuard", "useDiscardGuardState", "useFormField", "useToast"
+  ],
+  "utilities": ["cn", "getInitials", "getAvatarColor", "copyToClipboard"]
 }
