@@ -13,6 +13,11 @@ export const queryKeys = {
     detail: (id: string) => ['projects', 'detail', id] as const,
     members: (id: string) => ['projects', 'detail', id, 'members'] as const,
     candidates: (id: string) => ['projects', 'detail', id, 'candidates'] as const,
+    documents: (id: string) => ['projects', 'detail', id, 'documents'] as const,
+    document: (id: string, docId: string, versionId: string | null, page: number) =>
+      ['projects', 'detail', id, 'documents', docId, versionId, page] as const,
+    notes: (id: string) => ['projects', 'detail', id, 'notes'] as const,
+    processingStatus: (id: string) => ['projects', 'detail', id, 'processing-status'] as const,
   },
   documents: {
     all: () => ['documents'] as const,

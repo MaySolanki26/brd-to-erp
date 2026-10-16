@@ -2,6 +2,11 @@ import type { ApiErrorCode, ApiErrorEnvelope } from '@brd/shared';
 
 const BASE_URL = `${import.meta.env.VITE_API_URL ?? ''}/api`;
 
+/** Builds a URL for a browser-handled request (such as a download link) to the API. */
+export function apiUrl(path: string): string {
+  return `${BASE_URL}${path}`;
+}
+
 export class ApiClientError extends Error {
   public readonly code: ApiErrorCode;
   public readonly status: number;
@@ -19,6 +24,27 @@ export class ApiClientError extends Error {
 let refreshPromise: Promise<void> | null = null;
 
 const LOGIN_PATH = '/login';
+const CSRF_COOKIE = 'csrf_token';
+const CSRF_HEADER = 'X-CSRF-Token';
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+function readCsrfToken(): string | undefined {
+  for (const pair of document.cookie.split(';')) {
+    const [name, ...rest] = pair.trim().split('=');
+    if (name === CSRF_COOKIE) return rest.join('=');
+  }
+  return undefined;
+}
+
+// Read per attempt: a token refresh rotates the csrf cookie.
+function withCsrf(init: RequestInit): RequestInit {
+  const method = (init.method ?? 'GET').toUpperCase();
+  const token = readCsrfToken();
+  if (SAFE_METHODS.has(method) || !token) return { ...init, credentials: 'include' };
+  const headers = new Headers(init.headers);
+  headers.set(CSRF_HEADER, token);
+  return { ...init, headers, credentials: 'include' };
+}
 
 // Reloading while already on the login page would restart the session check and loop forever.
 function redirectToLogin(): void {
@@ -28,10 +54,7 @@ function redirectToLogin(): void {
 }
 
 async function silentRefresh(): Promise<void> {
-  const res = await fetch(`${BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  });
+  const res = await fetch(`${BASE_URL}/auth/refresh`, withCsrf({ method: 'POST' }));
   if (!res.ok) {
     throw new ApiClientError(res.status, 'UNAUTHORIZED', 'Session expired');
   }
@@ -39,7 +62,7 @@ async function silentRefresh(): Promise<void> {
 
 async function request<T>(path: string, init: RequestInit): Promise<T> {
   const url = `${BASE_URL}${path}`;
-  const res = await fetch(url, { ...init, credentials: 'include' });
+  const res = await fetch(url, withCsrf(init));
 
   if (res.ok) {
     if (res.status === 204) return undefined as T;
@@ -56,7 +79,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
       refreshPromise = null;
 
       // Retry original request
-      const retry = await fetch(url, { ...init, credentials: 'include' });
+      const retry = await fetch(url, withCsrf(init));
       if (retry.ok) {
         if (retry.status === 204) return undefined as T;
         return retry.json() as Promise<T>;
@@ -102,7 +125,38 @@ function withBody(method: string) {
     });
 }
 
+/**
+ * Sends a file straight to a signed storage URL. The URL is absolute and carries its own token,
+ * so this skips the /api prefix and never sends the session cookie.
+ */
+async function upload(url: string, file: File, contentType: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: file,
+    });
+  } catch {
+    throw new ApiClientError(
+      0,
+      'INTERNAL_SERVER_ERROR',
+      'Upload failed. Check your connection and try again.',
+    );
+  }
+  if (res.ok) return;
+
+  const body = (await res.json().catch(() => null)) as ApiErrorEnvelope | null;
+  throw new ApiClientError(
+    res.status,
+    body?.error?.code ?? 'INTERNAL_SERVER_ERROR',
+    body?.error?.message ?? 'Upload failed. Please try again.',
+    body?.error?.requestId,
+  );
+}
+
 export const apiClient = {
+  upload,
   get: <T>(path: string, opts?: RequestInit) => request<T>(path, { ...opts, method: 'GET' }),
   post: withBody('POST'),
   put: withBody('PUT'),

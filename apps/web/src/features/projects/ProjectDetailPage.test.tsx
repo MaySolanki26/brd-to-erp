@@ -50,6 +50,19 @@ function mockApi(proj: ProjectDto | Error, members: MemberDto[] = [MEMBER]) {
       return { project: proj };
     }
     if (url === '/projects/p1/members') return { members };
+    if (url === '/projects/p1/documents?pageSize=100')
+      return { items: [], page: 1, pageSize: 100, total: 0 };
+    if (url === '/projects/p1/notes?pageSize=100')
+      return { items: [], page: 1, pageSize: 100, total: 0 };
+    if (url === '/projects/p1/processing-status') {
+      return {
+        status: {
+          counts: { UPLOADED: 0, PROCESSING: 0, PROCESSED: 0, FAILED: 0 },
+          active: false,
+          sources: [],
+        },
+      };
+    }
     if (url === '/projects/p1/members/candidates') {
       return { candidates: [{ userId: 'c1', name: 'Cal', email: 'cal@brd.test' }] };
     }
@@ -111,6 +124,24 @@ describe('ProjectDetailPage', () => {
     await screen.findByRole('heading', { name: 'Alpha' });
     await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
     expect(await screen.findByText('No members yet')).toBeInTheDocument();
+  });
+
+  it('lets analysts and owners add sources, but not viewers or approvers', async () => {
+    for (const [role, canAdd] of [
+      ['OWNER', true],
+      ['ANALYST', true],
+      ['APPROVER', false],
+      ['VIEWER', false],
+    ] as const) {
+      mockApi(project({ myRole: role }));
+      const { unmount } = view();
+      await screen.findByRole('heading', { name: 'Alpha' });
+      await userEvent.click(screen.getByRole('tab', { name: 'Sources' }));
+      expect(await screen.findByText('No documents yet')).toBeInTheDocument();
+      const uploads = screen.queryAllByRole('button', { name: 'Upload document' });
+      expect(uploads.length > 0).toBe(canAdd);
+      unmount();
+    }
   });
 
   it('hides member management from roles without the permission', async () => {

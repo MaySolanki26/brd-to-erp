@@ -23,12 +23,15 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { ApiClientError } from '@/lib/api-client';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { MembersTab } from './components/MembersTab';
+import { SourcesTab } from './components/SourcesTab';
 import { useArchiveProject } from './hooks/use-project-mutations';
 import { useProject } from './hooks/use-projects';
 import { ROLE_LABELS, STATUS_TONES, formatDate } from './project-labels';
 
 const MANAGE_ROLES = projectRolesWith(ProjectPermission.MANAGE_MEMBERS);
 const ARCHIVE_ROLES = projectRolesWith(ProjectPermission.ARCHIVE_PROJECT);
+const ADD_SOURCE_ROLES = projectRolesWith(ProjectPermission.ADD_SOURCE);
+const REPROCESS_ROLES = projectRolesWith(ProjectPermission.REPROCESS);
 
 export function ProjectDetailPage() {
   const { projectId = '' } = useParams<{ projectId: string }>();
@@ -69,6 +72,12 @@ export function ProjectDetailPage() {
   const data = project.data;
   const isOrgAdmin = user?.orgRole === 'ORG_ADMIN';
   const canManage = isOrgAdmin || (data.myRole !== null && MANAGE_ROLES.includes(data.myRole));
+  const canAddSource =
+    data.status !== 'ARCHIVED' &&
+    (isOrgAdmin || (data.myRole !== null && ADD_SOURCE_ROLES.includes(data.myRole)));
+  const canReprocess =
+    data.status !== 'ARCHIVED' &&
+    (isOrgAdmin || (data.myRole !== null && REPROCESS_ROLES.includes(data.myRole)));
   const canArchive =
     data.status !== 'ARCHIVED' &&
     (isOrgAdmin || (data.myRole !== null && ARCHIVE_ROLES.includes(data.myRole)));
@@ -103,6 +112,7 @@ export function ProjectDetailPage() {
         <Tabs defaultValue="overview">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="sources">Sources</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
@@ -116,6 +126,13 @@ export function ProjectDetailPage() {
               <dt className="text-muted-foreground">Last updated</dt>
               <dd>{formatDate(data.updatedAt)}</dd>
             </dl>
+          </TabsContent>
+          <TabsContent value="sources" className="mt-4">
+            <SourcesTab
+              projectId={data.id}
+              canAddSource={canAddSource}
+              canReprocess={canReprocess}
+            />
           </TabsContent>
           <TabsContent value="members" className="mt-4">
             <MembersTab projectId={data.id} canManage={canManage} currentUserId={user?.id ?? ''} />
