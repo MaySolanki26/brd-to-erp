@@ -9,6 +9,7 @@ import { requestId } from './middleware/request-id.js';
 import { notFound } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './modules/health/health.route.js';
+import { storageRouter } from './modules/storage/storage.route.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -51,6 +52,7 @@ export function createApp(): express.Express {
 
   // Routes
   app.use('/health', healthRouter);
+  app.use('/storage', storageRouter);
 
   // Fallback handlers
   app.use(notFound);
