@@ -18,9 +18,17 @@ import type { ExtractionPlan } from './extraction.types.js';
 
 const scope = { organizationId: 'o1', projectId: 'p1' };
 type Args = Record<string, unknown>;
-const call = (mock: ReturnType<typeof vi.fn>, n = 0): Args => (mock.mock.calls[n]?.[0] ?? {}) as Args;
+const call = (mock: ReturnType<typeof vi.fn>, n = 0): Args =>
+  (mock.mock.calls[n]?.[0] ?? {}) as Args;
 
-const emptyPlan: ExtractionPlan = { create: [], link: [], update: [], remove: [], unlink: [] };
+const emptyPlan: ExtractionPlan = {
+  create: [],
+  link: [],
+  update: [],
+  remove: [],
+  unlink: [],
+  revalidate: [],
+};
 
 /** A transaction client whose every method is a mock returning harmless defaults. */
 function fakeTx() {
@@ -97,7 +105,9 @@ describe('extraction.repository', () => {
       const requirements = call(tx.requirement.findMany)['where'] as Args;
       expect(requirements).toMatchObject({ ...scope, deletedAt: null });
       expect(JSON.stringify(requirements)).toContain('"sourceChunkId":"c1"');
-      expect(JSON.stringify(requirements)).toContain('"title":{"equals":"send invoices","mode":"insensitive"}');
+      expect(JSON.stringify(requirements)).toContain(
+        '"title":{"equals":"send invoices","mode":"insensitive"}',
+      );
       expect(call(tx.module.findMany)['where']).toMatchObject(scope);
       // No rule drafts: rules are read only for what this chunk already owns or links.
       expect(JSON.stringify(call(tx.businessRule.findMany)['where'])).not.toContain('equals');
@@ -107,18 +117,44 @@ describe('extraction.repository', () => {
       const tx = fakeTx();
       tx.requirement.findMany.mockResolvedValue([
         {
-          id: 'r1', title: 'Send invoices', description: 'D', status: 'OPEN', createdById: null,
-          moduleId: 'm1', sourceChunkId: 'c1', extraSources: [{ chunkId: 'c9' }],
+          id: 'r1',
+          title: 'Send invoices',
+          description: 'D',
+          status: 'OPEN',
+          createdById: null,
+          moduleId: 'm1',
+          sourceChunkId: 'c1',
+          extraSources: [{ chunkId: 'c9' }],
         },
         {
-          id: 'r2', title: 'Other', description: 'D', status: 'OPEN', createdById: null,
-          moduleId: null, sourceChunkId: 'c5', extraSources: [{ chunkId: 'c1' }, { chunkId: 'c6' }],
+          id: 'r2',
+          title: 'Other',
+          description: 'D',
+          status: 'OPEN',
+          createdById: null,
+          moduleId: null,
+          sourceChunkId: 'c5',
+          extraSources: [{ chunkId: 'c1' }, { chunkId: 'c6' }],
         },
       ]);
-      const result = await loadExisting(tx as never, scope, 'c1', { modules: [], requirements: [], rules: [] });
+      const result = await loadExisting(tx as never, scope, 'c1', {
+        modules: [],
+        requirements: [],
+        rules: [],
+      });
       expect(result.requirement).toEqual([
-        expect.objectContaining({ id: 'r1', ownedHere: true, linkedHere: false, otherSourceChunkIds: ['c9'] }),
-        expect.objectContaining({ id: 'r2', ownedHere: false, linkedHere: true, otherSourceChunkIds: ['c6'] }),
+        expect.objectContaining({
+          id: 'r1',
+          ownedHere: true,
+          linkedHere: false,
+          otherSourceChunkIds: ['c9'],
+        }),
+        expect.objectContaining({
+          id: 'r2',
+          ownedHere: false,
+          linkedHere: true,
+          otherSourceChunkIds: ['c6'],
+        }),
       ]);
     });
   });
@@ -136,7 +172,13 @@ describe('extraction.repository', () => {
       });
       const first = call(tx.module.create, 0)['data'] as Args;
       const second = call(tx.module.create, 1)['data'] as Args;
-      expect(first).toMatchObject({ ...scope, name: 'Billing & Payments', code: 'BILLING-PAYMENTS', sourceChunkId: 'c1', createdById: null });
+      expect(first).toMatchObject({
+        ...scope,
+        name: 'Billing & Payments',
+        code: 'BILLING-PAYMENTS',
+        sourceChunkId: 'c1',
+        createdById: null,
+      });
       expect(second['code']).toBe('BILLING-2');
     });
 
@@ -151,9 +193,17 @@ describe('extraction.repository', () => {
         ],
       });
       expect(call(tx.requirement.create)['data']).toMatchObject({
-        ...scope, title: 'Send invoices', moduleId: 'm1', sourceChunkId: 'c1', createdById: null,
+        ...scope,
+        title: 'Send invoices',
+        moduleId: 'm1',
+        sourceChunkId: 'c1',
+        createdById: null,
       });
-      expect(call(tx.businessRule.create)['data']).toMatchObject({ title: 'VAT', moduleId: null, createdById: null });
+      expect(call(tx.businessRule.create)['data']).toMatchObject({
+        title: 'VAT',
+        moduleId: null,
+        createdById: null,
+      });
       expect(counts.created).toBe(2);
     });
 
@@ -161,7 +211,10 @@ describe('extraction.repository', () => {
       const tx = fakeTx();
       const counts = await applyPlan(tx as never, scope, 'c1', {
         ...emptyPlan,
-        link: [{ kind: 'requirement', id: 'r1' }, { kind: 'module', id: 'm1' }],
+        link: [
+          { kind: 'requirement', id: 'r1' },
+          { kind: 'module', id: 'm1' },
+        ],
       });
       expect(call(tx.itemSource.createMany)).toEqual({
         data: [
@@ -182,10 +235,18 @@ describe('extraction.repository', () => {
           { kind: 'module', id: 'm1', repointTo: null },
         ],
       });
-      const guard = { ...scope, sourceChunkId: 'c1', createdById: null, status: { in: ['OPEN', 'ASSUMED'] } };
+      const guard = {
+        ...scope,
+        sourceChunkId: 'c1',
+        createdById: null,
+        status: { in: ['OPEN', 'ASSUMED'] },
+      };
       expect(call(tx.requirement.deleteMany)['where']).toEqual({ id: 'r1', ...guard });
       expect(call(tx.module.deleteMany)['where']).toEqual({
-        id: 'm1', ...guard, requirements: { none: {} }, businessRules: { none: {} },
+        id: 'm1',
+        ...guard,
+        requirements: { none: {} },
+        businessRules: { none: {} },
       });
     });
 
@@ -200,14 +261,44 @@ describe('extraction.repository', () => {
         where: { id: 'u1', sourceChunkId: 'c1', createdById: null },
         data: { sourceChunkId: 'c9' },
       });
-      expect(call(tx.itemSource.deleteMany)['where']).toMatchObject({ chunkId: 'c9', ruleId: 'u1' });
+      expect(call(tx.itemSource.deleteMany)['where']).toMatchObject({
+        chunkId: 'c9',
+        ruleId: 'u1',
+      });
+    });
+
+    it('moves stale items the chunk states again back to OPEN, only if they are still stale', async () => {
+      const tx = fakeTx();
+      await applyPlan(tx as never, scope, 'c1', {
+        ...emptyPlan,
+        revalidate: [
+          { kind: 'requirement', id: 'r1' },
+          { kind: 'rule', id: 'u1' },
+          { kind: 'module', id: 'm1' },
+        ],
+      });
+      for (const model of [tx.requirement, tx.businessRule, tx.module]) {
+        expect(call(model.updateMany)).toEqual({
+          where: expect.objectContaining({
+            organizationId: 'o1',
+            projectId: 'p1',
+            status: 'NEEDS_REVALIDATION',
+          }),
+          data: { status: 'OPEN' },
+        });
+      }
     });
 
     it('drops links from this chunk to items it no longer states', async () => {
       const tx = fakeTx();
-      await applyPlan(tx as never, scope, 'c1', { ...emptyPlan, unlink: [{ kind: 'requirement', id: 'r1' }] });
+      await applyPlan(tx as never, scope, 'c1', {
+        ...emptyPlan,
+        unlink: [{ kind: 'requirement', id: 'r1' }],
+      });
       expect(call(tx.itemSource.deleteMany)['where']).toEqual({
-        chunkId: 'c1', organizationId: 'o1', requirementId: 'r1',
+        chunkId: 'c1',
+        organizationId: 'o1',
+        requirementId: 'r1',
       });
     });
   });
@@ -234,7 +325,10 @@ describe('extraction.repository', () => {
       tx.chunk.findFirst.mockResolvedValue(chunkRow());
       tx.chunk.count.mockResolvedValue(1);
       expect(await finishSourceIfDone(tx as never, scope, 'c1')).toBe(false);
-      expect(call(tx.chunk.count)['where']).toMatchObject({ documentVersionId: 'v1', extractedAt: null });
+      expect(call(tx.chunk.count)['where']).toMatchObject({
+        documentVersionId: 'v1',
+        extractedAt: null,
+      });
       expect(tx.document.updateMany).not.toHaveBeenCalled();
     });
 
@@ -244,7 +338,9 @@ describe('extraction.repository', () => {
       expect(await finishSourceIfDone(tx as never, scope, 'c1')).toBe(true);
       expect(call(tx.document.updateMany)).toMatchObject({
         where: {
-          id: 'd1', ...scope, status: 'PROCESSING',
+          id: 'd1',
+          ...scope,
+          status: 'PROCESSING',
           versions: { none: { versionNumber: { gt: 2 } } },
         },
         data: { status: 'PROCESSED' },
@@ -255,7 +351,9 @@ describe('extraction.repository', () => {
 
     it('processes a note when its last chunk is done', async () => {
       const tx = fakeTx();
-      tx.chunk.findFirst.mockResolvedValue(chunkRow({ documentVersionId: null, documentVersion: null, contextNoteId: 'n1' }));
+      tx.chunk.findFirst.mockResolvedValue(
+        chunkRow({ documentVersionId: null, documentVersion: null, contextNoteId: 'n1' }),
+      );
       expect(await finishSourceIfDone(tx as never, scope, 'c1')).toBe(true);
       expect(call(tx.contextNote.updateMany)).toMatchObject({
         where: { id: 'n1', ...scope, status: 'PROCESSING' },
@@ -267,7 +365,10 @@ describe('extraction.repository', () => {
   describe('failSourceOfChunk', () => {
     it('fails a document that is still processing, and nothing else', async () => {
       const tx = fakeTx();
-      tx.chunk.findFirst.mockResolvedValue({ documentVersion: { documentId: 'd1' }, contextNoteId: null });
+      tx.chunk.findFirst.mockResolvedValue({
+        documentVersion: { documentId: 'd1' },
+        contextNoteId: null,
+      });
       await failSourceOfChunk(tx as never, scope, 'c1', 'why');
       expect(call(tx.document.updateMany)).toEqual({
         where: { id: 'd1', ...scope, status: 'PROCESSING' },
@@ -298,7 +399,10 @@ describe('extraction.repository', () => {
       const tx = fakeTx();
       tx.requirement.findMany.mockResolvedValue([{ id: 'r1', extraSources: [] }]);
       expect(await releaseChunkItems(tx as never, scope, 'c1')).toBe(true);
-      expect(call(tx.requirement.deleteMany)['where']).toMatchObject({ id: 'r1', sourceChunkId: 'c1' });
+      expect(call(tx.requirement.deleteMany)['where']).toMatchObject({
+        id: 'r1',
+        sourceChunkId: 'c1',
+      });
     });
 
     it('reports the chunk still in use when a confirmed or person-made item points at it', async () => {

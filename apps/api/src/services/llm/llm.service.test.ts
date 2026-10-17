@@ -8,11 +8,12 @@ vi.mock('../../lib/logger.js', () => ({
 import {
   InvalidLlmOutputError,
   LlmBudgetExceededError,
+  LlmOutputTooLongError,
   LlmRefusalError,
   LlmTransientError,
 } from './llm.errors.js';
 import { createLlmService } from './llm.service.js';
-import type { LlmProvider, LlmResponse } from './llm.types.js';
+import type { LlmProvider, LlmRequest, LlmResponse } from './llm.types.js';
 
 const schema = z.object({ items: z.array(z.string()) });
 const context = { organizationId: 'o1', projectId: 'p1', userId: 'u1' };
@@ -39,7 +40,7 @@ function setup(overrides: { used?: number; budget?: number; now?: Date } = {}) {
     maxOutputTokens: 4096,
     now: () => overrides.now ?? new Date('2026-10-16T12:00:00Z'),
   });
-  const run = (extra: { cachedContext?: string } = {}) =>
+  const run = (extra: { cachedContext?: string; maxOutputTokens?: number } = {}) =>
     service.run({
       promptName: 'extraction',
       user: SECRET,
@@ -108,6 +109,53 @@ describe('llmService.run', () => {
     expect((await run()).output).toEqual({ items: ['a'] });
     expect(provider.complete).toHaveBeenCalledTimes(2);
     expect(usage.record.mock.calls.map((c) => c[0].status)).toEqual(['INVALID_OUTPUT', 'OK']);
+  });
+
+  describe('answers cut off at the output limit', () => {
+    const cutOff: LlmResponse = { ...good, json: undefined, truncated: true };
+    const limits = (provider: { complete: { mock: { calls: { 0: LlmRequest }[] } } }) =>
+      provider.complete.mock.calls.map((c) => c[0].maxOutputTokens);
+
+    it('is retried with a doubled limit instead of the identical request', async () => {
+      const { provider, run } = setup();
+      provider.complete.mockResolvedValueOnce(cutOff).mockResolvedValueOnce(good);
+      expect((await run()).output).toEqual({ items: ['a'] });
+      expect(limits(provider)).toEqual([4096, 8192]);
+    });
+
+    it('fails for good, with a clear error, when it is cut off again', async () => {
+      const { provider, usage, run } = setup();
+      provider.complete.mockResolvedValue(cutOff);
+      await expect(run()).rejects.toBeInstanceOf(LlmOutputTooLongError);
+      expect(provider.complete).toHaveBeenCalledTimes(2);
+      expect(usage.record.mock.calls.map((c) => c[0].status)).toEqual([
+        'INVALID_OUTPUT',
+        'INVALID_OUTPUT',
+      ]);
+    });
+
+    it('stops at once when the limit is already at the ceiling', async () => {
+      const { provider, run } = setup();
+      provider.complete.mockResolvedValue(cutOff);
+      await expect(run({ maxOutputTokens: 32_000 })).rejects.toBeInstanceOf(LlmOutputTooLongError);
+      expect(provider.complete).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses a per-call limit, never lower than the default and never above the ceiling', async () => {
+      const { provider, run } = setup();
+      provider.complete.mockResolvedValue(good);
+      await run({ maxOutputTokens: 16_000 });
+      await run({ maxOutputTokens: 100 });
+      await run({ maxOutputTokens: 90_000 });
+      expect(limits(provider)).toEqual([16_000, 4096, 32_000]);
+    });
+
+    it('does not double the limit for an answer that is merely invalid', async () => {
+      const { provider, run } = setup();
+      provider.complete.mockResolvedValueOnce(bad).mockResolvedValueOnce(good);
+      await run();
+      expect(limits(provider)).toEqual([4096, 4096]);
+    });
   });
 
   it('treats missing JSON like an invalid answer', async () => {

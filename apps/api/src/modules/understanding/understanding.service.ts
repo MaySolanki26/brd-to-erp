@@ -12,6 +12,10 @@ import type { DbClient } from '../../lib/transaction.js';
 import type { createAuditLog } from '../audit/audit.repository.js';
 import type { LlmService } from '../../services/llm/llm.service.js';
 import { providerJsonSchema } from '../../services/llm/json-schema.js';
+import {
+  QUESTIONS_MAX_OUTPUT_TOKENS,
+  SUMMARY_MAX_OUTPUT_TOKENS,
+} from '../../services/llm/output-limits.js';
 import { sanitizeSummary } from './build-summary.js';
 import { summaryFingerprint } from './fingerprint.js';
 import { conflictQuestion, planAnswer, type PlannedChange } from './plan-answer.js';
@@ -82,6 +86,7 @@ export function createUnderstandingService(deps: UnderstandingDeps): Understandi
 
     const { output } = await llm.run({
       promptName: 'summary',
+      maxOutputTokens: SUMMARY_MAX_OUTPUT_TOKENS,
       user: summaryInput(name, items),
       schema: summaryLlmOutputSchema,
       outputJsonSchema: providerJsonSchema(summaryLlmOutputSchema),
@@ -133,7 +138,9 @@ export function createUnderstandingService(deps: UnderstandingDeps): Understandi
 
     const items = await repo.loadItems(organizationId, projectId);
     const offset =
-      Number.isInteger(payload.offset) && (payload.offset ?? 0) > 0 ? (payload.offset as number) : 0;
+      Number.isInteger(payload.offset) && (payload.offset ?? 0) > 0
+        ? (payload.offset as number)
+        : 0;
     const batch = questionBatch(orderItemsForQuestions(items), offset);
     const candidates = batch.items;
     if (candidates.length === 0) return { status: 'empty' };
@@ -146,6 +153,7 @@ export function createUnderstandingService(deps: UnderstandingDeps): Understandi
     );
     const { output } = await llm.run({
       promptName: 'questions',
+      maxOutputTokens: QUESTIONS_MAX_OUTPUT_TOKENS,
       cachedContext: summary?.content ? summaryContext(summary.content, items) : undefined,
       user: questionsInput(candidates, existing),
       schema: questionsLlmOutputSchema,

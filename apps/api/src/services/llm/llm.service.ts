@@ -2,7 +2,13 @@ import type { LlmCallStatus } from '@prisma/client';
 import type { z } from 'zod';
 import { logger } from '../../lib/logger.js';
 import { startOfUtcMonth } from './budget.js';
-import { InvalidLlmOutputError, LlmBudgetExceededError, LlmRefusalError } from './llm.errors.js';
+import {
+  InvalidLlmOutputError,
+  LlmBudgetExceededError,
+  LlmOutputTooLongError,
+  LlmRefusalError,
+} from './llm.errors.js';
+import { OUTPUT_TOKENS_CEILING } from './output-limits.js';
 import type { LlmProvider, LlmRequest, LlmResponse, LlmTokenUsage } from './llm.types.js';
 import type { NewLlmUsage } from './llm-usage.repository.js';
 import type { PromptTemplate } from './prompt-loader.js';
@@ -24,6 +30,8 @@ export interface LlmRunOptions<T> {
   /** The same shape as JSON Schema, sent to the provider. */
   outputJsonSchema: Record<string, unknown>;
   context: LlmContext;
+  /** Room for a longer answer than the default; never lower than the default. */
+  maxOutputTokens?: number | undefined;
 }
 
 export interface LlmRunResult<T> {
@@ -103,14 +111,17 @@ export function createLlmService(deps: LlmServiceDeps) {
   async function run<T>(options: LlmRunOptions<T>): Promise<LlmRunResult<T>> {
     const { context } = options;
     const prompt = deps.loadPrompt(options.promptName);
-    const request: LlmRequest = {
+    let request: LlmRequest = {
       promptName: prompt.name,
       promptVersion: prompt.version,
       system: prompt.system,
       cachedContext: options.cachedContext,
       user: options.user,
       outputSchema: options.outputJsonSchema,
-      maxOutputTokens: deps.maxOutputTokens,
+      maxOutputTokens: Math.min(
+        Math.max(deps.maxOutputTokens, options.maxOutputTokens ?? 0),
+        OUTPUT_TOKENS_CEILING,
+      ),
     };
 
     await assertWithinBudget(context);
@@ -138,9 +149,23 @@ export function createLlmService(deps: LlmServiceDeps) {
           attempt,
           projectId: context.projectId,
           issueCount: parsed.error.issues.length,
+          truncated: response.truncated === true,
+          outputTokens: response.usage.outputTokens,
+          maxOutputTokens: request.maxOutputTokens,
         },
         'LLM output failed validation',
       );
+
+      if (response.truncated) {
+        // The same request would be cut off again: give the answer more room, or stop at the ceiling.
+        if (attempt === 2 || request.maxOutputTokens >= OUTPUT_TOKENS_CEILING) {
+          throw new LlmOutputTooLongError(request.maxOutputTokens);
+        }
+        request = {
+          ...request,
+          maxOutputTokens: Math.min(request.maxOutputTokens * 2, OUTPUT_TOKENS_CEILING),
+        };
+      }
     }
 
     throw new InvalidLlmOutputError();

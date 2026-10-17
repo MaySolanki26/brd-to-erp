@@ -18,6 +18,7 @@ import {
   listModules,
   listRequirements,
   listRules,
+  setRevalidatedStatus,
 } from './knowledge.repository.js';
 
 const base = { organizationId: 'o1', projectId: 'p1', page: 3, pageSize: 10 };
@@ -64,11 +65,17 @@ describe('knowledge.repository', () => {
       AND: [
         {
           OR: [
-            { sourceChunk: { OR: [{ documentVersion: { documentId: 's1' } }, { contextNoteId: 's1' }] } },
+            {
+              sourceChunk: {
+                OR: [{ documentVersion: { documentId: 's1' } }, { contextNoteId: 's1' }],
+              },
+            },
             {
               extraSources: {
                 some: {
-                  chunk: { OR: [{ documentVersion: { documentId: 's1' } }, { contextNoteId: 's1' }] },
+                  chunk: {
+                    OR: [{ documentVersion: { documentId: 's1' } }, { contextNoteId: 's1' }],
+                  },
                 },
               },
             },
@@ -163,6 +170,61 @@ describe('knowledge.repository', () => {
       id: 'c1',
       organizationId: 'o1',
       projectId: 'p1',
+    });
+  });
+
+  describe('setRevalidatedStatus', () => {
+    type Model = { findFirst: ReturnType<typeof vi.fn>; updateMany: ReturnType<typeof vi.fn> };
+    const tx = () => {
+      const model = (): Model => ({
+        findFirst: vi.fn().mockResolvedValue({ status: 'NEEDS_REVALIDATION' }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      });
+      const models = { requirement: model(), businessRule: model(), module: model() };
+      return { db: models as never, models };
+    };
+    const params = {
+      organizationId: 'o1',
+      projectId: 'p1',
+      id: 'i1',
+      status: 'CONFIRMED' as const,
+    };
+    const scope = { id: 'i1', organizationId: 'o1', projectId: 'p1' };
+
+    it.each([
+      ['requirement', 'requirement'],
+      ['rule', 'businessRule'],
+      ['module', 'module'],
+    ] as const)(
+      'updates a stale %s inside the project, only while it is still stale',
+      async (kind, key) => {
+        const { db, models } = tx();
+        expect(await setRevalidatedStatus(db, { ...params, kind })).toBe('updated');
+        const where = models[key].updateMany.mock.calls[0]?.[0].where;
+        expect(where).toMatchObject({ ...scope, status: 'NEEDS_REVALIDATION' });
+        expect(models[key].updateMany.mock.calls[0]?.[0].data).toEqual({ status: 'CONFIRMED' });
+        expect(models[key].findFirst.mock.calls[0]?.[0].where).toMatchObject(scope);
+      },
+    );
+
+    it('never touches a deleted requirement', async () => {
+      const { db, models } = tx();
+      await setRevalidatedStatus(db, { ...params, kind: 'requirement' });
+      expect(models.requirement.findFirst.mock.calls[0]?.[0].where.deletedAt).toBeNull();
+      expect(models.requirement.updateMany.mock.calls[0]?.[0].where.deletedAt).toBeNull();
+    });
+
+    it('reports a missing item without writing', async () => {
+      const { db, models } = tx();
+      models.module.findFirst.mockResolvedValue(null);
+      expect(await setRevalidatedStatus(db, { ...params, kind: 'module' })).toBe('missing');
+      expect(models.module.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('reports an item someone else already decided', async () => {
+      const { db, models } = tx();
+      models.businessRule.updateMany.mockResolvedValue({ count: 0 });
+      expect(await setRevalidatedStatus(db, { ...params, kind: 'rule' })).toBe('not-stale');
     });
   });
 });

@@ -36,7 +36,11 @@ export async function findChunk(
           versionNumber: true,
           document: {
             select: {
-              versions: { select: { versionNumber: true }, orderBy: { versionNumber: 'desc' }, take: 1 },
+              versions: {
+                select: { versionNumber: true },
+                orderBy: { versionNumber: 'desc' },
+                take: 1,
+              },
             },
           },
         },
@@ -85,7 +89,9 @@ export async function loadExisting(
   } as const;
 
   const matching = (kind: 'requirement' | 'rule') =>
-    titles(drafts, kind).length > 0 ? [{ OR: titles(drafts, kind).map((title) => ({ title: sameText(title) })) }] : [];
+    titles(drafts, kind).length > 0
+      ? [{ OR: titles(drafts, kind).map((title) => ({ title: sameText(title) })) }]
+      : [];
 
   const [modules, requirements, rules] = await Promise.all([
     db.module.findMany({
@@ -99,34 +105,53 @@ export async function loadExisting(
         ],
       },
       select: {
-        id: true, name: true, description: true, status: true, createdById: true, sourceChunkId: true,
+        id: true,
+        name: true,
+        description: true,
+        status: true,
+        createdById: true,
+        sourceChunkId: true,
         extraSources: links,
       },
     }),
     db.requirement.findMany({
       where: { ...scope, deletedAt: null, OR: [here, ...matching('requirement')] },
       select: {
-        id: true, title: true, description: true, status: true, createdById: true,
-        moduleId: true, sourceChunkId: true, extraSources: links,
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        createdById: true,
+        moduleId: true,
+        sourceChunkId: true,
+        extraSources: links,
       },
     }),
     db.businessRule.findMany({
       where: { ...scope, OR: [here, ...matching('rule')] },
       select: {
-        id: true, title: true, description: true, status: true, createdById: true,
-        moduleId: true, sourceChunkId: true, extraSources: links,
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        createdById: true,
+        moduleId: true,
+        sourceChunkId: true,
+        extraSources: links,
       },
     }),
   ]);
 
-  const build = <T extends {
-    id: string;
-    description: string | null;
-    status: KnowledgeStatus;
-    createdById: string | null;
-    sourceChunkId: string;
-    extraSources: { chunkId: string }[];
-  }>(
+  const build = <
+    T extends {
+      id: string;
+      description: string | null;
+      status: KnowledgeStatus;
+      createdById: string | null;
+      sourceChunkId: string;
+      extraSources: { chunkId: string }[];
+    },
+  >(
     kind: ExtractedKind,
     rows: T[],
     titleOf: (row: T) => string,
@@ -146,9 +171,24 @@ export async function loadExisting(
     }));
 
   return {
-    module: build('module', modules, (m) => m.name, () => null),
-    requirement: build('requirement', requirements, (r) => r.title, (r) => r.moduleId),
-    rule: build('rule', rules, (r) => r.title, (r) => r.moduleId),
+    module: build(
+      'module',
+      modules,
+      (m) => m.name,
+      () => null,
+    ),
+    requirement: build(
+      'requirement',
+      requirements,
+      (r) => r.title,
+      (r) => r.moduleId,
+    ),
+    rule: build(
+      'rule',
+      rules,
+      (r) => r.title,
+      (r) => r.moduleId,
+    ),
   };
 }
 
@@ -299,7 +339,8 @@ export async function applyPlan(
     if (moduleId !== null && update.kind !== 'module') data.moduleId = moduleId;
     if (Object.keys(data).length === 0) continue;
     const where = { id: update.id, ...scope };
-    if (update.kind === 'module') await db.module.updateMany({ where, data: { description: data.description } });
+    if (update.kind === 'module')
+      await db.module.updateMany({ where, data: { description: data.description } });
     else if (update.kind === 'requirement') await db.requirement.updateMany({ where, data });
     else await db.businessRule.updateMany({ where, data });
     counts.updated += 1;
@@ -319,6 +360,16 @@ export async function applyPlan(
 
   for (const removal of plan.remove) {
     if (await removeItem(db, scope, chunkId, removal)) counts.removed += 1;
+  }
+
+  // The new text states these items again, so they leave the stale state; a person still reviews them.
+  for (const item of plan.revalidate) {
+    const where = { id: item.id, ...scope, status: 'NEEDS_REVALIDATION' as const };
+    const data = { status: 'OPEN' as const };
+    if (item.kind === 'module') await db.module.updateMany({ where, data });
+    else if (item.kind === 'requirement') await db.requirement.updateMany({ where, data });
+    else await db.businessRule.updateMany({ where, data });
+    counts.updated += 1;
   }
 
   for (const unlink of plan.unlink) {
@@ -403,7 +454,10 @@ export async function releaseChunkItems(
   const owned = { ...scope, sourceChunkId: chunkId };
   const replaceable = { createdById: null, status: { in: [...REPLACEABLE_STATUSES] } };
   const firstOther = {
-    select: { id: true, extraSources: { select: { chunkId: true }, orderBy: SOURCE_ORDER, take: 1 } },
+    select: {
+      id: true,
+      extraSources: { select: { chunkId: true }, orderBy: SOURCE_ORDER, take: 1 },
+    },
   } as const;
 
   const [modules, requirements, rules] = await Promise.all([

@@ -8,6 +8,7 @@ import {
   InvalidLlmOutputError,
   LlmBudgetExceededError,
   LlmConfigError,
+  LlmOutputTooLongError,
   LlmRefusalError,
   LlmTransientError,
 } from '../services/llm/llm.errors.js';
@@ -76,7 +77,11 @@ describe('understanding handlers', () => {
 
     it('queues the next batch of questions where this one ended, until the last', async () => {
       const { send, service, handlers, job } = setup();
-      service.generateQuestions.mockResolvedValueOnce({ status: 'generated', created: 2, nextOffset: 60 });
+      service.generateQuestions.mockResolvedValueOnce({
+        status: 'generated',
+        created: 2,
+        nextOffset: 60,
+      });
       await handlers.generateQuestions(job(base));
       expect(queued(send)).toEqual([
         expect.objectContaining({ name: 'generate-questions', data: { ...base, offset: 60 } }),
@@ -129,6 +134,7 @@ describe('understanding handlers', () => {
     it.each([
       ['a misconfigured model', new LlmConfigError()],
       ['a refusal', new LlmRefusalError()],
+      ['an answer that is always cut off', new LlmOutputTooLongError(32_000)],
     ])('does not retry %s', async (_name, error) => {
       const { send, service, handlers, job } = setup();
       service.refreshSummary.mockRejectedValueOnce(error);
@@ -148,7 +154,11 @@ describe('understanding handlers', () => {
 
     it('hands every job in a batch to the service', async () => {
       const { service, handlers } = setup();
-      service.generateQuestions.mockResolvedValue({ status: 'generated', created: 0, nextOffset: null });
+      service.generateQuestions.mockResolvedValue({
+        status: 'generated',
+        created: 0,
+        nextOffset: null,
+      });
       const jobs = [
         { id: 'a', data: base },
         { id: 'b', data: { ...base, projectId: '00000000-0000-4000-8000-000000000009' } },

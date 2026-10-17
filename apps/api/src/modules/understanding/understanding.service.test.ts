@@ -186,6 +186,28 @@ describe('generateQuestions', () => {
     expect((call?.[0] as { cachedContext?: string }).cachedContext).toContain('A billing system.');
   });
 
+  it('asks the model for room to list every module and many questions', async () => {
+    const summary = {
+      overview: 'An ERP.',
+      modules: [],
+      keyRequirements: [],
+      keyRules: [],
+      assumptions: [],
+      staleItems: [],
+    };
+    const { service, run } = setup(
+      { items: [requirement] },
+      { summary, questions: { questions: [] } },
+    );
+    await service.refreshSummary(payload);
+    await service.generateQuestions(payload);
+    const limit = (name: string) =>
+      (run.mock.calls.find(([o]) => o.promptName === name)?.[0] as { maxOutputTokens?: number })
+        .maxOutputTokens;
+    expect(limit('summary')).toBe(16_000);
+    expect(limit('questions')).toBe(8_000);
+  });
+
   it('sends no cached context while there is no summary yet', async () => {
     const { service, run } = setup({ items: [requirement] }, { questions: { questions: [] } });
     await service.generateQuestions(payload);
@@ -241,7 +263,9 @@ describe('generateQuestions', () => {
 
   describe('batches', () => {
     const many = (n: number) =>
-      Array.from({ length: n }, (_, i) => promptItem('requirement', 'OPEN', { title: `Item ${String(i)}` }));
+      Array.from({ length: n }, (_, i) =>
+        promptItem('requirement', 'OPEN', { title: `Item ${String(i)}` }),
+      );
 
     function shownIds(run: { mock: { calls: unknown[][] } }): string[] {
       return run.mock.calls.flatMap(([options]) => {
@@ -261,7 +285,10 @@ describe('generateQuestions', () => {
       expect(first).toEqual({ status: 'generated', created: 0, nextOffset: QUESTION_BATCH_SIZE });
       const second = await service.generateQuestions({ ...payload, offset: QUESTION_BATCH_SIZE });
       expect(second).toMatchObject({ nextOffset: QUESTION_BATCH_SIZE * 2 });
-      const third = await service.generateQuestions({ ...payload, offset: QUESTION_BATCH_SIZE * 2 });
+      const third = await service.generateQuestions({
+        ...payload,
+        offset: QUESTION_BATCH_SIZE * 2,
+      });
       expect(third).toEqual({ status: 'generated', created: 0, nextOffset: null });
 
       // Every item was shown to the model exactly once.
@@ -332,7 +359,9 @@ describe('generateQuestions', () => {
 
     it('is empty when the offset is past the last item', async () => {
       const { service, run } = setup({ items: many(3) }, {});
-      expect(await service.generateQuestions({ ...payload, offset: 500 })).toEqual({ status: 'empty' });
+      expect(await service.generateQuestions({ ...payload, offset: 500 })).toEqual({
+        status: 'empty',
+      });
       expect(run).not.toHaveBeenCalled();
     });
   });

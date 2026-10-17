@@ -21,6 +21,14 @@ const pagingShape = {
     .optional(),
 };
 
+export const itemParamsSchema = z.object({ id: uuidSchema, itemId: uuidSchema });
+export type ItemParams = z.infer<typeof itemParamsSchema>;
+
+/** What a person decides about an item whose source text changed. */
+export const REVALIDATION_OUTCOMES = ['CONFIRMED', 'ASSUMED', 'OPEN', 'REJECTED'] as const;
+export const revalidateItemSchema = z.object({ status: z.enum(REVALIDATION_OUTCOMES) }).strict();
+export type RevalidateItemInput = z.infer<typeof revalidateItemSchema>;
+
 export const listModulesQuerySchema = z.object(pagingShape);
 export type ListModulesQuery = z.infer<typeof listModulesQuerySchema>;
 

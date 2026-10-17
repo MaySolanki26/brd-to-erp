@@ -1,5 +1,10 @@
 import type { Request, Response } from 'express';
-import type { ListKnowledgeQuery, ListModulesQuery } from '@brd/shared';
+import {
+  itemParamsSchema,
+  revalidateItemSchema,
+  type ListKnowledgeQuery,
+  type ListModulesQuery,
+} from '@brd/shared';
 import { getAuthUser } from '../../middleware/require-auth.js';
 import * as service from './knowledge.service.js';
 
@@ -47,3 +52,16 @@ export async function chunkController(req: Request, res: Response): Promise<void
   );
   res.json({ chunk });
 }
+
+function revalidateController(kind: service.RevalidateKind) {
+  return async (req: Request, res: Response): Promise<void> => {
+    const { itemId } = itemParamsSchema.parse(req.params);
+    const input = revalidateItemSchema.parse(req.body);
+    await service.revalidateItem(getAuthUser(res), projectIdOf(req), kind, itemId, input);
+    res.status(204).end();
+  };
+}
+
+export const revalidateRequirementController = revalidateController('requirement');
+export const revalidateRuleController = revalidateController('rule');
+export const revalidateModuleController = revalidateController('module');

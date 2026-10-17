@@ -859,7 +859,9 @@ function filterKnowledge(kind: KnowledgeKindKey, p: KnowledgeListParams): FakeKn
     .filter(
       (i) =>
         !p.sourceId ||
-        [i.sourceChunkId, ...(i.extraChunkIds ?? [])].some((id) => fromSource(id, p.sourceId as string)),
+        [i.sourceChunkId, ...(i.extraChunkIds ?? [])].some((id) =>
+          fromSource(id, p.sourceId as string),
+        ),
     )
     .filter((i) => {
       if (!needle) return true;
@@ -968,6 +970,23 @@ export const knowledgeRepositoryModule = {
     countByStatus([...db.rules.values()].filter(inScope(organizationId, projectId))),
   countModulesByStatus: async (organizationId: string, projectId: string) =>
     countByStatus([...db.modules.values()].filter(inScope(organizationId, projectId))),
+  setRevalidatedStatus: async (
+    _tx: unknown,
+    p: {
+      organizationId: string;
+      projectId: string;
+      kind: 'requirement' | 'rule' | 'module';
+      id: string;
+      status: FakeKnowledgeStatus;
+    },
+  ) => {
+    const map = { requirement: db.requirements, rule: db.rules, module: db.modules }[p.kind];
+    const item = map.get(p.id);
+    if (!item || !inScope(p.organizationId, p.projectId)(item)) return 'missing' as const;
+    if (item.status !== 'NEEDS_REVALIDATION') return 'not-stale' as const;
+    item.status = p.status;
+    return 'updated' as const;
+  },
   countChunksNeedingReview: async (organizationId: string, projectId: string) =>
     [...db.chunks.values()].filter(
       (c) => c.organizationId === organizationId && c.projectId === projectId && c.needsReview,

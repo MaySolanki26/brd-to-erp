@@ -37,23 +37,30 @@ enum QuestionStatus {
   DISMISSED
 }
 
-enum ApprovalStatus {
-  PENDING
+enum ReportType {
+  UNDERSTANDING
+}
+
+enum ReportVersionStatus {
+  GENERATING
+  FAILED
+  DRAFT
+  SUBMITTED
   APPROVED
   REJECTED
+  APPROVED_WITH_CONDITIONS
+  OUTDATED
 }
 
-enum ReportType {
-  GAP_ANALYSIS
-  REQUIREMENTS_SPEC
-  MODULE_MAPPING
-  CUSTOM
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+  APPROVED_WITH_CONDITIONS
 }
 
-enum ReportStatus {
-  GENERATING
-  READY
-  FAILED
+enum ConditionStatus {
+  OPEN
+  MET
 }
 
 enum AuditAction {
@@ -135,22 +142,25 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  organization         Organization      @relation(fields: [organizationId], references: [id])
-  answers              Answer[]
-  approvals            Approval[]
-  auditLogs            AuditLog[]
-  llmUsages            LlmUsage[]
-  projectMemberships   ProjectMember[]
-  refreshSessions      RefreshSession[]
-  createdDocuments     Document[]
-  createdVersions      DocumentVersion[]
-  createdNotes         ContextNote[]
-  createdRequirements  Requirement[]     @relation("RequirementCreator")
-  createdBusinessRules BusinessRule[]    @relation("BusinessRuleCreator")
-  createdModules       Module[]          @relation("ModuleCreator")
-  createdQuestions     Question[]        @relation("QuestionCreator")
-  dismissedQuestions   Question[]        @relation("QuestionDismisser")
-  decisionsMade        Decision[]        @relation("DecisionMaker")
+  organization            Organization        @relation(fields: [organizationId], references: [id])
+  answers                 Answer[]
+  reportVersionsCreated   ReportVersion[]     @relation("ReportVersionCreator")
+  reportVersionsSubmitted ReportVersion[]     @relation("ReportVersionSubmitter")
+  approvalsDecided        Approval[]          @relation("ApprovalDecider")
+  conditionsUpdated       ApprovalCondition[] @relation("ConditionUpdater")
+  auditLogs               AuditLog[]
+  llmUsages               LlmUsage[]
+  projectMemberships      ProjectMember[]
+  refreshSessions         RefreshSession[]
+  createdDocuments        Document[]
+  createdVersions         DocumentVersion[]
+  createdNotes            ContextNote[]
+  createdRequirements     Requirement[]       @relation("RequirementCreator")
+  createdBusinessRules    BusinessRule[]      @relation("BusinessRuleCreator")
+  createdModules          Module[]            @relation("ModuleCreator")
+  createdQuestions        Question[]          @relation("QuestionCreator")
+  dismissedQuestions      Question[]          @relation("QuestionDismisser")
+  decisionsMade           Decision[]          @relation("DecisionMaker")
 
   @@index([organizationId])
   @@map("users")
@@ -642,47 +652,111 @@ model ProjectSummary {
 
 // ─── Report ─────────────────────────────────────────────────────────────────
 
+/// One report per project and type. Its content lives in versions, which are never edited.
 model Report {
-  id             String       @id @default(uuid()) @db.Uuid
-  title          String
+  id             String     @id @default(uuid()) @db.Uuid
   type           ReportType
-  status         ReportStatus @default(GENERATING)
-  content        String?      @db.Text
-  projectId      String       @db.Uuid
-  organizationId String       @db.Uuid
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  projectId      String     @db.Uuid
+  organizationId String     @db.Uuid
+  createdAt      DateTime   @default(now())
 
-  project Project @relation(fields: [projectId], references: [id])
+  project  Project         @relation(fields: [projectId], references: [id])
+  versions ReportVersion[]
 
+  @@unique([projectId, type])
   @@index([projectId])
-  @@index([type])
-  @@index([status])
   @@index([organizationId])
   @@map("reports")
 }
 
-// ─── Approval ───────────────────────────────────────────────────────────────
+/// The content is written once, while the version is GENERATING. A trigger in the migration refuses
+/// every later change to it, to the version number and to the fingerprint.
+model ReportVersion {
+  id               String              @id @default(uuid()) @db.Uuid
+  reportId         String              @db.Uuid
+  version          Int
+  status           ReportVersionStatus @default(GENERATING)
+  content          Json?
+  /// The project summary version the narrative was written from.
+  summaryVersion   Int?
+  /// Hash of the items the content describes; a different hash later means the project moved on.
+  itemsFingerprint String?
+  failureReason    String?
+  projectId        String              @db.Uuid
+  organizationId   String              @db.Uuid
+  createdById      String              @db.Uuid
+  submittedById    String?             @db.Uuid
+  submittedAt      DateTime?
+  outdatedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
-model Approval {
-  id               String         @id @default(uuid()) @db.Uuid
-  status           ApprovalStatus @default(PENDING)
-  baselineSnapshot Json
-  comment          String?
-  projectId        String         @db.Uuid
-  approvedById     String?        @db.Uuid
-  organizationId   String         @db.Uuid
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  report      Report    @relation(fields: [reportId], references: [id])
+  createdBy   User      @relation("ReportVersionCreator", fields: [createdById], references: [id])
+  submittedBy User?     @relation("ReportVersionSubmitter", fields: [submittedById], references: [id])
+  approval    Approval?
 
-  project    Project @relation(fields: [projectId], references: [id])
-  approvedBy User?   @relation(fields: [approvedById], references: [id])
-
+  @@unique([reportId, version])
+  @@index([reportId])
   @@index([projectId])
   @@index([status])
-  @@index([approvedById])
+  @@index([createdById])
+  @@index([submittedById])
+  @@index([organizationId])
+  @@map("report_versions")
+}
+
+// ─── Approval ───────────────────────────────────────────────────────────────
+
+/// The decision on one report version, with the baseline it was made against. Written once.
+model Approval {
+  id                  String           @id @default(uuid()) @db.Uuid
+  reportVersionId     String           @unique @db.Uuid
+  decision            ApprovalDecision
+  /// The reason for a rejection, or the approver's comment.
+  comment             String?
+  /// Every item with its status and wording, the source versions and the summary version, as they
+  /// were when the decision was made.
+  baselineSnapshot    Json
+  baselineHash        String
+  /// Hash of the items alone; when the project's items stop matching it the version is OUTDATED.
+  baselineFingerprint String
+  projectId           String           @db.Uuid
+  organizationId      String           @db.Uuid
+  decidedById         String           @db.Uuid
+  decidedAt           DateTime         @default(now())
+
+  reportVersion ReportVersion       @relation(fields: [reportVersionId], references: [id])
+  decidedBy     User                @relation("ApprovalDecider", fields: [decidedById], references: [id])
+  conditions    ApprovalCondition[]
+  project       Project             @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([decision])
+  @@index([decidedById])
   @@index([organizationId])
   @@map("approvals")
+}
+
+model ApprovalCondition {
+  id             String          @id @default(uuid()) @db.Uuid
+  approvalId     String          @db.Uuid
+  text           String
+  status         ConditionStatus @default(OPEN)
+  organizationId String          @db.Uuid
+  updatedById    String?         @db.Uuid
+  metAt          DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  approval  Approval @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  updatedBy User?    @relation("ConditionUpdater", fields: [updatedById], references: [id])
+
+  @@index([approvalId])
+  @@index([status])
+  @@index([updatedById])
+  @@index([organizationId])
+  @@map("approval_conditions")
 }
 
 // ─── AuditLog (immutable) ───────────────────────────────────────────────────

@@ -8,6 +8,7 @@ export {
   type GenerateQuestionsPayload,
   type ApplyAnswerPayload,
   type ExtractChunkPayload,
+  type GenerateReportPayload,
   type JobPayloadMap,
 } from './jobs.js';
 
@@ -78,6 +79,11 @@ export {
   chunkParamsSchema,
   listKnowledgeQuerySchema,
   listModulesQuerySchema,
+  itemParamsSchema,
+  revalidateItemSchema,
+  REVALIDATION_OUTCOMES,
+  type ItemParams,
+  type RevalidateItemInput,
   type ChunkParams,
   type ListKnowledgeQuery,
   type ListModulesQuery,
@@ -111,12 +117,33 @@ export {
   generatedQuestionSchema,
   applyAnswerLlmOutputSchema,
   extractionLlmOutputSchema,
+  reportLlmOutputSchema,
+  type ReportLlmOutput,
   type ExtractionLlmOutput,
   type SummaryLlmOutput,
   type QuestionsLlmOutput,
   type GeneratedQuestion,
   type ApplyAnswerLlmOutput,
 } from './schemas/understanding-llm.js';
+
+export {
+  reportVersionParamsSchema,
+  conditionParamsSchema,
+  approveReportSchema,
+  rejectReportSchema,
+  approveWithConditionsSchema,
+  updateConditionSchema,
+  reportNarrativeSchema,
+  reportContentSchema,
+  type ReportVersionParams,
+  type ConditionParams,
+  type ApproveReportInput,
+  type RejectReportInput,
+  type ApproveWithConditionsInput,
+  type UpdateConditionInput,
+  type ReportNarrative,
+  type ReportContent,
+} from './schemas/report.js';
 
 // Types
 export { type ApiErrorCode, type ApiErrorEnvelope } from './types/api.js';
@@ -207,3 +234,27 @@ export {
   PROJECT_PERMISSIONS,
   projectRolesWith,
 } from './constants/roles.js';
+
+export {
+  type ReportConditionDto,
+  type ReportDecisionDto,
+  type ReportVersionSummaryDto,
+  type ReportVersionDto,
+  type BlockingQuestionDto,
+  type ReportReadinessDto,
+} from './types/report.js';
+export {
+  REPORT_VERSION_STATUSES,
+  APPROVAL_DECISIONS,
+  CONDITION_STATUSES,
+  RISK_SEVERITIES,
+  APPROVED_STATUSES,
+  MAX_REJECTION_CHARS,
+  MAX_COMMENT_CHARS,
+  MAX_CONDITION_CHARS,
+  MAX_CONDITIONS,
+  type ReportVersionStatus,
+  type ApprovalDecision,
+  type ConditionStatus,
+  type RiskSeverity,
+} from './constants/report.js';

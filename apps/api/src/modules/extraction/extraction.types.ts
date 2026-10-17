@@ -72,6 +72,8 @@ export interface ExtractionPlan {
   remove: PlannedRemoval[];
   /** Extra-source links from this chunk to items it no longer states. */
   unlink: { kind: ExtractedKind; id: string }[];
+  /** Items flagged NEEDS_REVALIDATION that this chunk states again; they go back to OPEN for a normal review. */
+  revalidate: { kind: ExtractedKind; id: string }[];
 }
 
 /** Items a person has not confirmed, rejected or flagged; only these may be replaced by a re-run. */

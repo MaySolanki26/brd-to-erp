@@ -23,6 +23,7 @@ export const ProjectPermission = {
   ADD_SOURCE: 'ADD_SOURCE',
   ANSWER_QUESTION: 'ANSWER_QUESTION',
   REPROCESS: 'REPROCESS',
+  SUBMIT_REPORT: 'SUBMIT_REPORT',
   APPROVE: 'APPROVE',
   UPDATE_PROJECT: 'UPDATE_PROJECT',
   MANAGE_MEMBERS: 'MANAGE_MEMBERS',
@@ -36,6 +37,7 @@ const ANALYST_PERMISSIONS: readonly ProjectPermission[] = [
   ProjectPermission.ADD_SOURCE,
   ProjectPermission.ANSWER_QUESTION,
   ProjectPermission.REPROCESS,
+  ProjectPermission.SUBMIT_REPORT,
 ];
 
 export const PROJECT_PERMISSIONS: Record<ProjectRole, readonly ProjectPermission[]> = {

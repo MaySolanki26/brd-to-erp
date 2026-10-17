@@ -4,6 +4,7 @@ export const JobName = {
   GENERATE_QUESTIONS: 'generate-questions',
   APPLY_ANSWER: 'apply-answer',
   EXTRACT_CHUNK: 'extract-chunk',
+  GENERATE_REPORT: 'generate-report',
 } as const;
 
 export type JobName = (typeof JobName)[keyof typeof JobName];
@@ -49,12 +50,20 @@ export interface ExtractChunkPayload {
   chunkId: string;
 }
 
+/** Writes the narrative of one report version that is waiting in GENERATING. */
+export interface GenerateReportPayload {
+  organizationId: string;
+  projectId: string;
+  reportVersionId: string;
+}
+
 export interface JobPayloadMap {
   [JobName.PROCESS_SOURCE]: ProcessSourcePayload;
   [JobName.REFRESH_SUMMARY]: RefreshSummaryPayload;
   [JobName.GENERATE_QUESTIONS]: GenerateQuestionsPayload;
   [JobName.APPLY_ANSWER]: ApplyAnswerPayload;
   [JobName.EXTRACT_CHUNK]: ExtractChunkPayload;
+  [JobName.GENERATE_REPORT]: GenerateReportPayload;
 }
 
 export const DEFAULT_BACKOFF = {

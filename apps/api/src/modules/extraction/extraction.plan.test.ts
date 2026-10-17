@@ -17,7 +17,9 @@ const answer = (overrides: Partial<ExtractionLlmOutput> = {}): ExtractionLlmOutp
   ...overrides,
 });
 
-function existing(partial: Partial<ExistingItem> & Pick<ExistingItem, 'kind' | 'id' | 'title'>): ExistingItem {
+function existing(
+  partial: Partial<ExistingItem> & Pick<ExistingItem, 'kind' | 'id' | 'title'>,
+): ExistingItem {
   return {
     description: 'Old wording.',
     status: 'OPEN',
@@ -62,7 +64,11 @@ describe('sanitizeDrafts', () => {
 
   it('caps each list', () => {
     const many = (n: number) =>
-      Array.from({ length: n }, (_, i) => ({ title: `T${String(i)}`, description: 'x', moduleName: null }));
+      Array.from({ length: n }, (_, i) => ({
+        title: `T${String(i)}`,
+        description: 'x',
+        moduleName: null,
+      }));
     const drafts = sanitizeDrafts(
       answer({
         modules: Array.from({ length: 30 }, (_, i) => ({ name: `M${String(i)}`, description: '' })),
@@ -94,7 +100,9 @@ describe('planExtraction', () => {
   const drafts = sanitizeDrafts(
     answer({
       modules: [{ name: 'Billing', description: 'Invoices.' }],
-      requirements: [{ title: 'Send invoices', description: 'Within 3 days.', moduleName: 'Billing' }],
+      requirements: [
+        { title: 'Send invoices', description: 'Within 3 days.', moduleName: 'Billing' },
+      ],
       rules: [{ title: 'VAT is 20%', description: 'On every invoice.', moduleName: 'Billing' }],
     }),
   );
@@ -125,13 +133,71 @@ describe('planExtraction', () => {
     ]);
   });
 
+  it('brings a stale item back to OPEN when the new text states it again, and leaves others alone', () => {
+    const plan = planExtraction(
+      drafts,
+      stored(
+        existing({
+          kind: 'requirement',
+          id: 'r1',
+          title: 'Send invoices',
+          status: 'NEEDS_REVALIDATION',
+        }),
+        existing({ kind: 'rule', id: 'u1', title: 'VAT is 20%', status: 'CONFIRMED' }),
+        existing({
+          kind: 'module',
+          id: 'm9',
+          title: 'Gone from the text',
+          status: 'NEEDS_REVALIDATION',
+        }),
+      ),
+    );
+    expect(plan.revalidate).toEqual([{ kind: 'requirement', id: 'r1' }]);
+  });
+
+  it('plans nothing more once the stale item is back to OPEN and linked (a retried job)', () => {
+    const plan = planExtraction(
+      drafts,
+      stored(
+        existing({
+          kind: 'requirement',
+          id: 'r1',
+          title: 'Send invoices',
+          description: 'Within 3 days.',
+          linkedHere: true,
+        }),
+      ),
+    );
+    expect(plan.revalidate).toEqual([]);
+  });
+
   it('does nothing when the chunk already owns or links the matching item', () => {
     const plan = planExtraction(
       drafts,
       stored(
-        existing({ kind: 'module', id: 'm1', title: 'Billing', description: 'Invoices.', ownedHere: true }),
-        existing({ kind: 'requirement', id: 'r1', title: 'Send invoices', description: 'Within 3 days.', ownedHere: true, moduleId: 'm1' }),
-        existing({ kind: 'rule', id: 'u1', title: 'VAT is 20%', description: 'On every invoice.', linkedHere: true, moduleId: 'm1' }),
+        existing({
+          kind: 'module',
+          id: 'm1',
+          title: 'Billing',
+          description: 'Invoices.',
+          ownedHere: true,
+        }),
+        existing({
+          kind: 'requirement',
+          id: 'r1',
+          title: 'Send invoices',
+          description: 'Within 3 days.',
+          ownedHere: true,
+          moduleId: 'm1',
+        }),
+        existing({
+          kind: 'rule',
+          id: 'u1',
+          title: 'VAT is 20%',
+          description: 'On every invoice.',
+          linkedHere: true,
+          moduleId: 'm1',
+        }),
       ),
     );
     expect(isEmptyPlan(plan)).toBe(true);
@@ -142,7 +208,13 @@ describe('planExtraction', () => {
       drafts,
       stored(
         existing({ kind: 'requirement', id: 'r1', title: 'Send invoices', ownedHere: true }),
-        existing({ kind: 'rule', id: 'u1', title: 'VAT is 20%', description: 'On every invoice.', ownedHere: true }),
+        existing({
+          kind: 'rule',
+          id: 'u1',
+          title: 'VAT is 20%',
+          description: 'On every invoice.',
+          ownedHere: true,
+        }),
       ),
     );
     expect(plan.update).toEqual([
@@ -155,8 +227,20 @@ describe('planExtraction', () => {
     const plan = planExtraction(
       drafts,
       stored(
-        existing({ kind: 'requirement', id: 'r1', title: 'Send invoices', status: 'CONFIRMED', ownedHere: true }),
-        existing({ kind: 'rule', id: 'u1', title: 'VAT is 20%', createdById: 'user-1', ownedHere: true }),
+        existing({
+          kind: 'requirement',
+          id: 'r1',
+          title: 'Send invoices',
+          status: 'CONFIRMED',
+          ownedHere: true,
+        }),
+        existing({
+          kind: 'rule',
+          id: 'u1',
+          title: 'VAT is 20%',
+          createdById: 'user-1',
+          ownedHere: true,
+        }),
       ),
     );
     expect(plan.update).toEqual([]);
@@ -167,7 +251,13 @@ describe('planExtraction', () => {
       sanitizeDrafts(answer()),
       stored(
         existing({ kind: 'requirement', id: 'r1', title: 'Gone', ownedHere: true }),
-        existing({ kind: 'rule', id: 'u1', title: 'Also elsewhere', ownedHere: true, otherSourceChunkIds: ['c9', 'c10'] }),
+        existing({
+          kind: 'rule',
+          id: 'u1',
+          title: 'Also elsewhere',
+          ownedHere: true,
+          otherSourceChunkIds: ['c9', 'c10'],
+        }),
       ),
     );
     expect(plan.remove).toEqual([
@@ -180,8 +270,20 @@ describe('planExtraction', () => {
     const plan = planExtraction(
       sanitizeDrafts(answer()),
       stored(
-        existing({ kind: 'requirement', id: 'r1', title: 'A', status: 'CONFIRMED', ownedHere: true }),
-        existing({ kind: 'requirement', id: 'r2', title: 'B', status: 'NEEDS_REVALIDATION', ownedHere: true }),
+        existing({
+          kind: 'requirement',
+          id: 'r1',
+          title: 'A',
+          status: 'CONFIRMED',
+          ownedHere: true,
+        }),
+        existing({
+          kind: 'requirement',
+          id: 'r2',
+          title: 'B',
+          status: 'NEEDS_REVALIDATION',
+          ownedHere: true,
+        }),
         existing({ kind: 'rule', id: 'u1', title: 'C', createdById: 'user-1', ownedHere: true }),
       ),
     );
@@ -200,7 +302,14 @@ describe('planExtraction', () => {
   it('adds a source to a flagged item when the new version states it again, without changing its status', () => {
     const plan = planExtraction(
       drafts,
-      stored(existing({ kind: 'requirement', id: 'r1', title: 'Send invoices', status: 'NEEDS_REVALIDATION' })),
+      stored(
+        existing({
+          kind: 'requirement',
+          id: 'r1',
+          title: 'Send invoices',
+          status: 'NEEDS_REVALIDATION',
+        }),
+      ),
     );
     expect(plan.link).toContainEqual({ kind: 'requirement', id: 'r1' });
     expect(plan.update).toEqual([]);

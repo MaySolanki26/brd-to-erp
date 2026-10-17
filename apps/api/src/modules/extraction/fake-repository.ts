@@ -9,7 +9,9 @@ import type { ExistingItem, ExtractedKind } from './extraction.types.js';
  * prompts (and the same fixture hashes) every time.
  */
 export function stableItemId(kind: ExtractedKind, title: string): string {
-  const hex = createHash('sha256').update(`${kind}:${normalize(title)}`).digest('hex');
+  const hex = createHash('sha256')
+    .update(`${kind}:${normalize(title)}`)
+    .digest('hex');
   const variant = ((Number.parseInt(hex[16] ?? '0', 16) & 0x3) | 0x8).toString(16);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
@@ -80,7 +82,11 @@ export function createFakeRepository(seed: {
         ...drafts.requirements.map((r) => normalize(r.title)),
         ...drafts.rules.map((r) => normalize(r.title)),
       ]);
-      const result: Record<ExtractedKind, ExistingItem[]> = { module: [], requirement: [], rule: [] };
+      const result: Record<ExtractedKind, ExistingItem[]> = {
+        module: [],
+        requirement: [],
+        rule: [],
+      };
       for (const item of state.items.values()) {
         const ownedHere = item.sourceChunkId === chunkId;
         const linkedHere = item.links.includes(chunkId);
@@ -149,10 +155,10 @@ export function createFakeRepository(seed: {
       }
       for (const removal of plan.remove) {
         const item = state.items.get(removal.id);
-        if (!item || item.createdById !== null || !['OPEN', 'ASSUMED'].includes(item.status)) continue;
+        if (!item || item.createdById !== null || !['OPEN', 'ASSUMED'].includes(item.status))
+          continue;
         const referenced =
-          item.kind === 'module' &&
-          [...state.items.values()].some((i) => i.moduleId === item.id);
+          item.kind === 'module' && [...state.items.values()].some((i) => i.moduleId === item.id);
         if (referenced && removal.repointTo === null) continue;
         if (removal.repointTo !== null) {
           item.sourceChunkId = removal.repointTo;
@@ -161,6 +167,11 @@ export function createFakeRepository(seed: {
           state.items.delete(item.id);
         }
         counts.removed += 1;
+      }
+      for (const revalidate of plan.revalidate) {
+        const item = state.items.get(revalidate.id);
+        if (item?.status === 'NEEDS_REVALIDATION') item.status = 'OPEN';
+        counts.updated += 1;
       }
       for (const unlink of plan.unlink) {
         const item = state.items.get(unlink.id);

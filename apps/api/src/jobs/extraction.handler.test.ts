@@ -6,7 +6,11 @@ vi.mock('../lib/logger.js', async () => (await import('../test/test-env.js')).lo
 
 import type { ExtractChunkPayload } from '@brd/shared';
 import type { ExtractionService } from '../modules/extraction/extraction.service.js';
-import { LlmBudgetExceededError, LlmConfigError } from '../services/llm/llm.errors.js';
+import {
+  LlmBudgetExceededError,
+  LlmConfigError,
+  LlmOutputTooLongError,
+} from '../services/llm/llm.errors.js';
 import {
   AI_UNAVAILABLE,
   SUMMARY_REFRESH_WINDOW_SECONDS,
@@ -20,7 +24,9 @@ const data: ExtractChunkPayload = {
   chunkId: '00000000-0000-4000-8000-000000000003',
 };
 const jobAt = (retryCount: number) =>
-  [{ id: 'j1', data, retryCount, retryLimit: 3 }] as unknown as PgBoss.JobWithMetadata<ExtractChunkPayload>[];
+  [
+    { id: 'j1', data, retryCount, retryLimit: 3 },
+  ] as unknown as PgBoss.JobWithMetadata<ExtractChunkPayload>[];
 const jobs = jobAt(0);
 
 function setup() {
@@ -39,7 +45,11 @@ describe('extraction handler', () => {
   it('queues one summary refresh per project window when the last chunk of a source is done', async () => {
     const { send, service, handler } = setup();
     service.extractChunk.mockResolvedValue({
-      status: 'extracted', created: 1, linked: 0, removed: 0, sourceFinished: true,
+      status: 'extracted',
+      created: 1,
+      linked: 0,
+      removed: 0,
+      sourceFinished: true,
     });
     await handler(jobs);
     expect(send).toHaveBeenCalledWith(
@@ -60,7 +70,10 @@ describe('extraction handler', () => {
   });
 
   it.each([
-    ['a chunk with others still waiting', { status: 'extracted', created: 1, linked: 0, removed: 0, sourceFinished: false }],
+    [
+      'a chunk with others still waiting',
+      { status: 'extracted', created: 1, linked: 0, removed: 0, sourceFinished: false },
+    ],
     ['a flagged chunk with others waiting', { status: 'needs-review', sourceFinished: false }],
     ['a skipped chunk', { status: 'skipped' }],
   ])('queues nothing after %s', async (_name, outcome) => {
@@ -111,6 +124,14 @@ describe('extraction handler', () => {
     await expect(handler(jobAt(3))).resolves.toBeUndefined();
     expect(service.giveUp).toHaveBeenCalledWith(data);
     expect(send).toHaveBeenCalledWith('refresh-summary', expect.anything(), expect.anything());
+  });
+
+  it('flags the chunk for review at once when its answer is always cut off', async () => {
+    const { service, handler } = setup();
+    service.extractChunk.mockRejectedValue(new LlmOutputTooLongError(32_000));
+    service.giveUp.mockResolvedValue({ status: 'needs-review', sourceFinished: false });
+    await expect(handler(jobAt(0))).resolves.toBeUndefined();
+    expect(service.giveUp).toHaveBeenCalledWith(data);
   });
 
   it('still pauses for the budget on the last retry', async () => {

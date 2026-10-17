@@ -66,7 +66,10 @@ function setup(
     audit,
   });
   const titles = (kind: FakeItem['kind']) =>
-    [...fake.state.items.values()].filter((i) => i.kind === kind).map((i) => i.title).sort();
+    [...fake.state.items.values()]
+      .filter((i) => i.kind === kind)
+      .map((i) => i.title)
+      .sort();
   const respondWith = (next: ExtractionLlmOutput | Error): void => {
     current = next;
   };
@@ -133,6 +136,34 @@ describe('extractChunk', () => {
     expect(requirement?.links).toEqual([C2]);
   });
 
+  it('brings stale items back to OPEN when a new document version states them again', async () => {
+    const stale = (id: string, kind: FakeItem['kind'], title: string): FakeItem => ({
+      kind,
+      id,
+      title,
+      description: 'Within 3 days.',
+      status: 'NEEDS_REVALIDATION',
+      createdById: null,
+      moduleId: null,
+      sourceChunkId: C1,
+      links: [],
+    });
+    const { service, state } = setup(
+      [chunk(C1, 's1'), chunk(C2, 's1')],
+      [
+        stale('old-r', 'requirement', 'Send invoices'),
+        stale('old-x', 'requirement', 'Dropped from the new text'),
+      ],
+    );
+    await service.extractChunk(payload(C2));
+    expect(state.items.get('old-r')?.status).toBe('OPEN');
+    expect(state.items.get('old-x')?.status).toBe('NEEDS_REVALIDATION');
+    // Running the same chunk again changes nothing.
+    const again = await service.extractChunk(payload(C2));
+    expect(again).toMatchObject({ created: 0, removed: 0 });
+    expect(state.items.get('old-r')?.status).toBe('OPEN');
+  });
+
   it("replaces only this chunk's unconfirmed items when its text no longer states them", async () => {
     const item = (overrides: Partial<FakeItem>): FakeItem => ({
       kind: 'requirement',
@@ -161,7 +192,11 @@ describe('extractChunk', () => {
     const outcome = await service.extractChunk(payload(C1));
 
     expect(outcome).toMatchObject({ status: 'extracted', removed: 2 });
-    expect(titles('requirement')).toEqual(['Confirmed by a person', 'From another chunk', 'Typed by hand']);
+    expect(titles('requirement')).toEqual([
+      'Confirmed by a person',
+      'From another chunk',
+      'Typed by hand',
+    ]);
     expect(titles('rule')).toEqual([]);
   });
 
@@ -189,7 +224,10 @@ describe('extractChunk', () => {
   it('gives up on a chunk that keeps failing: flagged, counted as done, source can finish', async () => {
     const { service, state, run } = setup([chunk(C1, 's1'), chunk(C3, 's1')]);
     await service.extractChunk(payload(C1));
-    expect(await service.giveUp(payload(C3))).toEqual({ status: 'needs-review', sourceFinished: true });
+    expect(await service.giveUp(payload(C3))).toEqual({
+      status: 'needs-review',
+      sourceFinished: true,
+    });
     expect(state.chunks.get(C3)).toMatchObject({ needsReview: true });
     expect(run).toHaveBeenCalledTimes(1);
   });
@@ -200,7 +238,7 @@ describe('extractChunk', () => {
     expect(await service.giveUp(payload(C2))).toEqual({ status: 'skipped' });
   });
 
-  it('fails the chunk\'s source with a reason a person can read', async () => {
+  it("fails the chunk's source with a reason a person can read", async () => {
     const { service, state } = setup([chunk(C1, 's1')]);
     await service.failSource(payload(C1), 'The AI service is not available.');
     expect(state.failedSources.get('s1')).toBe('The AI service is not available.');
@@ -228,7 +266,10 @@ describe('extractChunk', () => {
     expect(await service.extractChunk(payload(C1))).toEqual({ status: 'skipped' });
     expect(await service.extractChunk(payload(C2))).toEqual({ status: 'skipped' });
     expect(
-      await service.extractChunk({ ...payload(C1), projectId: '00000000-0000-4000-8000-0000000000ff' }),
+      await service.extractChunk({
+        ...payload(C1),
+        projectId: '00000000-0000-4000-8000-0000000000ff',
+      }),
     ).toEqual({ status: 'skipped' });
     expect(run).not.toHaveBeenCalled();
   });

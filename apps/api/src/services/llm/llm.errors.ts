@@ -34,6 +34,17 @@ export class InvalidLlmOutputError extends AppError {
   }
 }
 
+/**
+ * The answer was cut off at the output limit even after the limit was raised. The same input will
+ * be cut off again, so retrying it will not help.
+ */
+export class LlmOutputTooLongError extends AppError {
+  constructor(public readonly limit: number) {
+    super(502, 'LLM_OUTPUT_TOO_LONG', 'The LLM answer was too long to fit the output limit');
+    this.name = 'LlmOutputTooLongError';
+  }
+}
+
 /** The provider declined to answer this input. Retrying the same input will not help. */
 export class LlmRefusalError extends AppError {
   constructor(message = 'The LLM declined to process this input') {

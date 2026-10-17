@@ -1,12 +1,16 @@
 import type { KnowledgeStatus, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
+import type { DbClient } from '../../lib/transaction.js';
 import { chunkSelect } from './knowledge-source.js';
 
 const creatorSelect = { select: { id: true, name: true } } as const;
 const extraSourcesSelect = {
   select: { chunk: { select: chunkSelect } },
   orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-} satisfies { select: Prisma.ItemSourceSelect; orderBy: Prisma.ItemSourceOrderByWithRelationInput[] };
+} satisfies {
+  select: Prisma.ItemSourceSelect;
+  orderBy: Prisma.ItemSourceOrderByWithRelationInput[];
+};
 
 export type ChunkRecord = Prisma.ChunkGetPayload<{ select: typeof chunkSelect }>;
 
@@ -242,4 +246,47 @@ export async function findChunk(
     where: { id: chunkId, organizationId, projectId },
     select: { ...chunkSelect, chunkIndex: true, content: true },
   });
+}
+
+export type RevalidateKind = 'requirement' | 'rule' | 'module';
+export type RevalidateResult = 'updated' | 'not-stale' | 'missing';
+
+/**
+ * Sets the status a person decided for an item whose source text changed. Only an item that is still
+ * NEEDS_REVALIDATION is touched, so two people deciding at once cannot overwrite each other.
+ */
+export async function setRevalidatedStatus(
+  db: DbClient,
+  params: {
+    organizationId: string;
+    projectId: string;
+    kind: RevalidateKind;
+    id: string;
+    status: KnowledgeStatus;
+  },
+): Promise<RevalidateResult> {
+  const { organizationId, projectId, kind, id, status } = params;
+  const scope = { id, organizationId, projectId };
+  const stale = { ...scope, status: 'NEEDS_REVALIDATION' as const };
+  const data = { status };
+
+  if (kind === 'module') {
+    const found = await db.module.findFirst({ where: scope, select: { status: true } });
+    if (!found) return 'missing';
+    return (await db.module.updateMany({ where: stale, data })).count === 1
+      ? 'updated'
+      : 'not-stale';
+  }
+  if (kind === 'requirement') {
+    const live = { ...scope, deletedAt: null };
+    const found = await db.requirement.findFirst({ where: live, select: { status: true } });
+    if (!found) return 'missing';
+    const result = await db.requirement.updateMany({ where: { ...stale, deletedAt: null }, data });
+    return result.count === 1 ? 'updated' : 'not-stale';
+  }
+  const found = await db.businessRule.findFirst({ where: scope, select: { status: true } });
+  if (!found) return 'missing';
+  return (await db.businessRule.updateMany({ where: stale, data })).count === 1
+    ? 'updated'
+    : 'not-stale';
 }

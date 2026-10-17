@@ -28,6 +28,8 @@ export interface LlmResponse {
   json: unknown;
   usage: LlmTokenUsage;
   model: string;
+  /** True when the reply stopped at the output limit, so `json` is missing because it was cut off. */
+  truncated?: boolean;
 }
 
 export interface LlmProvider {

@@ -3,11 +3,13 @@ import {
   ProjectPermission,
   chunkParamsSchema,
   createProjectSchema,
+  itemParamsSchema,
   listKnowledgeQuerySchema,
   listModulesQuerySchema,
   listProjectsQuerySchema,
   projectIdParamsSchema,
   projectRolesWith,
+  revalidateItemSchema,
   updateProjectSchema,
 } from '@brd/shared';
 import { requireAuth } from '../../middleware/require-auth.js';
@@ -21,11 +23,15 @@ import {
   listModulesController,
   listRequirementsController,
   listRulesController,
+  revalidateModuleController,
+  revalidateRequirementController,
+  revalidateRuleController,
   summaryController,
 } from '../knowledge/knowledge.controller.js';
 import { membersRouter } from '../members/members.route.js';
 import { notesRouter } from '../notes/notes.route.js';
 import { questionsRouter } from '../questions/questions.route.js';
+import { reportRouter } from '../report/report.route.js';
 import { processingStatusController } from '../sources/sources.controller.js';
 import { summaryRouter } from '../summary/summary.route.js';
 import {
@@ -69,6 +75,7 @@ projectsRouter.use('/:id/notes', idParams, notesRouter);
 projectsRouter.use('/:id/questions', idParams, questionsRouter);
 projectsRouter.use('/:id/decisions', idParams, decisionsRouter);
 projectsRouter.use('/:id/summary', idParams, summaryRouter);
+projectsRouter.use('/:id/report', idParams, reportRouter);
 projectsRouter.get(
   '/:id/processing-status',
   idParams,
@@ -98,6 +105,20 @@ projectsRouter.get(
   canRead,
   listModulesController,
 );
+const canDecideItems = requireProjectRole(...projectRolesWith(ProjectPermission.ANSWER_QUESTION));
+for (const [path, controller] of [
+  ['requirements', revalidateRequirementController],
+  ['rules', revalidateRuleController],
+  ['modules', revalidateModuleController],
+] as const) {
+  projectsRouter.post(
+    `/:id/${path}/:itemId/revalidate`,
+    validate(itemParamsSchema, 'params'),
+    canDecideItems,
+    validate(revalidateItemSchema),
+    controller,
+  );
+}
 projectsRouter.get('/:id/knowledge-summary', idParams, canRead, summaryController);
 projectsRouter.get(
   '/:id/chunks/:chunkId',

@@ -123,9 +123,16 @@ describe('AnthropicProvider', () => {
     ).toBeUndefined();
 
     const truncated = message({ stop_reason: 'max_tokens' });
+    const cutOff = await new AnthropicProvider(
+      clientReturning(truncated).client,
+      'm',
+      'low',
+    ).complete(request);
+    expect(cutOff.json).toBeUndefined();
+    expect(cutOff.truncated).toBe(true);
     expect(
-      (await new AnthropicProvider(clientReturning(truncated).client, 'm', 'low').complete(request))
-        .json,
+      (await new AnthropicProvider(clientReturning(text).client, 'm', 'low').complete(request))
+        .truncated,
     ).toBeUndefined();
   });
 

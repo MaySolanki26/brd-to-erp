@@ -1,10 +1,10 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
 import pinoHttp from 'pino-http';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
+import { createApiRateLimit } from './middleware/api-rate-limit.js';
 import { requestId } from './middleware/request-id.js';
 import { notFound } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -39,15 +39,7 @@ export function createApp(options: AppOptions = {}): express.Express {
 
   // Rate limiting
   if (rateLimitEnabled) {
-    app.use(
-      rateLimit({
-        windowMs: 15 * 60 * 1000,
-        limit: 100,
-        standardHeaders: 'draft-7',
-        legacyHeaders: false,
-        message: { error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests' } },
-      }),
-    );
+    app.use(...createApiRateLimit());
   }
 
   // Body parsing

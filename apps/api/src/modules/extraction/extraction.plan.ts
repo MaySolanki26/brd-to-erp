@@ -94,13 +94,21 @@ function planKind(
       continue;
     }
     matched.add(match.id);
+    if (match.status === 'NEEDS_REVALIDATION' && !plan.revalidate.some((r) => r.id === match.id)) {
+      plan.revalidate.push({ kind, id: match.id });
+    }
 
     if (!match.ownedHere && !match.linkedHere) {
       plan.link.push({ kind, id: match.id });
     }
     const replaceable = isReplaceable(match);
     const update: { description?: string; moduleName?: string } = {};
-    if (replaceable && match.ownedHere && draft.description && draft.description !== match.description) {
+    if (
+      replaceable &&
+      match.ownedHere &&
+      draft.description &&
+      draft.description !== match.description
+    ) {
       update.description = draft.description;
     }
     if (replaceable && match.moduleId === null && draft.moduleName) {
@@ -130,7 +138,14 @@ export function planExtraction(
   drafts: Drafts,
   existing: Record<ExtractedKind, ExistingItem[]>,
 ): ExtractionPlan {
-  const plan: ExtractionPlan = { create: [], link: [], update: [], remove: [], unlink: [] };
+  const plan: ExtractionPlan = {
+    create: [],
+    link: [],
+    update: [],
+    remove: [],
+    unlink: [],
+    revalidate: [],
+  };
   planKind(
     'module',
     drafts.modules.map((m) => ({ title: m.name, description: m.description, moduleName: null })),
@@ -143,5 +158,10 @@ export function planExtraction(
 }
 
 export const isEmptyPlan = (plan: ExtractionPlan): boolean =>
-  plan.create.length + plan.link.length + plan.update.length + plan.remove.length + plan.unlink.length ===
+  plan.create.length +
+    plan.link.length +
+    plan.update.length +
+    plan.remove.length +
+    plan.unlink.length +
+    plan.revalidate.length ===
   0;

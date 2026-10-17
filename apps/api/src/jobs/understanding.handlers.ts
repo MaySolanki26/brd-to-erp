@@ -5,6 +5,7 @@ import type { UnderstandingService } from '../modules/understanding/understandin
 import {
   LlmBudgetExceededError,
   LlmConfigError,
+  LlmOutputTooLongError,
   LlmRefusalError,
 } from '../services/llm/llm.errors.js';
 import { enqueue } from '../services/queue.service.js';
@@ -15,7 +16,8 @@ export const BUDGET_RETRY_SECONDS = 60 * 60;
 type UnderstandingJob =
   typeof JobName.REFRESH_SUMMARY | typeof JobName.GENERATE_QUESTIONS | typeof JobName.APPLY_ANSWER;
 /** Every job that calls the model goes through `guarded`. */
-export type LlmJob = UnderstandingJob | typeof JobName.EXTRACT_CHUNK;
+export type LlmJob =
+  UnderstandingJob | typeof JobName.EXTRACT_CHUNK | typeof JobName.GENERATE_REPORT;
 type Jobs<N extends UnderstandingJob> = PgBoss.JobWithMetadata<JobPayloadMap[N]>[];
 
 export interface UnderstandingHandlers {
@@ -49,7 +51,11 @@ export async function guarded<N extends LlmJob>(
       await enqueue(boss, name, job.data, { startAfter: BUDGET_RETRY_SECONDS });
       return;
     }
-    if (err instanceof LlmConfigError || err instanceof LlmRefusalError) {
+    if (
+      err instanceof LlmConfigError ||
+      err instanceof LlmRefusalError ||
+      err instanceof LlmOutputTooLongError
+    ) {
       log.error({ err }, 'The LLM cannot handle this job, not retrying');
       return;
     }
@@ -57,9 +63,30 @@ export async function guarded<N extends LlmJob>(
   }
 }
 
+/**
+ * Tells the reports the items changed. The change is already saved, so a failure here must not
+ * fail (and re-run) the job; reads check again anyway.
+ */
+export async function notifyItemsChanged(
+  organizationId: string,
+  projectId: string,
+  onItemsChanged: ItemsChanged | undefined,
+): Promise<void> {
+  if (!onItemsChanged) return;
+  try {
+    await onItemsChanged(organizationId, projectId);
+  } catch (err) {
+    logger.warn({ err, projectId }, 'Could not refresh report state');
+  }
+}
+
+/** Called once the project's items have changed, so approved reports can be marked OUTDATED. */
+export type ItemsChanged = (organizationId: string, projectId: string) => Promise<void>;
+
 export function createUnderstandingHandlers(
   boss: PgBoss,
   service: UnderstandingService,
+  onItemsChanged?: ItemsChanged,
 ): UnderstandingHandlers {
   return {
     async refreshSummary(jobs) {
@@ -96,6 +123,7 @@ export function createUnderstandingHandlers(
         await guarded(boss, JobName.APPLY_ANSWER, job, async () => {
           const outcome = await service.applyAnswer(job.data);
           if (outcome.status === 'applied') {
+            await notifyItemsChanged(job.data.organizationId, job.data.projectId, onItemsChanged);
             await enqueue(boss, JobName.REFRESH_SUMMARY, {
               organizationId: job.data.organizationId,
               projectId: job.data.projectId,

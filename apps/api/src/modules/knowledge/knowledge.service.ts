@@ -9,10 +9,15 @@ import type {
   ModuleDto,
   PagedResult,
   RequirementDto,
+  RevalidateItemInput,
   UserDto,
 } from '@brd/shared';
-import { KNOWLEDGE_STATUSES } from '@brd/shared';
-import { NotFoundError } from '../../errors/app-error.js';
+import { JobName, KNOWLEDGE_STATUSES } from '@brd/shared';
+import { ConflictError, NotFoundError } from '../../errors/app-error.js';
+import { logger } from '../../lib/logger.js';
+import { withTransaction } from '../../lib/transaction.js';
+import { enqueueJob } from '../../services/queue.service.js';
+import { createAuditLog } from '../audit/audit.repository.js';
 import * as repo from './knowledge.repository.js';
 import { toSource } from './knowledge-source.js';
 
@@ -160,4 +165,51 @@ export async function getChunk(
     needsReview: chunk.needsReview,
     source: { type, sourceId, sourceTitle, versionNumber },
   };
+}
+
+/**
+ * A person decides what a stale item is now: confirmed, assumed, open or rejected. Only items whose
+ * source text changed (NEEDS_REVALIDATION) can be decided this way.
+ */
+export type RevalidateKind = repo.RevalidateKind;
+
+export async function revalidateItem(
+  user: UserDto,
+  projectId: string,
+  kind: repo.RevalidateKind,
+  itemId: string,
+  input: RevalidateItemInput,
+): Promise<void> {
+  const { organizationId } = user;
+  await withTransaction(async (tx) => {
+    const result = await repo.setRevalidatedStatus(tx, {
+      organizationId,
+      projectId,
+      kind,
+      id: itemId,
+      status: input.status,
+    });
+    if (result === 'missing') throw new NotFoundError('Item not found');
+    if (result === 'not-stale') {
+      throw new ConflictError('This item does not need revalidation any more.');
+    }
+    await createAuditLog(
+      {
+        action: 'UPDATE',
+        entity: kind === 'rule' ? 'BusinessRule' : kind === 'module' ? 'Module' : 'Requirement',
+        entityId: itemId,
+        userId: user.id,
+        organizationId,
+        metadata: { projectId, status: input.status, revalidated: true },
+      },
+      tx,
+    );
+  });
+
+  // The summary follows the items. The decision is saved either way, so a queue failure only logs.
+  try {
+    await enqueueJob(JobName.REFRESH_SUMMARY, { organizationId, projectId });
+  } catch (err) {
+    logger.warn({ err, projectId }, 'Could not queue summary refresh after revalidation');
+  }
 }

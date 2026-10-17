@@ -84,3 +84,21 @@ export const extractionLlmOutputSchema = z.object({
   rules: z.array(extractedItemSchema),
 });
 export type ExtractionLlmOutput = z.infer<typeof extractionLlmOutputSchema>;
+
+// ─── report.md ──────────────────────────────────────────────────────────────
+
+/** Lenient: the pipeline trims and caps the narrative, so one long sentence never costs the call. */
+export const reportLlmOutputSchema = z.object({
+  objectives: z.array(z.string()),
+  scope: z.object({ inScope: z.array(z.string()), outOfScope: z.array(z.string()) }),
+  roles: z.array(z.object({ name: z.string(), description: z.string() })),
+  risks: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      severity: z.enum(['LOW', 'MEDIUM', 'HIGH']),
+    }),
+  ),
+  confidence: z.string(),
+});
+export type ReportLlmOutput = z.infer<typeof reportLlmOutputSchema>;

@@ -94,8 +94,9 @@ export class AnthropicProvider implements LlmProvider {
     const uncachedInput = message.usage.input_tokens;
     const written = message.usage.cache_creation_input_tokens ?? 0;
     return {
-      // A reply cut off by max_tokens is not valid JSON, so the caller treats it as invalid output.
+      // A reply cut off by max_tokens is not valid JSON; `truncated` tells the caller why.
       json: message.stop_reason === 'max_tokens' ? undefined : tryParseJson(textOf(message)),
+      ...(message.stop_reason === 'max_tokens' && { truncated: true }),
       usage: {
         inputTokens: uncachedInput + written + cached,
         outputTokens: message.usage.output_tokens,

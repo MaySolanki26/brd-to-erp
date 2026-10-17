@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 
+const queue = vi.hoisted(() => ({ enqueueJob: vi.fn() }));
+vi.mock('../../services/queue.service.js', () => queue);
 vi.mock('../../config/env.js', async () => (await import('../../test/test-env.js')).envModule);
 vi.mock('../../lib/logger.js', async () => (await import('../../test/test-env.js')).loggerModule);
 vi.mock('../../lib/prisma.js', () => ({ prisma: {} }));
@@ -362,25 +364,44 @@ describe('knowledge routes', () => {
         index: 5,
       });
       addKnowledge('requirements', {
-        organizationId: world.orgA, projectId: world.p1.id, sourceChunkId: flagged.id, title: 'Own flagged',
+        organizationId: world.orgA,
+        projectId: world.p1.id,
+        sourceChunkId: flagged.id,
+        title: 'Own flagged',
       });
       addKnowledge('requirements', {
-        organizationId: world.orgA, projectId: world.p1.id, sourceChunkId: docChunk.id,
-        extraChunkIds: [flagged.id], title: 'Merged flagged',
+        organizationId: world.orgA,
+        projectId: world.p1.id,
+        sourceChunkId: docChunk.id,
+        extraChunkIds: [flagged.id],
+        title: 'Merged flagged',
       });
       addKnowledge('requirements', {
-        organizationId: world.orgA, projectId: world.p1.id, sourceChunkId: docChunk.id, title: 'Clean',
+        organizationId: world.orgA,
+        projectId: world.p1.id,
+        sourceChunkId: docChunk.id,
+        title: 'Clean',
       });
       const viewer = await sessionFor('viewerA');
 
-      const res = await as(app, viewer, 'get', `${url(world.p1.id, 'requirements')}?needsReview=true`);
+      const res = await as(
+        app,
+        viewer,
+        'get',
+        `${url(world.p1.id, 'requirements')}?needsReview=true`,
+      );
       expect(res.body.items.map((i: { title: string }) => i.title).sort()).toEqual([
         'Merged flagged',
         'Own flagged',
       ]);
       expect(res.body.total).toBe(2);
 
-      const all = await as(app, viewer, 'get', `${url(world.p1.id, 'requirements')}?needsReview=false`);
+      const all = await as(
+        app,
+        viewer,
+        'get',
+        `${url(world.p1.id, 'requirements')}?needsReview=false`,
+      );
       expect(all.body.items).toHaveLength(3);
     });
 
@@ -389,7 +410,9 @@ describe('knowledge routes', () => {
       const bad = await as(app, viewer, 'get', `${url(world.p1.id, 'rules')}?needsReview=maybe`);
       expect(bad.status).toBe(400);
       const combined = await as(
-        app, viewer, 'get',
+        app,
+        viewer,
+        'get',
         `${url(world.p1.id, 'modules')}?needsReview=true&status=OPEN&sourceId=${docId}`,
       );
       expect(combined.status).toBe(200);
@@ -438,7 +461,12 @@ describe('knowledge routes', () => {
         projectId: world.p1.id,
         sourceChunkId: docChunk.id,
       });
-      const res = await as(app, await sessionFor('viewerA'), 'get', url(world.p1.id, 'requirements'));
+      const res = await as(
+        app,
+        await sessionFor('viewerA'),
+        'get',
+        url(world.p1.id, 'requirements'),
+      );
       expect(res.body.items[0].otherSources).toEqual([]);
     });
   });
@@ -600,6 +628,140 @@ describe('knowledge routes', () => {
         url(world.p1.id, `chunks/${crypto.randomUUID()}`),
       );
       expect(res.status).toBe(404);
+    });
+  });
+
+  describe('revalidating a stale item', () => {
+    const revalidate = async (
+      actor: Actor,
+      kindPath: string,
+      itemId: string,
+      body: object = { status: 'CONFIRMED' },
+    ) =>
+      as(
+        app,
+        await sessionFor(actor),
+        'post',
+        url(world.p1.id, `${kindPath}/${itemId}/revalidate`),
+      ).send(body);
+
+    function stale(
+      kind: 'requirements' | 'rules' | 'modules',
+      status: FakeKnowledgeStatus = 'NEEDS_REVALIDATION',
+    ) {
+      return addKnowledge(kind, {
+        organizationId: world.orgA,
+        projectId: world.p1.id,
+        sourceChunkId: docChunk.id,
+        title: 'Old item',
+        status,
+      });
+    }
+
+    beforeEach(() => {
+      queue.enqueueJob.mockReset().mockResolvedValue('job-1');
+    });
+
+    it.each([
+      ['ownerA', 204],
+      ['analystA', 204],
+      ['adminA', 204],
+      ['approverA', 403],
+      ['viewerA', 403],
+      ['outsiderA', 404],
+      ['userB', 404],
+    ] as const)('%s deciding a stale requirement gets %i', async (actor, status) => {
+      const item = stale('requirements');
+      expect((await revalidate(actor, 'requirements', item.id)).status).toBe(status);
+      expect(item.status).toBe(status === 204 ? 'CONFIRMED' : 'NEEDS_REVALIDATION');
+    });
+
+    it.each([
+      ['requirements', 'CONFIRMED'],
+      ['rules', 'REJECTED'],
+      ['modules', 'ASSUMED'],
+    ] as const)('lets a person decide a stale item in %s (%s)', async (kind, decision) => {
+      const item = stale(kind);
+      const res = await revalidate('analystA', kind, item.id, { status: decision });
+      expect(res.status).toBe(204);
+      expect(item.status).toBe(decision);
+    });
+
+    it('audits who decided and queues a summary refresh', async () => {
+      const item = stale('rules');
+      await revalidate('analystA', 'rules', item.id, { status: 'OPEN' });
+      const entry = db.audit.find((a) => a.entityId === item.id);
+      expect(entry).toMatchObject({
+        action: 'UPDATE',
+        entity: 'BusinessRule',
+        userId: world.analystA.id,
+        metadata: { status: 'OPEN', revalidated: true },
+      });
+      expect(queue.enqueueJob).toHaveBeenCalledWith('refresh-summary', {
+        organizationId: world.orgA,
+        projectId: world.p1.id,
+      });
+    });
+
+    it('still succeeds when the summary refresh cannot be queued', async () => {
+      queue.enqueueJob.mockImplementation(async () => {
+        throw new Error('down');
+      });
+      const item = stale('requirements');
+      const res = await revalidate('analystA', 'requirements', item.id);
+      expect(res.status).toBe(204);
+      expect(item.status).toBe('CONFIRMED');
+    });
+
+    it('refuses an item that is not stale (409) and leaves it alone', async () => {
+      const item = stale('requirements', 'CONFIRMED');
+      expect(
+        (await revalidate('analystA', 'requirements', item.id, { status: 'REJECTED' })).status,
+      ).toBe(409);
+      expect(item.status).toBe('CONFIRMED');
+      expect(queue.enqueueJob).not.toHaveBeenCalled();
+    });
+
+    it('only the first of two people deciding wins', async () => {
+      const item = stale('requirements');
+      expect(
+        (await revalidate('analystA', 'requirements', item.id, { status: 'CONFIRMED' })).status,
+      ).toBe(204);
+      expect(
+        (await revalidate('ownerA', 'requirements', item.id, { status: 'REJECTED' })).status,
+      ).toBe(409);
+      expect(item.status).toBe('CONFIRMED');
+    });
+
+    it('returns 404 for an unknown item, an item of another project, and another kind', async () => {
+      const item = stale('requirements');
+      expect(
+        (await revalidate('analystA', 'requirements', '99999999-9999-4999-8999-999999999999'))
+          .status,
+      ).toBe(404);
+      expect((await revalidate('analystA', 'rules', item.id)).status).toBe(404);
+      const session = await sessionFor('ownerA');
+      const other = await as(
+        app,
+        session,
+        'post',
+        url(world.p2.id, `requirements/${item.id}/revalidate`),
+      ).send({ status: 'OPEN' });
+      expect(other.status).toBe(404);
+    });
+
+    it('validates the decision', async () => {
+      const item = stale('requirements');
+      for (const body of [
+        {},
+        { status: 'NEEDS_REVALIDATION' },
+        { status: 'MAYBE' },
+        { status: 'OPEN', extra: 1 },
+      ]) {
+        expect((await revalidate('analystA', 'requirements', item.id, body)).status).toBe(400);
+      }
+      expect((await revalidate('analystA', 'requirements', 'not-a-uuid')).status).toBe(400);
+      expect(item.status).toBe('NEEDS_REVALIDATION');
     });
   });
 });
