@@ -22,6 +22,7 @@ import { errorMessage } from '@/lib/error-message';
 import { useMemberCandidates } from '../hooks/use-members';
 import { useAddMember } from '../hooks/use-member-mutations';
 import { ROLE_LABELS, ROLE_OPTIONS } from '../project-labels';
+import { PersonPicker } from './PersonPicker';
 
 const addMemberFormSchema = z.object({
   userId: uuidSchema,
@@ -68,19 +69,16 @@ export function AddMemberDrawer({ projectId, open, onOpenChange }: AddMemberDraw
         open={open}
         onOpenChange={onOpenChange}
         title="Add project member"
-        description="Pick a teammate from your organization."
+        description="Search your organization by name or email."
         size="lg"
         onSubmit={submit}
         submitLabel="Add member"
         isPending={addMember.isPending}
         submitDisabled={candidates.isPending || options.length === 0}
+        dirty={form.formState.isDirty}
       >
         <div className="space-y-4">
-          {candidates.isError && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(candidates.error)}
-            </p>
-          )}
+          <FormError message={candidates.isError ? errorMessage(candidates.error) : null} />
           {candidates.isSuccess && options.length === 0 && (
             <p className="text-sm text-muted-foreground">
               Everyone in your organization is already on this project. Ask an admin to add more
@@ -93,22 +91,15 @@ export function AddMemberDrawer({ projectId, open, onOpenChange }: AddMemberDraw
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Person</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={candidates.isPending ? 'Loading…' : 'Select a person'}
-                      />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {options.map((candidate) => (
-                      <SelectItem key={candidate.userId} value={candidate.userId}>
-                        {candidate.name} ({candidate.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <PersonPicker
+                    people={options}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder={candidates.isPending ? 'Loading…' : 'Search by name or email'}
+                    disabled={candidates.isPending || options.length === 0}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

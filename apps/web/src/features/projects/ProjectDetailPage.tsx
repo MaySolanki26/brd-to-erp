@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Archive, FileQuestion } from 'lucide-react';
+import { Archive, FileQuestion, FileText } from 'lucide-react';
 import {
   Button,
   ConfirmDialog,
@@ -28,6 +28,7 @@ import {
 } from '@/features/questions/hooks/use-question-filters';
 import { MembersTab } from './components/MembersTab';
 import { OverviewTab } from './components/OverviewTab';
+import { PlaceholderTab } from './components/PlaceholderTab';
 import { SourcesTab } from './components/SourcesTab';
 import { useArchiveProject } from './hooks/use-project-mutations';
 import { useProject } from './hooks/use-projects';
@@ -130,6 +131,17 @@ export function ProjectDetailPage() {
       content: <QuestionsTab projectId={data.id} canAnswer={canAnswer} />,
     },
     { key: 'decisions', label: 'Decisions', content: <DecisionsTab projectId={data.id} /> },
+    {
+      key: 'report',
+      label: 'Report',
+      content: (
+        <PlaceholderTab
+          icon={FileText}
+          title="Understanding Report"
+          description="Reports are built from the project summary and its items. They will appear here once report building is available."
+        />
+      ),
+    },
     ...(canManage
       ? [
           {

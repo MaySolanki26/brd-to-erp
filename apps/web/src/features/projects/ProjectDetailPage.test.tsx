@@ -187,6 +187,7 @@ describe('ProjectDetailPage', () => {
       'Modules',
       'Questions',
       'Decisions',
+      'Report',
       'Members',
     ]);
     await userEvent.click(screen.getByRole('tab', { name: 'Questions' }));
@@ -235,7 +236,16 @@ describe('ProjectDetailPage', () => {
     mockApi(project({ myRole: 'VIEWER' }));
     view();
     await screen.findByRole('heading', { name: 'Alpha' });
-    expect(screen.getAllByRole('tab')).toHaveLength(7);
+    expect(screen.getAllByRole('tab')).toHaveLength(8);
+  });
+
+  it('explains that the report is not available yet, to anyone who can read', async () => {
+    mockApi(project({ myRole: 'VIEWER' }));
+    view();
+    await screen.findByRole('heading', { name: 'Alpha' });
+    await userEvent.click(screen.getByRole('tab', { name: 'Report' }));
+    expect(await screen.findByText('Understanding Report')).toBeInTheDocument();
+    expect(screen.getByText(/once report building is available/)).toBeInTheDocument();
   });
 
   it('protects the only owner from removal and demotion in the interface', async () => {
