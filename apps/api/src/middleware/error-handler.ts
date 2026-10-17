@@ -21,13 +21,26 @@ function messageForStatus(status: number | undefined): string {
     : 'The request could not be processed';
 }
 
+/** A unique-constraint race that slipped past an existence check is a conflict, not a server fault. */
+function isUniqueViolation(err: Error): boolean {
+  return (err as { code?: unknown }).code === 'P2002';
+}
+
 export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
   const requestId = (res.locals['requestId'] as string | undefined) ?? 'unknown';
 
+  const conflict = !(err instanceof AppError) && isUniqueViolation(err);
   const parserStatus = bodyParserStatus(err);
-  const statusCode = err instanceof AppError ? err.statusCode : (parserStatus ?? 500);
-  const code = err instanceof AppError ? err.code : codeForStatus(parserStatus);
-  const message = err instanceof AppError ? err.message : messageForStatus(parserStatus);
+  const statusCode =
+    err instanceof AppError ? err.statusCode : conflict ? 409 : (parserStatus ?? 500);
+  const code =
+    err instanceof AppError ? err.code : conflict ? 'CONFLICT' : codeForStatus(parserStatus);
+  const message =
+    err instanceof AppError
+      ? err.message
+      : conflict
+        ? 'Already exists'
+        : messageForStatus(parserStatus);
 
   if (statusCode >= 500) {
     logger.error({ err, requestId }, 'Unhandled server error');

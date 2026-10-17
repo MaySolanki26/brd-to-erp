@@ -1,26 +1,24 @@
 import type { Readable } from 'node:stream';
+import { ServiceUnavailableError } from '../../errors/app-error.js';
 import type { StorageService, UploadUrlResult } from './storage.types.js';
 
+const NOT_AVAILABLE = 'S3 storage is not available yet. Use STORAGE_DRIVER=local.';
+
+/** Placeholder so STORAGE_DRIVER=s3 fails loudly with a typed error until the driver exists. */
 export class S3StorageService implements StorageService {
-  // TODO: accept bucket, region, credentials in constructor
-
-  async createUploadUrl(_contentType: string): Promise<UploadUrlResult> {
-    // TODO: generate S3 presigned PUT URL
-    throw new Error('TODO: implement S3 storage before staging');
+  createUploadUrl(_contentType: string): Promise<UploadUrlResult> {
+    return Promise.reject(new ServiceUnavailableError(NOT_AVAILABLE));
   }
 
-  async confirmUpload(_fileKey: string): Promise<void> {
-    // TODO: HEAD object to verify upload landed
-    throw new Error('TODO: implement S3 storage before staging');
+  confirmUpload(_fileKey: string): Promise<void> {
+    return Promise.reject(new ServiceUnavailableError(NOT_AVAILABLE));
   }
 
-  async getDownloadStream(_fileKey: string): Promise<Readable> {
-    // TODO: return S3 GetObject stream
-    throw new Error('TODO: implement S3 storage before staging');
+  getDownloadStream(_fileKey: string): Promise<Readable> {
+    return Promise.reject(new ServiceUnavailableError(NOT_AVAILABLE));
   }
 
-  async delete(_fileKey: string): Promise<void> {
-    // TODO: DeleteObject call
-    throw new Error('TODO: implement S3 storage before staging');
+  delete(_fileKey: string): Promise<void> {
+    return Promise.reject(new ServiceUnavailableError(NOT_AVAILABLE));
   }
 }

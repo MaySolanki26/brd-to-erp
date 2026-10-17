@@ -4,4 +4,8 @@ import { handleUpload } from './storage.controller.js';
 
 export const storageRouter: RouterType = Router();
 
-storageRouter.post('/upload', raw({ type: '*/*', limit: MAX_UPLOAD_BYTES }), handleUpload);
+const rawBody = raw({ type: '*/*', limit: MAX_UPLOAD_BYTES });
+
+// PUT is the documented upload verb; POST stays for the existing web client.
+storageRouter.put('/upload', rawBody, handleUpload);
+storageRouter.post('/upload', rawBody, handleUpload);

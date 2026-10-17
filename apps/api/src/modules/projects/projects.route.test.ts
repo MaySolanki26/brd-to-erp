@@ -56,7 +56,7 @@ const ACTORS: Actor[] = [
 
 interface Case {
   name: string;
-  method: 'get' | 'post' | 'patch';
+  method: 'get' | 'post' | 'patch' | 'delete';
   path: (w: World) => string;
   body?: Record<string, unknown>;
   /** Expected status per actor against project p1. */
@@ -117,6 +117,19 @@ const CASES: Case[] = [
     path: (w) => `/api/projects/${w.p1.id}/members`,
     body: { userId: '__outsider__', role: 'VIEWER' },
     expected: OWNER_ONLY(201),
+  },
+  {
+    name: 'change member role',
+    method: 'patch',
+    path: (w) => `/api/projects/${w.p1.id}/members/${w.viewerA.id}`,
+    body: { role: 'ANALYST' },
+    expected: OWNER_ONLY(200),
+  },
+  {
+    name: 'remove member',
+    method: 'delete',
+    path: (w) => `/api/projects/${w.p1.id}/members/${w.viewerA.id}`,
+    expected: OWNER_ONLY(204),
   },
 ];
 
@@ -280,6 +293,26 @@ describe('projects API', () => {
       expect((shown.body.items as unknown[]).length).toBe(2);
     });
 
+    it('searches by name within what the caller can access only', async () => {
+      const analyst = await sessionFor('analystA');
+      const own = await as(app, analyst, 'get', '/api/projects?search=p1');
+      expect((own.body.items as { name: string }[]).map((p) => p.name)).toEqual(['P1']);
+      // P2 exists in the same organization but the analyst is not a member of it.
+      const other = await as(app, analyst, 'get', '/api/projects?search=P2');
+      expect(other.body.items).toEqual([]);
+      expect(other.body.total).toBe(0);
+    });
+
+    it('rejects an over-long search term', async () => {
+      const res = await as(
+        app,
+        await sessionFor('ownerA'),
+        'get',
+        `/api/projects?search=${'x'.repeat(101)}`,
+      );
+      expect(res.status).toBe(400);
+    });
+
     it('rejects an invalid page size', async () => {
       const res = await as(app, await sessionFor('ownerA'), 'get', '/api/projects?pageSize=1000');
       expect(res.status).toBe(400);
@@ -352,6 +385,19 @@ describe('projects API', () => {
         400,
       );
       expect((await as(app, owner, 'get', '/api/projects/not-a-uuid')).status).toBe(400);
+    });
+
+    it('rejects a non-uuid project id on the members routes with 400, not 500', async () => {
+      const owner = await sessionFor('ownerA');
+      expect((await as(app, owner, 'get', '/api/projects/not-a-uuid/members')).status).toBe(400);
+      expect(
+        (
+          await as(app, owner, 'post', '/api/projects/not-a-uuid/members').send({
+            userId: world.outsiderA.id,
+            role: 'VIEWER',
+          })
+        ).status,
+      ).toBe(400);
     });
 
     it('does not allow setting ARCHIVED through PATCH', async () => {

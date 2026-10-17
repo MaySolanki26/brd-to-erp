@@ -30,11 +30,7 @@ export function DataTableSortHeader({
     onSort?.({ key: sortKey, order: nextOrder(currentOrder) });
   };
 
-  const Icon = isActive
-    ? currentOrder === 'asc'
-      ? ArrowUp
-      : ArrowDown
-    : ArrowUpDown;
+  const Icon = isActive ? (currentOrder === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
   return (
     <Button

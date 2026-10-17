@@ -111,6 +111,14 @@ export async function revokeSessionIfActive(
   return result.count === 1;
 }
 
+/** True while the family still has an unrevoked, unexpired refresh session. */
+export async function isFamilyActive(familyId: string, now: Date): Promise<boolean> {
+  const count = await prisma.refreshSession.count({
+    where: { familyId, revokedAt: null, expiresAt: { gt: now } },
+  });
+  return count > 0;
+}
+
 export async function revokeFamily(
   familyId: string,
   now: Date,

@@ -1,14 +1,26 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { PagedResult, ProjectDto } from '@brd/shared';
 import { apiClient } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 
-const PAGE_SIZE = 50;
+export const PROJECTS_PAGE_SIZE = 20;
 
-export function useProjects() {
+export interface ProjectsFilter {
+  page: number;
+  search: string;
+}
+
+function toQueryString({ page, search }: ProjectsFilter): string {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(PROJECTS_PAGE_SIZE) });
+  if (search) params.set('search', search);
+  return params.toString();
+}
+
+export function useProjects(filter: ProjectsFilter) {
   return useQuery({
-    queryKey: queryKeys.projects.list({ pageSize: PAGE_SIZE }),
-    queryFn: () => apiClient.get<PagedResult<ProjectDto>>(`/projects?pageSize=${PAGE_SIZE}`),
+    queryKey: queryKeys.projects.list({ ...filter, pageSize: PROJECTS_PAGE_SIZE }),
+    queryFn: () => apiClient.get<PagedResult<ProjectDto>>(`/projects?${toQueryString(filter)}`),
+    placeholderData: keepPreviousData,
   });
 }
 

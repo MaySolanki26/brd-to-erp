@@ -1,14 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type {
-  ChunkDto,
-  ContextNoteDto,
-  DocumentDetailDto,
-  DocumentDto,
-  ProcessingStatusDto,
-} from '@brd/shared';
+import type { ChunkDto, ContextNoteDto, DocumentDetailDto, DocumentDto } from '@brd/shared';
 import { makeAuth, makeUser, renderRoute } from '@/test/render';
+import { PDF, doc, note, paged, processingStatus, version } from './test-data';
 
 const api = vi.hoisted(() => ({
   get: vi.fn(),
@@ -36,302 +32,358 @@ vi.mock('@brd/ui', async (importOriginal) => ({
   toast: toastMock,
 }));
 
-import { ApiClientError } from '@/lib/api-client';
+import { ApiClientError, UploadCanceledError } from '@/lib/api-client';
 import { SourcesTab } from './SourcesTab';
 
-const PID = 'p1';
-const DOCS_URL = `/projects/${PID}/documents?pageSize=100`;
-const NOTES_URL = `/projects/${PID}/notes?pageSize=100`;
-const STATUS_URL = `/projects/${PID}/processing-status`;
-const PDF = 'application/pdf';
+const docsUrl = (id: string) => `/projects/${id}/documents?pageSize=100`;
+const notesUrl = (id: string) => `/projects/${id}/notes?pageSize=100`;
+const statusUrl = (id: string) => `/projects/${id}/processing-status`;
 
-function person() {
-  return { id: 'u1', name: 'Ann Analyst' };
+interface World {
+  docs?: DocumentDto[];
+  notes?: ContextNoteDto[];
+  active?: boolean;
+  detail?: DocumentDetailDto;
 }
 
-function doc(overrides: Partial<DocumentDto> = {}): DocumentDto {
-  return {
-    id: 'd1',
-    title: 'brd.pdf',
-    fileName: 'brd.pdf',
-    status: 'PROCESSED',
-    failureReason: null,
-    latestVersion: {
-      id: 'v1',
-      versionNumber: 1,
-      mimeType: PDF,
-      sizeBytes: 2048,
-      contentHash: 'h',
-      createdAt: '2026-01-01T00:00:00.000Z',
-      createdBy: person(),
-    },
-    versionCount: 1,
-    chunkCount: 4,
-    createdBy: person(),
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-    ...overrides,
-  };
-}
-
-function note(overrides: Partial<ContextNoteDto> = {}): ContextNoteDto {
-  return {
-    id: 'n1',
-    title: 'Kickoff call',
-    body: '# Goals\nCut errors.',
-    status: 'PROCESSED',
-    failureReason: null,
-    chunkCount: 1,
-    createdBy: person(),
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-02T00:00:00.000Z',
-    ...overrides,
-  };
-}
-
-const paged = <T,>(items: T[]) => ({ items, page: 1, pageSize: 100, total: items.length });
-
-function status(active = false): { status: ProcessingStatusDto } {
-  return {
-    status: {
-      counts: { UPLOADED: active ? 1 : 0, PROCESSING: 0, PROCESSED: 1, FAILED: 0 },
-      active,
-      sources: [],
-    },
-  };
-}
-
-function mockLists(docs: DocumentDto[] = [doc()], notes: ContextNoteDto[] = [note()]) {
-  api.get.mockImplementation(async (url: string) => {
-    if (url === DOCS_URL) return paged(docs);
-    if (url === NOTES_URL) return paged(notes);
-    if (url === STATUS_URL) return status();
+function mockProject(id: string, world: World = {}) {
+  const { docs = [doc()], notes = [note()], active = false, detail } = world;
+  return async (url: string): Promise<unknown> => {
+    if (url === docsUrl(id)) return paged(docs);
+    if (url === notesUrl(id)) return paged(notes);
+    if (url === statusUrl(id)) return processingStatus(active);
+    if (url.startsWith(`/projects/${id}/documents/`) && detail) return { document: detail };
     throw new Error(`unexpected GET ${url}`);
-  });
+  };
+}
+
+function useWorld(world: World = {}) {
+  api.get.mockImplementation(mockProject('p1', world));
+}
+
+const chunk = (i: number): ChunkDto => ({
+  id: `c${String(i)}`,
+  chunkIndex: i,
+  headingPath: ['Order to Cash'],
+  content: `Chunk body ${String(i)}`,
+});
+
+function detailOf(versions = [version()], chunks = [chunk(0)]): DocumentDetailDto {
+  const base = doc({ latestVersion: versions[0] ?? version(), versionCount: versions.length });
+  return {
+    ...base,
+    versions,
+    chunksVersionId: versions[0]?.id ?? 'v1',
+    chunks: { items: chunks, page: 1, pageSize: 20, total: chunks.length },
+  };
 }
 
 const view = (props: { canAddSource?: boolean; canReprocess?: boolean } = {}) =>
   renderRoute(
     <SourcesTab
-      projectId={PID}
+      projectId="p1"
       canAddSource={props.canAddSource ?? true}
       canReprocess={props.canReprocess ?? true}
     />,
   );
 
+const pdfFile = (name = 'new.pdf', size = 20) =>
+  new File([new Uint8Array(size)], name, { type: PDF, lastModified: 1 });
+
+function scriptUpload(duplicateOf: { documentId: string; title: string } | null = null) {
+  api.post.mockImplementation(async (url: string) => {
+    if (url.endsWith('/upload-url')) {
+      return {
+        upload: { uploadUrl: 'http://storage.test/upload?token=t', ticket: 'tk', expiresAt: 'x' },
+      };
+    }
+    if (url.endsWith('/confirm')) return { document: doc({ status: 'UPLOADED' }), duplicateOf };
+    throw new Error(`unexpected POST ${url}`);
+  });
+  api.upload.mockResolvedValue(undefined);
+}
+
+const dropZone = () => screen.getByRole('button', { name: 'Upload documents' });
+
 describe('SourcesTab', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     auth.current = makeAuth(makeUser());
-    mockLists();
+    useWorld();
   });
 
   describe('states', () => {
     it('shows loading placeholders before data arrives', () => {
       api.get.mockReturnValue(new Promise(() => {}));
       view();
-      expect(screen.getByRole('heading', { name: 'Documents' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Sources' })).toBeInTheDocument();
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
 
-    it('shows an error with retry when documents fail to load', async () => {
+    it('shows an error with a retry that reloads both lists', async () => {
       api.get.mockImplementation(async (url: string) => {
-        if (url === DOCS_URL) throw new ApiClientError(500, 'INTERNAL_SERVER_ERROR', 'boom');
-        if (url === NOTES_URL) return paged([]);
-        return status();
+        if (url === docsUrl('p1')) throw new ApiClientError(500, 'INTERNAL_SERVER_ERROR', 'boom');
+        return url === notesUrl('p1') ? paged([]) : processingStatus();
       });
       view();
-      expect(await screen.findByText('Could not load documents')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+      expect(await screen.findByText('Could not load sources')).toBeInTheDocument();
+
+      useWorld();
+      await userEvent.click(screen.getByRole('button', { name: /retry/i }));
+      expect(await screen.findByText('brd.pdf')).toBeInTheDocument();
     });
 
     it('shows no-access when the API forbids reading sources', async () => {
       api.get.mockRejectedValue(new ApiClientError(403, 'FORBIDDEN', 'nope'));
       view();
       expect(await screen.findByText('Access restricted')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Upload documents' })).not.toBeInTheDocument();
     });
 
-    it('shows an empty state with an upload action for people who can add sources', async () => {
-      mockLists([], []);
+    it('invites people who can add sources to upload when nothing exists yet', async () => {
+      useWorld({ docs: [], notes: [] });
       view();
-      expect(await screen.findByText('No documents yet')).toBeInTheDocument();
-      expect(screen.getByText('No notes yet')).toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: 'Upload document' }).length).toBeGreaterThan(0);
+      expect(await screen.findByText('No sources yet')).toBeInTheDocument();
+      expect(screen.getByText(/Drop a PDF, DOCX or XLSX above/)).toBeInTheDocument();
+      expect(dropZone()).toBeInTheDocument();
     });
 
     it('shows a read-only empty state for people who cannot add sources', async () => {
-      mockLists([], []);
+      useWorld({ docs: [], notes: [] });
       view({ canAddSource: false });
-      expect(await screen.findByText('No documents yet')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Upload document' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Add note' })).not.toBeInTheDocument();
+      expect(await screen.findByText('No sources yet')).toBeInTheDocument();
+      expect(screen.getByText(/added by analysts and owners/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Upload documents' })).not.toBeInTheDocument();
     });
   });
 
-  describe('listing', () => {
-    it('shows documents with status, chunk count, uploader and a download link', async () => {
-      mockLists([
-        doc(),
-        doc({
-          id: 'd2',
-          title: 'scan.pdf',
-          status: 'FAILED',
-          failureReason: 'OCR not supported. This PDF has no selectable text.',
-          chunkCount: 0,
-        }),
-      ]);
+  describe('list', () => {
+    it('shows documents and notes together', async () => {
       view();
       expect(await screen.findByText('brd.pdf')).toBeInTheDocument();
-      expect(screen.getAllByText('Processed').length).toBeGreaterThan(0);
-      expect(screen.getByText('Failed')).toBeInTheDocument();
-      expect(screen.getByText(/OCR not supported/)).toBeInTheDocument();
-      const link = screen.getAllByRole('link', { name: 'Download' })[0];
-      expect(link).toHaveAttribute('href', '/api/projects/p1/documents/d1/versions/v1/download');
-    });
-
-    it('shows notes with their status', async () => {
-      mockLists([], [note({ status: 'UPLOADED' })]);
-      view();
-      expect(await screen.findByText('Kickoff call')).toBeInTheDocument();
-      expect(screen.getByText('Queued')).toBeInTheDocument();
+      expect(screen.getByText('Kickoff call')).toBeInTheDocument();
+      expect(screen.getByText('PDF')).toBeInTheDocument();
+      expect(screen.getByText('Note')).toBeInTheDocument();
     });
   });
 
-  describe('role gating', () => {
-    it('hides every write action for read-only roles', async () => {
+  describe('read-only roles (viewer, approver)', () => {
+    it('shows sources and the read-only hint but no way to add or change anything', async () => {
       view({ canAddSource: false, canReprocess: false });
-      await screen.findByText('brd.pdf');
-      expect(screen.queryByRole('button', { name: 'Upload document' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'New version' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Reprocess' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-      expect(screen.getAllByRole('link', { name: 'Download' }).length).toBe(1);
+      expect(await screen.findByText('brd.pdf')).toBeInTheDocument();
+
+      expect(screen.getByRole('note')).toHaveTextContent('You can view sources but not add them.');
+      for (const name of [
+        'Upload documents',
+        'Add context note',
+        /new version/i,
+        /Edit note/,
+        /Reprocess/,
+      ]) {
+        expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+      }
+      expect(screen.queryByLabelText('Choose files to upload')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Version history/ })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Download/ })).toBeInTheDocument();
     });
 
-    it('offers reprocess only for finished documents, and only with the permission', async () => {
-      mockLists([
-        doc({ id: 'a', title: 'done.pdf' }),
-        doc({ id: 'b', title: 'busy.pdf', status: 'PROCESSING' }),
-      ]);
-      view();
-      await screen.findByText('done.pdf');
-      expect(screen.getAllByRole('button', { name: 'Reprocess' })).toHaveLength(1);
-    });
-
-    it('lets analysts upload but not reprocess when reprocess is not granted', async () => {
+    it('lets analysts add sources but only reprocess when that permission is granted', async () => {
       view({ canAddSource: true, canReprocess: false });
       await screen.findByText('brd.pdf');
-      expect(screen.getByRole('button', { name: 'Upload document' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Reprocess' })).not.toBeInTheDocument();
+      expect(dropZone()).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add context note' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Reprocess/ })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('project isolation', () => {
+    it('never shows another project’s sources after switching projects', async () => {
+      api.get.mockImplementation(async (url: string) => {
+        if (url.includes('/projects/p1/'))
+          return mockProject('p1', {
+            docs: [doc({ title: 'alpha.pdf', fileName: 'alpha.pdf' })],
+            notes: [note({ title: 'alpha note' })],
+          })(url);
+        return mockProject('p2', {
+          docs: [doc({ id: 'd2', title: 'beta.pdf', fileName: 'beta.pdf' })],
+          notes: [],
+        })(url);
+      });
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const tree = (id: string) => (
+        <QueryClientProvider client={client}>
+          <SourcesTab projectId={id} canAddSource canReprocess />
+        </QueryClientProvider>
+      );
+
+      const { rerender } = render(tree('p1'));
+      expect(await screen.findByText('alpha.pdf')).toBeInTheDocument();
+      expect(screen.getByText('alpha note')).toBeInTheDocument();
+
+      rerender(tree('p2'));
+      expect(await screen.findByText('beta.pdf')).toBeInTheDocument();
+      expect(screen.queryByText('alpha.pdf')).not.toBeInTheDocument();
+      expect(screen.queryByText('alpha note')).not.toBeInTheDocument();
+      expect(
+        api.get.mock.calls.filter((c) => String(c[0]).includes('/projects/p2/')).length,
+      ).toBeGreaterThan(0);
     });
   });
 
   describe('uploading', () => {
-    const picker = () => screen.getByLabelText('Choose a file to upload') as HTMLInputElement;
-
-    function scriptUpload(duplicateOf: { documentId: string; title: string } | null = null) {
-      api.post.mockImplementation(async (url: string) => {
-        if (url.endsWith('/upload-url')) {
-          return {
-            upload: {
-              uploadUrl: 'http://storage.test/upload?token=t',
-              ticket: 'tk',
-              expiresAt: 'x',
-            },
-          };
-        }
-        if (url.endsWith('/confirm')) return { document: doc({ status: 'UPLOADED' }), duplicateOf };
-        throw new Error(`unexpected POST ${url}`);
-      });
-      api.upload.mockResolvedValue(undefined);
-    }
-
-    it('requests a signed URL, uploads the file to it and confirms with the ticket', async () => {
+    it('uploads dropped files with progress and shows them in the list afterwards', async () => {
       scriptUpload();
+      let finish: () => void = () => undefined;
+      api.upload.mockImplementation(
+        (_url: string, _file: File, _mime: string, opts: { onProgress: (p: number) => void }) =>
+          new Promise<void>((resolve) => {
+            opts.onProgress(55);
+            finish = resolve;
+          }),
+      );
       view();
       await screen.findByText('brd.pdf');
 
-      const file = new File(['%PDF-1.4 hello'], 'new.pdf', { type: PDF });
-      await userEvent.upload(picker(), file);
+      fireEvent.drop(dropZone(), { dataTransfer: { files: [pdfFile()] } });
 
-      await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
-      expect(api.post).toHaveBeenNthCalledWith(1, '/projects/p1/documents/upload-url', {
+      expect(await screen.findByText('Uploading 55%')).toBeInTheDocument();
+      expect(
+        screen.getByRole('progressbar', { name: 'Upload progress for new.pdf' }),
+      ).toHaveAttribute('aria-valuenow', '55');
+      expect(api.post).toHaveBeenCalledWith('/projects/p1/documents/upload-url', {
         fileName: 'new.pdf',
         mimeType: PDF,
-        sizeBytes: file.size,
+        sizeBytes: 20,
       });
-      expect(api.upload).toHaveBeenCalledWith('http://storage.test/upload?token=t', file, PDF);
-      expect(api.post).toHaveBeenNthCalledWith(2, '/projects/p1/documents/confirm', {
-        ticket: 'tk',
-      });
-      expect(toastMock.success).toHaveBeenCalled();
-      expect(toastMock.warning).not.toHaveBeenCalled();
+
+      finish();
+      expect(
+        await screen.findByText('Uploaded. Processing will start shortly.'),
+      ).toBeInTheDocument();
+      expect(api.post).toHaveBeenLastCalledWith('/projects/p1/documents/confirm', { ticket: 'tk' });
+      expect(api.upload).toHaveBeenCalledWith(
+        'http://storage.test/upload?token=t',
+        expect.any(File),
+        PDF,
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
-    it('uses the extension, not the browser-reported type, for Office files', async () => {
+    it('accepts files chosen with the picker and several at once', async () => {
       scriptUpload();
       view();
       await screen.findByText('brd.pdf');
-      await userEvent.upload(picker(), new File(['PK'], 'spec.docx', { type: '' }));
-      await waitFor(() => expect(api.post).toHaveBeenCalled());
-      expect(api.post.mock.calls[0]?.[1]).toMatchObject({
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      await userEvent.upload(screen.getByLabelText('Choose files to upload'), [
+        pdfFile('a.pdf', 1),
+        pdfFile('b.pdf', 2),
+      ]);
+      await waitFor(() => expect(api.upload).toHaveBeenCalledTimes(2));
+    });
+
+    it('rejects unsupported files inline without contacting the API', async () => {
+      view();
+      await screen.findByText('brd.pdf');
+      fireEvent.drop(dropZone(), {
+        dataTransfer: { files: [new File(['x'], 'notes.txt', { type: 'text/plain' })] },
       });
-    });
-
-    it('warns when the content already exists in the project', async () => {
-      scriptUpload({ documentId: 'd9', title: 'old.pdf' });
-      view();
-      await screen.findByText('brd.pdf');
-      await userEvent.upload(picker(), new File(['x'], 'copy.pdf', { type: PDF }));
-      await waitFor(() => expect(toastMock.warning).toHaveBeenCalled());
-      expect(String(toastMock.warning.mock.calls[0]?.[0])).toContain('old.pdf');
-    });
-
-    it('rejects unsupported files without calling the API', async () => {
-      const user = userEvent.setup({ applyAccept: false });
-      view();
-      await screen.findByText('brd.pdf');
-      await user.upload(picker(), new File(['x'], 'notes.txt', { type: 'text/plain' }));
-      expect(toastMock.error).toHaveBeenCalledWith(expect.stringMatching(/Unsupported file/));
+      expect(await screen.findByRole('alert')).toHaveTextContent(/Unsupported file/);
       expect(api.post).not.toHaveBeenCalled();
     });
 
-    it('shows the server message when the upload is rejected', async () => {
+    it('cancels an upload in flight and offers a retry that succeeds', async () => {
+      scriptUpload();
+      api.upload.mockImplementationOnce(
+        (_u: string, _f: File, _m: string, opts: { signal: AbortSignal }) =>
+          new Promise<void>((_resolve, reject) => {
+            opts.signal.addEventListener('abort', () => reject(new UploadCanceledError()));
+          }),
+      );
+      view();
+      await screen.findByText('brd.pdf');
+      fireEvent.drop(dropZone(), { dataTransfer: { files: [pdfFile()] } });
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Cancel upload of new.pdf' }),
+      );
+      expect(await screen.findByText('Canceled')).toBeInTheDocument();
+      expect(api.post).not.toHaveBeenCalledWith(
+        '/projects/p1/documents/confirm',
+        expect.anything(),
+      );
+
+      api.upload.mockResolvedValue(undefined);
+      await userEvent.click(screen.getByRole('button', { name: 'Retry upload of new.pdf' }));
+      expect(
+        await screen.findByText('Uploaded. Processing will start shortly.'),
+      ).toBeInTheDocument();
+    });
+
+    it('shows a failure from the server with a retry', async () => {
       api.post.mockRejectedValue(
         new ApiClientError(400, 'VALIDATION_ERROR', 'The file content does not match its type'),
       );
       view();
       await screen.findByText('brd.pdf');
-      await userEvent.upload(picker(), new File(['x'], 'bad.pdf', { type: PDF }));
+      fireEvent.drop(dropZone(), { dataTransfer: { files: [pdfFile('bad.pdf')] } });
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'The file content does not match its type',
+      );
+      expect(screen.getByRole('button', { name: 'Retry upload of bad.pdf' })).toBeInTheDocument();
+    });
+
+    it('keeps a visible duplicate warning that opens the original document', async () => {
+      scriptUpload({ documentId: 'd9', title: 'old.pdf' });
+      useWorld({ detail: detailOf() });
+      view();
+      await screen.findByText('brd.pdf');
+      fireEvent.drop(dropZone(), { dataTransfer: { files: [pdfFile('copy.pdf')] } });
+
+      expect(await screen.findByText(/Identical content already exists in/)).toHaveTextContent(
+        'old.pdf',
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'View original' }));
       await waitFor(() =>
-        expect(toastMock.error).toHaveBeenCalledWith('The file content does not match its type'),
+        expect(api.get).toHaveBeenCalledWith(expect.stringContaining('/projects/p1/documents/d9?')),
       );
     });
 
-    it('uploads a new version against the chosen document', async () => {
+    it('uploads a new version of the chosen document', async () => {
       scriptUpload();
       view();
-      await userEvent.click(await screen.findByRole('button', { name: 'New version' }));
-      await userEvent.upload(picker(), new File(['x'], 'brd.pdf', { type: PDF }));
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Upload a new version of brd.pdf' }),
+      );
+      await userEvent.upload(
+        screen.getByLabelText('Choose a file for the new version'),
+        pdfFile('brd-v2.pdf'),
+      );
       await waitFor(() => expect(api.post).toHaveBeenCalled());
-      expect(api.post.mock.calls[0]?.[1]).toMatchObject({ documentId: 'd1' });
+      expect(api.post.mock.calls[0]?.[1]).toMatchObject({
+        documentId: 'd1',
+        fileName: 'brd-v2.pdf',
+      });
+      expect(await screen.findByText(/new version of brd\.pdf/)).toBeInTheDocument();
     });
   });
 
   describe('reprocessing', () => {
-    it('re-queues a document', async () => {
-      mockLists([doc({ status: 'FAILED' })]);
+    it('asks first, then re-queues the document', async () => {
+      useWorld({ docs: [doc({ status: 'FAILED' })], notes: [] });
       api.post.mockResolvedValue({ document: doc({ status: 'UPLOADED' }) });
       view();
-      await userEvent.click(await screen.findByRole('button', { name: 'Reprocess' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Reprocess brd.pdf' }));
+      expect(api.post).not.toHaveBeenCalled();
+
+      const dialog = await screen.findByRole('alertdialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Reprocess' }));
       await waitFor(() =>
         expect(api.post).toHaveBeenCalledWith('/projects/p1/documents/d1/reprocess'),
       );
+      await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
     });
 
-    it('shows the server message when reprocessing fails', async () => {
-      mockLists([doc({ status: 'FAILED' })]);
+    it('shows the server message when reprocessing is refused', async () => {
+      useWorld({ docs: [doc({ status: 'FAILED' })], notes: [] });
       api.post.mockRejectedValue(
         new ApiClientError(
           409,
@@ -340,31 +392,35 @@ describe('SourcesTab', () => {
         ),
       );
       view();
-      await userEvent.click(await screen.findByRole('button', { name: 'Reprocess' }));
-      await waitFor(() => expect(toastMock.error).toHaveBeenCalled());
+      await userEvent.click(await screen.findByRole('button', { name: 'Reprocess brd.pdf' }));
+      await userEvent.click(
+        within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Reprocess' }),
+      );
+      await waitFor(() =>
+        expect(toastMock.error).toHaveBeenCalledWith(
+          'Only processed or failed documents can be reprocessed',
+        ),
+      );
     });
   });
 
-  describe('notes', () => {
+  describe('context notes', () => {
     it('adds a note and validates it first', async () => {
-      mockLists([], []);
+      useWorld({ docs: [], notes: [] });
       api.post.mockResolvedValue({ note: note() });
       view();
-      await screen.findByText('No notes yet');
+      await screen.findByText('No sources yet');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Add note' }));
-      await userEvent.click(
-        await screen
-          .findByRole('button', { name: 'Add note', hidden: false })
-          .catch(() => screen.getAllByRole('button', { name: 'Add note' })[1] as HTMLElement),
-      );
-      expect(await screen.findByText('Title is required')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Add context note' }));
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Add note' }));
+      expect(await within(dialog).findByText('Title is required')).toBeInTheDocument();
       expect(api.post).not.toHaveBeenCalled();
 
-      await userEvent.type(screen.getByLabelText('Title'), 'Call');
-      await userEvent.type(screen.getByLabelText('Note'), 'We agreed on scope.');
-      const buttons = screen.getAllByRole('button', { name: 'Add note' });
-      await userEvent.click(buttons[buttons.length - 1] as HTMLElement);
+      await userEvent.type(within(dialog).getByLabelText('Title'), 'Call');
+      await userEvent.type(within(dialog).getByLabelText('Note'), 'We agreed on scope.');
+      expect(within(dialog).getByText('19 / 20,000 characters')).toBeInTheDocument();
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Add note' }));
 
       await waitFor(() =>
         expect(api.post).toHaveBeenCalledWith('/projects/p1/notes', {
@@ -374,25 +430,17 @@ describe('SourcesTab', () => {
       );
     });
 
-    it('shows the character counter against the limit', async () => {
-      mockLists([], []);
-      view();
-      await screen.findByText('No notes yet');
-      await userEvent.click(screen.getByRole('button', { name: 'Add note' }));
-      await userEvent.type(await screen.findByLabelText('Note'), 'abc');
-      expect(screen.getByText('3 / 20,000 characters')).toBeInTheDocument();
-    });
-
     it('edits an existing note with its current text', async () => {
       api.patch.mockResolvedValue({ note: note() });
       view();
-      await userEvent.click(await screen.findByRole('button', { name: 'Edit' }));
-      const title = (await screen.findByLabelText('Title')) as HTMLInputElement;
+      await userEvent.click(await screen.findByRole('button', { name: 'Edit note Kickoff call' }));
+      const dialog = await screen.findByRole('dialog');
+      const title = within(dialog).getByLabelText('Title') as HTMLInputElement;
       expect(title.value).toBe('Kickoff call');
 
       await userEvent.clear(title);
       await userEvent.type(title, 'Kickoff v2');
-      await userEvent.click(screen.getByRole('button', { name: 'Save note' }));
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Save note' }));
       await waitFor(() =>
         expect(api.patch).toHaveBeenCalledWith('/projects/p1/notes/n1', {
           title: 'Kickoff v2',
@@ -402,88 +450,32 @@ describe('SourcesTab', () => {
     });
   });
 
-  describe('document details', () => {
-    const chunk = (i: number): ChunkDto => ({
-      id: `c${String(i)}`,
-      chunkIndex: i,
-      headingPath: ['Order to Cash', 'Invoicing'],
-      content: `Chunk body ${String(i)}`,
-    });
-
-    function detail(overrides: Partial<DocumentDetailDto> = {}): { document: DocumentDetailDto } {
-      const base = doc();
-      return {
-        document: {
-          ...base,
-          versions: [base.latestVersion],
-          chunksVersionId: 'v1',
-          chunks: { items: [chunk(0), chunk(1)], page: 1, pageSize: 20, total: 2 },
-          ...overrides,
-        },
-      };
-    }
-
-    function mockDetail(result: { document: DocumentDetailDto }) {
-      api.get.mockImplementation(async (url: string) => {
-        if (url === DOCS_URL) return paged([doc()]);
-        if (url === NOTES_URL) return paged([]);
-        if (url === STATUS_URL) return status();
-        if (url.startsWith('/projects/p1/documents/d1?')) return result;
-        throw new Error(`unexpected GET ${url}`);
-      });
-    }
-
-    it('opens a drawer listing chunks with their heading paths', async () => {
-      mockDetail(detail());
+  describe('drawers', () => {
+    it('opens the chunks of a document', async () => {
+      useWorld({ detail: detailOf() });
       view();
       await userEvent.click(await screen.findByRole('button', { name: 'brd.pdf' }));
       expect(await screen.findByText('Chunk body 0')).toBeInTheDocument();
-      expect(screen.getAllByText(/Order to Cash › Invoicing/).length).toBe(2);
     });
 
-    it('explains an empty chunk list', async () => {
-      mockDetail(
-        detail({ chunks: { items: [], page: 1, pageSize: 20, total: 0 }, status: 'UPLOADED' }),
-      );
-      view();
-      await userEvent.click(await screen.findByRole('button', { name: 'brd.pdf' }));
-      expect(await screen.findByText('No chunks for this version')).toBeInTheDocument();
-      expect(screen.getByText('Chunks appear once processing finishes.')).toBeInTheDocument();
-    });
-
-    it('shows the failure reason', async () => {
-      mockDetail(
-        detail({
-          status: 'FAILED',
-          failureReason: 'OCR not supported. This PDF has no selectable text.',
-          chunks: { items: [], page: 1, pageSize: 20, total: 0 },
-        }),
-      );
-      view();
-      await userEvent.click(await screen.findByRole('button', { name: 'brd.pdf' }));
-      const dialog = await screen.findByRole('dialog');
-      expect(await within(dialog).findByRole('alert')).toHaveTextContent(/OCR not supported/);
-    });
-
-    it('pages through chunks', async () => {
-      mockDetail(detail({ chunks: { items: [chunk(0)], page: 1, pageSize: 20, total: 45 } }));
-      view();
-      await userEvent.click(await screen.findByRole('button', { name: 'brd.pdf' }));
-      expect(await screen.findByText('Page 1 of 3')).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-      await waitFor(() => expect(api.get).toHaveBeenCalledWith(expect.stringContaining('page=2')));
-    });
-
-    it('shows an error with retry when the document cannot be loaded', async () => {
-      api.get.mockImplementation(async (url: string) => {
-        if (url === DOCS_URL) return paged([doc()]);
-        if (url === NOTES_URL) return paged([]);
-        if (url === STATUS_URL) return status();
-        throw new ApiClientError(500, 'INTERNAL_SERVER_ERROR', 'boom');
+    it('opens version history, then the chunks of an older version', async () => {
+      useWorld({
+        detail: detailOf([version({ id: 'v2', versionNumber: 2 }), version({ id: 'v1' })]),
       });
       view();
-      await userEvent.click(await screen.findByRole('button', { name: 'brd.pdf' }));
-      expect(await screen.findByText('Could not load the document')).toBeInTheDocument();
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Version history for brd.pdf' }),
+      );
+      const history = await screen.findByRole('dialog');
+      expect(await within(history).findByText('Version 2')).toBeInTheDocument();
+      expect(within(history).getByText('Version 1')).toBeInTheDocument();
+
+      await userEvent.click(
+        within(history).getByRole('button', { name: 'View chunks of version 1' }),
+      );
+      await waitFor(() =>
+        expect(api.get).toHaveBeenCalledWith(expect.stringContaining('versionId=v1')),
+      );
     });
   });
 
@@ -491,17 +483,13 @@ describe('SourcesTab', () => {
     it('keeps polling while sources are queued or running', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
       try {
-        api.get.mockImplementation(async (url: string) => {
-          if (url === DOCS_URL) return paged([doc({ status: 'PROCESSING' })]);
-          if (url === NOTES_URL) return paged([]);
-          return status(true);
-        });
+        useWorld({ docs: [doc({ status: 'PROCESSING' })], notes: [], active: true });
         view();
         await screen.findByText('Processing');
-        const statusCalls = () => api.get.mock.calls.filter((c) => c[0] === STATUS_URL).length;
-        const before = statusCalls();
+        const calls = () => api.get.mock.calls.filter((c) => c[0] === statusUrl('p1')).length;
+        const before = calls();
         await vi.advanceTimersByTimeAsync(3500);
-        await waitFor(() => expect(statusCalls()).toBeGreaterThan(before));
+        await waitFor(() => expect(calls()).toBeGreaterThan(before));
       } finally {
         vi.useRealTimers();
       }
@@ -512,10 +500,10 @@ describe('SourcesTab', () => {
       try {
         view();
         await screen.findByText('brd.pdf');
-        const statusCalls = () => api.get.mock.calls.filter((c) => c[0] === STATUS_URL).length;
-        const before = statusCalls();
+        const calls = () => api.get.mock.calls.filter((c) => c[0] === statusUrl('p1')).length;
+        const before = calls();
         await vi.advanceTimersByTimeAsync(10_000);
-        expect(statusCalls()).toBe(before);
+        expect(calls()).toBe(before);
       } finally {
         vi.useRealTimers();
       }

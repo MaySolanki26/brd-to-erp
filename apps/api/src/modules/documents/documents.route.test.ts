@@ -378,6 +378,44 @@ describe('documents routes', () => {
     });
   });
 
+  describe('same file name', () => {
+    it('adds a version to the existing document instead of creating a second one', async () => {
+      const first = await confirm(analyst, await stage(analyst, { name: 'BRD.pdf' }));
+      const documentId = first.body.document.id as string;
+
+      const second = await confirm(
+        analyst,
+        await stage(analyst, { name: 'brd.PDF', bytes: pdf('Changed content') }),
+      );
+
+      expect(second.status).toBe(201);
+      expect(second.body.document).toMatchObject({
+        id: documentId,
+        versionCount: 2,
+        latestVersion: { versionNumber: 2 },
+      });
+      expect(db.documents.size).toBe(1);
+    });
+
+    it('keeps documents with different names apart', async () => {
+      await confirm(analyst, await stage(analyst, { name: 'a.pdf' }));
+      await confirm(analyst, await stage(analyst, { name: 'b.pdf', bytes: pdf('Other') }));
+      expect(db.documents.size).toBe(2);
+    });
+
+    it('does not add a version to a same-named document of another project', async () => {
+      await confirm(analyst, await stage(analyst, { name: 'brd.pdf' }));
+      const otherProject = await login(app, world.adminA.email, PASSWORD);
+      const res = await confirm(
+        otherProject,
+        await stage(otherProject, { name: 'brd.pdf', projectId: world.p2.id, bytes: pdf('P2') }),
+        world.p2.id,
+      );
+      expect(res.status).toBe(201);
+      expect(db.documents.size).toBe(2);
+    });
+  });
+
   describe('reading documents', () => {
     it('lists documents with their latest version and chunk count', async () => {
       const seeded = await seedDocument('PROCESSED', 3);

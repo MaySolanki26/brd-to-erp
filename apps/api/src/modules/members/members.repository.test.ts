@@ -73,7 +73,10 @@ describe('members.repository', () => {
         delete: vi.fn(),
         count: vi.fn().mockResolvedValue(2),
       },
-      project: { updateMany: vi.fn() },
+      project: {
+        updateMany: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({ status: 'ACTIVE' }),
+      },
     };
     await addMember(
       { organizationId: 'o1', projectId: 'p1', userId: 'u1', role: 'VIEWER' },
@@ -82,7 +85,7 @@ describe('members.repository', () => {
     await updateMemberRole('m1', 'OWNER', tx as never);
     await deleteMember('m1', tx as never);
     expect(await countOwners('o1', 'p1', tx as never)).toBe(2);
-    await lockProject('o1', 'p1', tx as never);
+    expect(await lockProject('o1', 'p1', tx as never)).toBe('ACTIVE');
 
     expect(tx.projectMember.count.mock.calls[0]?.[0].where).toEqual({
       organizationId: 'o1',

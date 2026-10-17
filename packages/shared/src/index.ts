@@ -1,6 +1,14 @@
 export const SHARED_VERSION = '0.0.0' as const;
 
-export { JobName, DEFAULT_BACKOFF, type ProcessSourcePayload, type JobPayloadMap } from './jobs.js';
+export {
+  JobName,
+  DEFAULT_BACKOFF,
+  type ProcessSourcePayload,
+  type RefreshSummaryPayload,
+  type GenerateQuestionsPayload,
+  type ApplyAnswerPayload,
+  type JobPayloadMap,
+} from './jobs.js';
 
 // Schemas
 export { loginSchema, type LoginInput } from './schemas/auth.js';
@@ -64,6 +72,49 @@ export {
   type ListNotesQuery,
 } from './schemas/note.js';
 
+export {
+  knowledgeStatusSchema,
+  chunkParamsSchema,
+  listKnowledgeQuerySchema,
+  listModulesQuerySchema,
+  type ChunkParams,
+  type ListKnowledgeQuery,
+  type ListModulesQuery,
+} from './schemas/knowledge.js';
+
+export {
+  questionStatusSchema,
+  questionReasonSchema,
+  questionPrioritySchema,
+  questionParamsSchema,
+  listQuestionsQuerySchema,
+  answerQuestionSchema,
+  dismissQuestionSchema,
+  listDecisionsQuerySchema,
+  summaryQuerySchema,
+  decisionChangeRecordSchema,
+  decisionConflictRecordSchema,
+  type DecisionChangeRecord,
+  type DecisionConflictRecord,
+  type QuestionParams,
+  type ListQuestionsQuery,
+  type AnswerQuestionInput,
+  type DismissQuestionInput,
+  type ListDecisionsQuery,
+  type SummaryQuery,
+} from './schemas/question.js';
+
+export {
+  summaryLlmOutputSchema,
+  questionsLlmOutputSchema,
+  generatedQuestionSchema,
+  applyAnswerLlmOutputSchema,
+  type SummaryLlmOutput,
+  type QuestionsLlmOutput,
+  type GeneratedQuestion,
+  type ApplyAnswerLlmOutput,
+} from './schemas/understanding-llm.js';
+
 // Types
 export { type ApiErrorCode, type ApiErrorEnvelope } from './types/api.js';
 export { type UserDto, type OrgUserDto } from './types/user.js';
@@ -75,6 +126,32 @@ export {
   type PagedResult,
 } from './types/project.js';
 
+export {
+  type KnowledgeSourceDto,
+  type ModuleRefDto,
+  type RequirementDto,
+  type BusinessRuleDto,
+  type ModuleDto,
+  type ChunkDetailDto,
+  type KnowledgeKind,
+  type KnowledgeSummaryDto,
+} from './types/knowledge.js';
+export {
+  type LinkedItemDto,
+  type QuestionAnswerDto,
+  type QuestionDismissalDto,
+  type QuestionDto,
+  type QuestionCountsDto,
+  type DecisionItemStateDto,
+  type DecisionChangeDto,
+  type DecisionConflictDto,
+  type DecisionDto,
+  type SummaryItemRefDto,
+  type SummaryContentDto,
+  type SummaryVersionDto,
+  type SummaryDto,
+  type SummaryResponseDto,
+} from './types/question.js';
 export {
   type SourceStatus,
   type PersonRef,
@@ -90,6 +167,24 @@ export {
 } from './types/source.js';
 
 // Constants
+export {
+  QUESTION_STATUSES,
+  QUESTION_REASONS,
+  QUESTION_PRIORITIES,
+  LINKED_ITEM_KINDS,
+  MAX_ANSWER_CHARS,
+  MAX_DISMISS_REASON_CHARS,
+  priorityRank,
+  type QuestionStatus,
+  type QuestionReason,
+  type QuestionPriority,
+  type LinkedItemKind,
+} from './constants/questions.js';
+export {
+  KNOWLEDGE_STATUSES,
+  ATTENTION_STATUSES,
+  type KnowledgeStatus,
+} from './constants/knowledge.js';
 export {
   MAX_UPLOAD_BYTES,
   MAX_NOTE_CHARS,

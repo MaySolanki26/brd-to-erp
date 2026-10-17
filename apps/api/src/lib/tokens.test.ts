@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { generateOpaqueToken, hashToken } from './tokens.js';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('../config/env.js', async () => (await import('../test/test-env.js')).envModule);
+
+import { generateOpaqueToken, hashEmailForAudit, hashToken } from './tokens.js';
 
 describe('tokens', () => {
   it('generates unique url-safe tokens with 256 bits of entropy', () => {
@@ -12,5 +15,11 @@ describe('tokens', () => {
     expect(hashToken('abc')).toBe(hashToken('abc'));
     expect(hashToken('abc')).not.toBe('abc');
     expect(hashToken('abc')).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('hashes emails with a key, ignoring case and surrounding spaces', () => {
+    expect(hashEmailForAudit(' Ann@Example.com ')).toBe(hashEmailForAudit('ann@example.com'));
+    expect(hashEmailForAudit('ann@example.com')).not.toBe(hashToken('ann@example.com'));
+    expect(hashEmailForAudit('ann@example.com')).toMatch(/^[0-9a-f]{64}$/);
   });
 });

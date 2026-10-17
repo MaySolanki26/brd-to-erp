@@ -23,6 +23,10 @@ export interface AppOptions {
 export function createApp(options: AppOptions = {}): express.Express {
   const rateLimitEnabled = options.rateLimit ?? true;
   const app = express();
+  // Behind a load balancer req.ip is the proxy's address unless the hop count is configured.
+  if (env.TRUST_PROXY_HOPS > 0) {
+    app.set('trust proxy', env.TRUST_PROXY_HOPS);
+  }
 
   // Security
   app.use(helmet());

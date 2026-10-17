@@ -21,6 +21,19 @@ function toMemberDto(member: repo.MemberRecord): MemberDto {
   };
 }
 
+const ARCHIVED = 'Archived projects cannot be modified';
+
+/** Locks the project and refuses writes to archived ones; the lock also serializes member changes. */
+async function lockActiveProject(user: UserDto, projectId: string, tx: DbClient): Promise<void> {
+  const status = await repo.lockProject(user.organizationId, projectId, tx);
+  if (status === null) {
+    throw new NotFoundError('Project not found');
+  }
+  if (status === 'ARCHIVED') {
+    throw new ConflictError(ARCHIVED);
+  }
+}
+
 async function assertNotLastOwner(
   user: UserDto,
   projectId: string,
@@ -57,6 +70,7 @@ export async function addMember(
   }
 
   return withTransaction(async (tx) => {
+    await lockActiveProject(user, projectId, tx);
     if (await repo.findMember(user.organizationId, projectId, input.userId, tx)) {
       throw new ConflictError('User is already a member of this project');
     }
@@ -86,7 +100,7 @@ export async function updateMemberRole(
   input: UpdateMemberInput,
 ): Promise<MemberDto> {
   return withTransaction(async (tx) => {
-    await repo.lockProject(user.organizationId, projectId, tx);
+    await lockActiveProject(user, projectId, tx);
     const member = await repo.findMember(user.organizationId, projectId, targetUserId, tx);
     if (!member) {
       throw new NotFoundError('Member not found');

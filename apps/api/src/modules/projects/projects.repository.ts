@@ -12,6 +12,7 @@ export interface ListProjectsParams {
   userId: string;
   allInOrg: boolean;
   includeArchived: boolean;
+  search?: string | undefined;
   page: number;
   pageSize: number;
 }
@@ -23,6 +24,7 @@ export async function listProjects(
     organizationId: params.organizationId,
     ...(params.allInOrg ? {} : { members: { some: { userId: params.userId } } }),
     ...(params.includeArchived ? {} : { status: { not: 'ARCHIVED' as const } }),
+    ...(params.search ? { name: { contains: params.search, mode: 'insensitive' as const } } : {}),
   };
 
   const [total, rows] = await prisma.$transaction([

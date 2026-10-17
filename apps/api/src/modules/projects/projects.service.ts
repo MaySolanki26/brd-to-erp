@@ -36,6 +36,7 @@ export async function listProjects(
     userId: user.id,
     allInOrg: user.orgRole === 'ORG_ADMIN',
     includeArchived: query.includeArchived,
+    search: query.search,
     page: query.page,
     pageSize: query.pageSize,
   });

@@ -1,5 +1,8 @@
 export const JobName = {
   PROCESS_SOURCE: 'process-source',
+  REFRESH_SUMMARY: 'refresh-summary',
+  GENERATE_QUESTIONS: 'generate-questions',
+  APPLY_ANSWER: 'apply-answer',
 } as const;
 
 export type JobName = (typeof JobName)[keyof typeof JobName];
@@ -15,8 +18,30 @@ export interface ProcessSourcePayload {
   versionId?: string;
 }
 
+/** Rebuilds the versioned project summary; does nothing when the inputs have not changed. */
+export interface RefreshSummaryPayload {
+  organizationId: string;
+  projectId: string;
+}
+
+/** Looks for gaps, ambiguities, conflicts and missing rules in the project's items. */
+export interface GenerateQuestionsPayload {
+  organizationId: string;
+  projectId: string;
+}
+
+/** Applies one recorded answer to the items its question is linked to. */
+export interface ApplyAnswerPayload {
+  organizationId: string;
+  projectId: string;
+  answerId: string;
+}
+
 export interface JobPayloadMap {
   [JobName.PROCESS_SOURCE]: ProcessSourcePayload;
+  [JobName.REFRESH_SUMMARY]: RefreshSummaryPayload;
+  [JobName.GENERATE_QUESTIONS]: GenerateQuestionsPayload;
+  [JobName.APPLY_ANSWER]: ApplyAnswerPayload;
 }
 
 export const DEFAULT_BACKOFF = {

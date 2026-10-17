@@ -62,3 +62,22 @@ export async function listActiveNotes(
     take: ACTIVE_LIMIT,
   });
 }
+
+/** The most recent time any document or note in the project reached PROCESSED, if ever. */
+export async function latestProcessedAt(
+  organizationId: string,
+  projectId: string,
+): Promise<Date | null> {
+  const [document, note] = await Promise.all([
+    prisma.document.aggregate({
+      where: { organizationId, projectId, deletedAt: null, status: 'PROCESSED' },
+      _max: { updatedAt: true },
+    }),
+    prisma.contextNote.aggregate({
+      where: { organizationId, projectId, status: 'PROCESSED' },
+      _max: { updatedAt: true },
+    }),
+  ]);
+  const times = [document._max.updatedAt, note._max.updatedAt].filter((t): t is Date => t !== null);
+  return times.length === 0 ? null : new Date(Math.max(...times.map((t) => t.getTime())));
+}

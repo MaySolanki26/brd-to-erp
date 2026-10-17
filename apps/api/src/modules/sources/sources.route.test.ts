@@ -31,6 +31,8 @@ vi.mock(
   '../members/members.repository.js',
   async () => (await import('../../test/fake-db.js')).membersRepositoryModule,
 );
+const usage = vi.hoisted(() => ({ tokensUsedSince: vi.fn().mockResolvedValue(0) }));
+vi.mock('../../services/llm/llm-usage.repository.js', () => usage);
 vi.mock(
   './sources.repository.js',
   async () => (await import('../../test/fake-db.js')).sourcesRepositoryModule,
@@ -97,6 +99,36 @@ describe('GET /api/projects/:id/processing-status', () => {
       'document',
       'note',
     ]);
+  });
+
+  it('reports when the latest source finished processing, or null if none has', async () => {
+    const session = await login(app, world.viewerA.email, PASSWORD);
+    seed(world, world.p1.id, 'UPLOADED', 'doc');
+    const before = await as(app, session, 'get', url(world.p1.id));
+    expect(before.body.status.lastProcessedAt).toBeNull();
+
+    seed(world, world.p1.id, 'PROCESSED', 'doc');
+    seed(world, world.p1.id, 'PROCESSED', 'note');
+    for (const note of db.notes.values()) note.updatedAt = new Date('2026-05-01T10:00:00.000Z');
+    for (const doc of db.documents.values()) {
+      if (doc.status === 'PROCESSED') doc.updatedAt = new Date('2026-04-01T10:00:00.000Z');
+    }
+    const after = await as(app, session, 'get', url(world.p1.id));
+    expect(after.body.status.lastProcessedAt).toBe('2026-05-01T10:00:00.000Z');
+  });
+
+  it('says when the project has used up its monthly LLM budget, and not before', async () => {
+    const session = await login(app, world.viewerA.email, PASSWORD);
+    usage.tokensUsedSince.mockResolvedValueOnce(1_999_999);
+    expect((await as(app, session, 'get', url(world.p1.id))).body.status.llmPaused).toBe(false);
+
+    usage.tokensUsedSince.mockResolvedValueOnce(2_000_000);
+    expect((await as(app, session, 'get', url(world.p1.id))).body.status.llmPaused).toBe(true);
+    expect(usage.tokensUsedSince).toHaveBeenLastCalledWith(
+      world.orgA,
+      world.p1.id,
+      expect.any(Date),
+    );
   });
 
   it('reports inactive when everything has finished', async () => {

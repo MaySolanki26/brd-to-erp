@@ -72,6 +72,36 @@ export async function findDocument(
   });
 }
 
+/** Serializes first uploads in a project so two uploads of one new name cannot both create it. */
+export async function lockProjectForUpload(
+  organizationId: string,
+  projectId: string,
+  db: DbClient,
+): Promise<void> {
+  await db.project.updateMany({
+    where: { id: projectId, organizationId },
+    data: { updatedAt: new Date() },
+  });
+}
+
+/** Finds the active document in this project that already holds a file with this name. */
+export async function findDocumentIdByFileName(
+  organizationId: string,
+  projectId: string,
+  fileName: string,
+  db: DbClient,
+): Promise<string | null> {
+  const document = await db.document.findFirst({
+    where: {
+      fileName: { equals: fileName, mode: 'insensitive' },
+      ...inProject(organizationId, projectId),
+    },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true },
+  });
+  return document?.id ?? null;
+}
+
 export async function listVersions(
   organizationId: string,
   projectId: string,

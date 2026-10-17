@@ -1,4 +1,4 @@
-import type { ProjectRole } from '@prisma/client';
+import type { ProjectRole, ProjectStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import type { DbClient } from '../../lib/transaction.js';
 
@@ -103,9 +103,14 @@ export async function lockProject(
   organizationId: string,
   projectId: string,
   db: DbClient,
-): Promise<void> {
+): Promise<ProjectStatus | null> {
   await db.project.updateMany({
     where: { id: projectId, organizationId },
     data: { updatedAt: new Date() },
   });
+  const project = await db.project.findFirst({
+    where: { id: projectId, organizationId },
+    select: { status: true },
+  });
+  return project?.status ?? null;
 }

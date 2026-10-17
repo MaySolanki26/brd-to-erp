@@ -21,11 +21,18 @@ import { SourceStatusBadge } from './SourceStatusBadge';
 interface DocumentDrawerProps {
   projectId: string;
   documentId: string | null;
+  /** Start on this version instead of the latest. */
+  initialVersionId?: string | null;
   onClose: () => void;
 }
 
-export function DocumentDrawer({ projectId, documentId, onClose }: DocumentDrawerProps) {
-  const [versionId, setVersionId] = useState<string | null>(null);
+export function DocumentDrawer({
+  projectId,
+  documentId,
+  initialVersionId = null,
+  onClose,
+}: DocumentDrawerProps) {
+  const [versionId, setVersionId] = useState<string | null>(initialVersionId);
   const [page, setPage] = useState(1);
   const detail = useDocumentDetail(projectId, documentId, versionId, page);
   const document = detail.data;

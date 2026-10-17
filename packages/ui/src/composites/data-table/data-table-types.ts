@@ -78,6 +78,8 @@ export interface DataTableProps<TData> {
 
   // Row click
   onRowClick?: (row: TData) => void;
+  /** Extra classes for a row, e.g. `row-attention` to highlight rows that need a look. */
+  rowClassName?: (row: TData) => string | undefined;
 
   // Styling
   className?: string;

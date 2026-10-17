@@ -4,13 +4,15 @@ import { env } from '../../config/env.js';
 import { UnauthorizedError, ValidationError } from '../../errors/app-error.js';
 import { signAccessToken } from '../../lib/jwt.js';
 import { hashPassword, verifyAgainstDummy, verifyPassword } from '../../lib/password.js';
-import { generateOpaqueToken, hashToken } from '../../lib/tokens.js';
+import { generateOpaqueToken, hashEmailForAudit, hashToken } from '../../lib/tokens.js';
 import { withTransaction, type DbClient } from '../../lib/transaction.js';
 import { createAuditLog } from '../audit/audit.repository.js';
 import * as repo from './auth.repository.js';
 
 export const MAX_FAILED_LOGINS = 5;
 export const LOCKOUT_MS = 15 * 60 * 1000;
+/** A just-rotated token presented again within this window is a concurrent refresh, not a theft. */
+export const REFRESH_REUSE_GRACE_MS = 10_000;
 
 const INVALID_CREDENTIALS = 'Invalid email or password';
 const INVALID_REFRESH = 'Invalid refresh token';
@@ -67,6 +69,7 @@ async function issueSession(
   );
   const accessToken = await signAccessToken({
     userId: user.id,
+    familyId,
     organizationId: user.organizationId,
     orgRole: user.orgRole,
   });
@@ -92,7 +95,7 @@ async function recordFailedLogin(
         entity: 'Auth',
         userId: user?.id ?? null,
         organizationId: user?.organizationId ?? null,
-        metadata: { reason, emailHash: hashToken(email), ip: ctx.ip ?? null },
+        metadata: { reason, emailHash: hashEmailForAudit(email), ip: ctx.ip ?? null },
       },
       tx,
     );
@@ -166,8 +169,12 @@ export async function refresh(rawToken: string, ctx: RequestContext): Promise<Au
     throw new UnauthorizedError(INVALID_REFRESH);
   }
 
-  // A rotated token being replayed means it was stolen: kill the whole family.
   if (session.revokedAt) {
+    // Two tabs refreshing at once present the same token; only a late replay means theft.
+    if (Date.now() - session.revokedAt.getTime() < REFRESH_REUSE_GRACE_MS) {
+      throw new UnauthorizedError(INVALID_REFRESH);
+    }
+    // A rotated token being replayed means it was stolen: kill the whole family.
     await revokeFamilyWithAudit(session, ctx);
     throw new UnauthorizedError(INVALID_REFRESH);
   }
@@ -188,7 +195,7 @@ export async function refresh(rawToken: string, ctx: RequestContext): Promise<Au
   });
 
   if (!rotated) {
-    await revokeFamilyWithAudit(session, ctx);
+    // Lost a race against a concurrent refresh of the same token; the winner holds the new session.
     throw new UnauthorizedError(INVALID_REFRESH);
   }
   return rotated;
@@ -266,4 +273,8 @@ export async function getSessionUser(userId: string): Promise<UserDto> {
     throw new UnauthorizedError('User not found');
   }
   return toUserDto(user);
+}
+
+export async function isSessionActive(familyId: string): Promise<boolean> {
+  return repo.isFamilyActive(familyId, new Date());
 }

@@ -210,6 +210,39 @@ describe('members API', () => {
     });
   });
 
+  describe('archived projects', () => {
+    async function archive(): Promise<void> {
+      expect((await as(app, owner, 'post', `/api/projects/${world.p1.id}/archive`)).status).toBe(
+        200,
+      );
+    }
+
+    it('refuses to add a member or change a role with 409', async () => {
+      await archive();
+      const add = await as(app, owner, 'post', members(world.p1.id)).send({
+        userId: world.outsiderA.id,
+        role: 'VIEWER',
+      });
+      expect(add.status).toBe(409);
+      const change = await as(
+        app,
+        owner,
+        'patch',
+        `${members(world.p1.id)}/${world.viewerA.id}`,
+      ).send({ role: 'ANALYST' });
+      expect(change.status).toBe(409);
+      expect(roleOf(world.outsiderA.id, world.p1.id)).toBeUndefined();
+      expect(roleOf(world.viewerA.id, world.p1.id)).toBe('VIEWER');
+    });
+
+    it('still lets access be removed', async () => {
+      await archive();
+      const res = await as(app, owner, 'delete', `${members(world.p1.id)}/${world.viewerA.id}`);
+      expect(res.status).toBe(204);
+      expect(roleOf(world.viewerA.id, world.p1.id)).toBeUndefined();
+    });
+  });
+
   describe('audit log', () => {
     it('records every member write with the actor and organization', async () => {
       await as(app, owner, 'post', members(world.p1.id)).send({

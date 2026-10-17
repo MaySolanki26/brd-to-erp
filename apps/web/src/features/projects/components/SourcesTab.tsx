@@ -1,29 +1,17 @@
 import { useRef, useState } from 'react';
-import { FileText, FileUp, StickyNote } from 'lucide-react';
+import { FileText, StickyNote } from 'lucide-react';
 import { SOURCE_FILE_ACCEPT, type ContextNoteDto, type DocumentDto } from '@brd/shared';
-import {
-  Button,
-  EmptyState,
-  NoAccess,
-  PageError,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableSkeleton,
-  toast,
-} from '@brd/ui';
-import { apiUrl } from '@/lib/api-client';
+import { Button, EmptyState, NoAccess, PageError, TableSkeleton, toast } from '@brd/ui';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { useDocuments, useNotes, useProcessingStatus } from '../hooks/use-sources';
-import { useReprocessDocument, useUploadDocument } from '../hooks/use-source-mutations';
-import { formatDate } from '../project-labels';
-import { checkUploadable, formatBytes } from '../source-utils';
+import { useReprocessDocument } from '../hooks/use-source-mutations';
+import { useUploadQueue } from '../hooks/use-upload-queue';
 import { DocumentDrawer } from './DocumentDrawer';
+import { DropZone } from './DropZone';
 import { NoteDrawer } from './NoteDrawer';
-import { SourceStatusBadge } from './SourceStatusBadge';
+import { SourcesList } from './SourcesList';
+import { UploadQueue } from './UploadQueue';
+import { VersionHistoryDrawer } from './VersionHistoryDrawer';
 
 interface SourcesTabProps {
   projectId: string;
@@ -31,58 +19,46 @@ interface SourcesTabProps {
   canReprocess: boolean;
 }
 
-const DOCUMENT_COLUMNS = [
-  { kind: 'text' },
+const LIST_COLUMNS = [
   { kind: 'badge' },
+  { kind: 'text' },
+  { kind: 'text' },
   { kind: 'badge' },
   { kind: 'text' },
   { kind: 'icon' },
 ] as const;
 
-function canRetry(document: DocumentDto): boolean {
-  return document.status === 'FAILED' || document.status === 'PROCESSED';
+interface ChunkTarget {
+  documentId: string;
+  versionId: string | null;
 }
 
 export function SourcesTab({ projectId, canAddSource, canReprocess }: SourcesTabProps) {
   const documents = useDocuments(projectId);
   const notes = useNotes(projectId);
   useProcessingStatus(projectId);
-  const upload = useUploadDocument(projectId);
+  const queue = useUploadQueue(projectId);
   const reprocess = useReprocessDocument(projectId);
 
-  const fileInput = useRef<HTMLInputElement>(null);
-  const versionTarget = useRef<string | undefined>(undefined);
-  const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
+  const versionInput = useRef<HTMLInputElement>(null);
+  const versionTarget = useRef<DocumentDto | null>(null);
+  const [chunkTarget, setChunkTarget] = useState<ChunkTarget | null>(null);
+  const [versionsDocumentId, setVersionsDocumentId] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<ContextNoteDto | null>(null);
 
-  const pickFile = (documentId?: string) => {
-    versionTarget.current = documentId;
-    fileInput.current?.click();
+  const pickNewVersion = (document: DocumentDto) => {
+    versionTarget.current = document;
+    versionInput.current?.click();
   };
 
-  const onFileChosen = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onVersionFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file) return;
-
-    const problem = checkUploadable(file);
-    if (problem) {
-      toast.error(problem);
-      return;
+    const target = versionTarget.current;
+    if (file && target) {
+      queue.add([file], { documentId: target.id, documentName: target.fileName });
     }
-    upload.mutate(
-      { file, ...(versionTarget.current && { documentId: versionTarget.current }) },
-      {
-        onSuccess: ({ document, duplicateOf }) => {
-          toast.success(`${document.fileName} uploaded. Processing will start shortly.`);
-          if (duplicateOf) {
-            toast.warning(`Identical content already exists in "${duplicateOf.title}".`);
-          }
-        },
-        onError: (err) => toast.error(errorMessage(err)),
-      },
-    );
   };
 
   const retry = (document: DocumentDto) =>
@@ -96,221 +72,107 @@ export function SourcesTab({ projectId, canAddSource, canReprocess }: SourcesTab
     setNoteOpen(true);
   };
 
-  if (documents.isError && isForbidden(documents.error)) {
+  const forbidden = [documents, notes].some((q) => q.isError && isForbidden(q.error));
+  if (forbidden) {
     return <NoAccess description="You do not have access to this project's sources." />;
   }
 
+  const loading = documents.isPending || notes.isPending;
+  const failed = documents.isError ? documents : notes.isError ? notes : null;
+  const documentItems = documents.data?.items ?? [];
+  const noteItems = notes.data?.items ?? [];
+  const isEmpty =
+    documents.isSuccess && notes.isSuccess && documentItems.length + noteItems.length === 0;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <input
-        ref={fileInput}
+        ref={versionInput}
         type="file"
         accept={SOURCE_FILE_ACCEPT}
-        className="hidden"
-        aria-label="Choose a file to upload"
-        onChange={onFileChosen}
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Choose a file for the new version"
+        onChange={onVersionFile}
       />
 
-      <section aria-labelledby="documents-heading" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 id="documents-heading" className="text-xl font-semibold">
-            Documents
-          </h2>
-          {canAddSource && (
-            <Button size="sm" disabled={upload.isPending} onClick={() => pickFile()}>
-              <FileUp className="mr-1 h-4 w-4" />
-              {upload.isPending ? 'Uploading…' : 'Upload document'}
-            </Button>
-          )}
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl font-semibold">Sources</h2>
+        {canAddSource && (
+          <Button size="sm" variant="outline" onClick={() => openNote(null)}>
+            <StickyNote className="mr-1 h-4 w-4" />
+            Add context note
+          </Button>
+        )}
+      </div>
 
-        {documents.isPending && <TableSkeleton columns={[...DOCUMENT_COLUMNS]} rows={3} />}
-        {documents.isError && !isForbidden(documents.error) && (
-          <PageError
-            message="Could not load documents"
-            description={errorMessage(documents.error)}
-            onRetry={() => void documents.refetch()}
-          />
-        )}
-        {documents.isSuccess && documents.data.items.length === 0 && (
-          <EmptyState
-            icon={FileText}
-            title="No documents yet"
-            description={
-              canAddSource
-                ? 'Upload a PDF, DOCX or XLSX to start building project knowledge.'
-                : 'Documents added by analysts and owners appear here.'
-            }
-            {...(canAddSource && { actionLabel: 'Upload document', onAction: () => pickFile() })}
-          />
-        )}
-        {documents.isSuccess && documents.data.items.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Version</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Chunks</TableHead>
-                <TableHead>Uploaded</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {documents.data.items.map((document) => (
-                <TableRow key={document.id}>
-                  <TableCell>
-                    <button
-                      type="button"
-                      className="text-left font-medium hover:underline"
-                      onClick={() => setOpenDocumentId(document.id)}
-                    >
-                      {document.title}
-                    </button>
-                    <p className="text-xs text-muted-foreground">
-                      {formatBytes(document.latestVersion.sizeBytes)}
-                    </p>
-                    {document.failureReason && (
-                      <p className="text-xs text-destructive">{document.failureReason}</p>
-                    )}
-                  </TableCell>
-                  <TableCell>v{document.latestVersion.versionNumber}</TableCell>
-                  <TableCell>
-                    <SourceStatusBadge status={document.status} />
-                  </TableCell>
-                  <TableCell>{document.chunkCount}</TableCell>
-                  <TableCell>
-                    {formatDate(document.createdAt)}
-                    <p className="text-xs text-muted-foreground">{document.createdBy.name}</p>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={apiUrl(
-                            `/projects/${projectId}/documents/${document.id}/versions/${document.latestVersion.id}/download`,
-                          )}
-                          download
-                        >
-                          Download
-                        </a>
-                      </Button>
-                      {canAddSource && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={upload.isPending}
-                          onClick={() => pickFile(document.id)}
-                        >
-                          New version
-                        </Button>
-                      )}
-                      {canReprocess && canRetry(document) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={reprocess.isPending}
-                          onClick={() => retry(document)}
-                        >
-                          Reprocess
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+      <DropZone canAddSource={canAddSource} onFiles={(files) => queue.add(files)} />
 
-      <section aria-labelledby="notes-heading" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 id="notes-heading" className="text-xl font-semibold">
-            Context notes
-          </h2>
-          {canAddSource && (
-            <Button size="sm" variant="outline" onClick={() => openNote(null)}>
-              <StickyNote className="mr-1 h-4 w-4" />
-              Add note
-            </Button>
-          )}
-        </div>
+      <UploadQueue
+        items={queue.items}
+        onCancel={queue.cancel}
+        onRetry={queue.retry}
+        onDismiss={queue.dismiss}
+        onClearFinished={queue.clearFinished}
+        onOpenDocument={(documentId) => setChunkTarget({ documentId, versionId: null })}
+      />
 
-        {notes.isPending && (
-          <TableSkeleton
-            columns={[{ kind: 'text' }, { kind: 'badge' }, { kind: 'text' }]}
-            rows={2}
-          />
-        )}
-        {notes.isError && !isForbidden(notes.error) && (
-          <PageError
-            message="Could not load notes"
-            description={errorMessage(notes.error)}
-            onRetry={() => void notes.refetch()}
-          />
-        )}
-        {notes.isSuccess && notes.data.items.length === 0 && (
-          <EmptyState
-            icon={StickyNote}
-            title="No notes yet"
-            description={
-              canAddSource
-                ? 'Capture call summaries and decisions that are not in a document.'
-                : 'Notes added by analysts and owners appear here.'
-            }
-          />
-        )}
-        {notes.isSuccess && notes.data.items.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Chunks</TableHead>
-                <TableHead>Updated</TableHead>
-                {canAddSource && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {notes.data.items.map((note) => (
-                <TableRow key={note.id}>
-                  <TableCell className="font-medium">
-                    {note.title}
-                    {note.failureReason && (
-                      <p className="text-xs font-normal text-destructive">{note.failureReason}</p>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <SourceStatusBadge status={note.status} />
-                  </TableCell>
-                  <TableCell>{note.chunkCount}</TableCell>
-                  <TableCell>
-                    {formatDate(note.updatedAt)}
-                    <p className="text-xs text-muted-foreground">{note.createdBy.name}</p>
-                  </TableCell>
-                  {canAddSource && (
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => openNote(note)}>
-                        Edit
-                      </Button>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
-
-      {openDocumentId && (
-        <DocumentDrawer
-          key={openDocumentId}
-          projectId={projectId}
-          documentId={openDocumentId}
-          onClose={() => setOpenDocumentId(null)}
+      {loading && <TableSkeleton columns={[...LIST_COLUMNS]} rows={3} />}
+      {failed && (
+        <PageError
+          message="Could not load sources"
+          description={errorMessage(failed.error)}
+          onRetry={() => {
+            void documents.refetch();
+            void notes.refetch();
+          }}
         />
       )}
+      {isEmpty && (
+        <EmptyState
+          icon={FileText}
+          title="No sources yet"
+          description={
+            canAddSource
+              ? 'Drop a PDF, DOCX or XLSX above, or add a context note, to start building project knowledge.'
+              : 'Documents and notes added by analysts and owners appear here.'
+          }
+        />
+      )}
+      {documents.isSuccess && notes.isSuccess && !isEmpty && (
+        <SourcesList
+          projectId={projectId}
+          documents={documentItems}
+          notes={noteItems}
+          canAddSource={canAddSource}
+          canReprocess={canReprocess}
+          reprocessing={reprocess.isPending}
+          onViewChunks={(documentId) => setChunkTarget({ documentId, versionId: null })}
+          onViewVersions={setVersionsDocumentId}
+          onNewVersion={pickNewVersion}
+          onEditNote={openNote}
+          onReprocess={retry}
+        />
+      )}
+
+      {chunkTarget && (
+        <DocumentDrawer
+          key={`${chunkTarget.documentId}:${chunkTarget.versionId ?? 'latest'}`}
+          projectId={projectId}
+          documentId={chunkTarget.documentId}
+          initialVersionId={chunkTarget.versionId}
+          onClose={() => setChunkTarget(null)}
+        />
+      )}
+      <VersionHistoryDrawer
+        projectId={projectId}
+        documentId={versionsDocumentId}
+        onClose={() => setVersionsDocumentId(null)}
+        onViewChunks={(documentId, versionId) => {
+          setVersionsDocumentId(null);
+          setChunkTarget({ documentId, versionId });
+        }}
+      />
       <NoteDrawer
         projectId={projectId}
         open={noteOpen}

@@ -197,7 +197,7 @@ describe('users routes', () => {
     expect(db.users.get(world.userB.id)?.deletedAt).toBeNull();
   });
 
-  it('resets a password to a temporary one, revokes refresh and gates the old access token', async () => {
+  it('resets a password to a temporary one, ends the old session and gates the new one', async () => {
     const admin = await adminSession();
     const target = await login(app, world.viewerA.email, PASSWORD);
 
@@ -207,7 +207,8 @@ describe('users routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.user.mustChangePassword).toBe(true);
     expect((await as(app, target, 'post', '/api/auth/refresh')).status).toBe(401);
-    expect((await as(app, target, 'get', '/api/projects')).status).toBe(403);
+    // Resetting revokes every session, so the old access token stops working at once.
+    expect((await as(app, target, 'get', '/api/projects')).status).toBe(401);
     const session = await login(app, world.viewerA.email, TEMP);
     expect((await as(app, session, 'get', '/api/projects')).status).toBe(403);
   });

@@ -32,6 +32,16 @@ describe('projects.repository', () => {
     expect(prismaMock.project.count.mock.calls[0]?.[0].where).toEqual({ organizationId: 'o1' });
   });
 
+  it('filters by a case-insensitive name match without widening the tenant or membership scope', async () => {
+    await listProjects({ ...base, allInOrg: false, search: 'alp' });
+    expect(prismaMock.project.count.mock.calls[0]?.[0].where).toEqual({
+      organizationId: 'o1',
+      members: { some: { userId: 'u1' } },
+      status: { not: 'ARCHIVED' },
+      name: { contains: 'alp', mode: 'insensitive' },
+    });
+  });
+
   it('paginates and flattens the membership into myRole', async () => {
     prismaMock.project.findMany.mockResolvedValue([
       { id: 'p1', members: [{ role: 'VIEWER' }] },

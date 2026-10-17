@@ -22,6 +22,15 @@ describe('errorHandler', () => {
     expect(body.error).toMatchObject({ code: 'CONFLICT', message: 'Already there' });
   });
 
+  it('answers a unique-constraint race as 409 without leaking the database message', () => {
+    const err = Object.assign(new Error('Unique constraint failed on the fields: (`email`)'), {
+      code: 'P2002',
+    });
+    const { status, body } = run(err);
+    expect(status).toHaveBeenCalledWith(409);
+    expect(body.error).toMatchObject({ code: 'CONFLICT', message: 'Already exists' });
+  });
+
   it('answers 413 for a body that exceeds the parser limit', () => {
     const err = Object.assign(new Error('request entity too large'), { status: 413 });
     const { status, body } = run(err);

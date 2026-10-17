@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { FolderKanban, Plus } from 'lucide-react';
 import {
   Button,
+  DataTablePagination,
   EmptyState,
   InformativeBar,
   NoAccess,
   PageError,
   PageShell,
+  SearchInput,
   StatusBadge,
   Table,
   TableBody,
@@ -19,7 +21,7 @@ import {
 } from '@brd/ui';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { CreateProjectDrawer } from './components/CreateProjectDrawer';
-import { useProjects } from './hooks/use-projects';
+import { PROJECTS_PAGE_SIZE, useProjects } from './hooks/use-projects';
 import { ROLE_LABELS, STATUS_TONES, formatDate } from './project-labels';
 
 const SKELETON_COLUMNS = [
@@ -31,8 +33,16 @@ const SKELETON_COLUMNS = [
 
 export function ProjectsPage() {
   const navigate = useNavigate();
-  const projects = useProjects();
+  const [search, setSearch] = useState('');
+  const [pageNumber, setPageNumber] = useState(1);
+  const projects = useProjects({ page: pageNumber, search });
   const [createOpen, setCreateOpen] = useState(false);
+
+  const changeSearch = (value: string) => {
+    setSearch(value.trim());
+    setPageNumber(1);
+  };
+  const isSearching = search.length > 0;
 
   return (
     <PageShell>
@@ -43,6 +53,13 @@ export function ProjectsPage() {
         </Button>
       </InformativeBar>
       <PageShell.Body padded>
+        <SearchInput
+          value={search}
+          onChange={changeSearch}
+          placeholder="Search projects by name"
+          aria-label="Search projects"
+          className="mb-4 max-w-sm"
+        />
         {projects.isPending && <TableSkeleton columns={[...SKELETON_COLUMNS]} rows={5} />}
         {projects.isError &&
           (isForbidden(projects.error) ? (
@@ -54,7 +71,16 @@ export function ProjectsPage() {
               onRetry={() => void projects.refetch()}
             />
           ))}
-        {projects.isSuccess && projects.data.items.length === 0 && (
+        {projects.isSuccess && projects.data.items.length === 0 && isSearching && (
+          <EmptyState
+            icon={FolderKanban}
+            title="No matching projects"
+            description={`Nothing you can access matches "${search}".`}
+            actionLabel="Show all projects"
+            onAction={() => changeSearch('')}
+          />
+        )}
+        {projects.isSuccess && projects.data.items.length === 0 && !isSearching && (
           <EmptyState
             icon={FolderKanban}
             title="No projects yet"
@@ -96,6 +122,16 @@ export function ProjectsPage() {
               ))}
             </TableBody>
           </Table>
+        )}
+        {projects.isSuccess && projects.data.total > PROJECTS_PAGE_SIZE && (
+          <DataTablePagination
+            pagination={{
+              page: projects.data.page,
+              pageSize: projects.data.pageSize,
+              total: projects.data.total,
+            }}
+            onPageChange={setPageNumber}
+          />
         )}
       </PageShell.Body>
       <CreateProjectDrawer

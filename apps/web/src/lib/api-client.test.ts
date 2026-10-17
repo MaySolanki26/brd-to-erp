@@ -49,7 +49,44 @@ describe('apiClient', () => {
     await expect(apiClient.get('/auth/me')).rejects.toBeInstanceOf(ApiClientError);
 
     expect(window.location.pathname).toBe('/login');
-    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual(['/api/auth/me', '/api/auth/refresh']);
+    // One retry of the refresh covers a second tab refreshing at the same moment.
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+      '/api/auth/me',
+      '/api/auth/refresh',
+      '/api/auth/refresh',
+    ]);
+  });
+
+  it('retries a refused refresh once and carries on when the second attempt succeeds', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(respond(401))
+      .mockResolvedValueOnce(respond(401))
+      .mockResolvedValueOnce(respond(200, {}))
+      .mockResolvedValueOnce(respond(200, { ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(apiClient.get('/projects')).resolves.toEqual({ ok: true });
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+      '/api/projects',
+      '/api/auth/refresh',
+      '/api/auth/refresh',
+      '/api/projects',
+    ]);
+  });
+
+  it('sends an expired session to login with the page it was on as the return URL', async () => {
+    const original = window.location;
+    const location = { pathname: '/projects/p1', search: '?tab=members', href: '' };
+    Object.defineProperty(window, 'location', { value: location, writable: true });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond(401)));
+
+    try {
+      await expect(apiClient.get('/projects/p1')).rejects.toBeInstanceOf(ApiClientError);
+      expect(location.href).toBe('/login?returnTo=%2Fprojects%2Fp1%3Ftab%3Dmembers');
+    } finally {
+      Object.defineProperty(window, 'location', { value: original, writable: true });
+    }
   });
 
   describe('CSRF header', () => {
@@ -85,43 +122,6 @@ describe('apiClient', () => {
       vi.stubGlobal('fetch', fetchMock);
       await apiClient.del('/projects/1');
       expect(headersOfCall(fetchMock, 2).get('X-CSRF-Token')).toBe('tok-2');
-    });
-  });
-
-  describe('upload', () => {
-    const file = new File(['%PDF-1.4'], 'a.pdf', { type: 'application/pdf' });
-
-    it('posts the file to the absolute URL without the API prefix or cookies', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(respond(201));
-      vi.stubGlobal('fetch', fetchMock);
-      await apiClient.upload('http://storage.test/upload?token=t', file, 'application/pdf');
-      expect(fetchMock).toHaveBeenCalledWith('http://storage.test/upload?token=t', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/pdf' },
-        body: file,
-      });
-    });
-
-    it('turns an error envelope into an ApiClientError', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(
-          respond(413, {
-            error: { code: 'PAYLOAD_TOO_LARGE', message: 'The request is too large' },
-          }),
-        ),
-      );
-      await expect(apiClient.upload('http://s/u', file, 'application/pdf')).rejects.toMatchObject({
-        status: 413,
-        code: 'PAYLOAD_TOO_LARGE',
-      });
-    });
-
-    it('reports a friendly message when the network fails', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
-      await expect(apiClient.upload('http://s/u', file, 'application/pdf')).rejects.toThrow(
-        /Check your connection/,
-      );
     });
   });
 });

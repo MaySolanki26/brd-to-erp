@@ -46,6 +46,7 @@ export function MembersTab({ projectId, canManage, currentUserId }: MembersTabPr
   const removeMember = useRemoveMember(projectId);
   const [addOpen, setAddOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<MemberDto | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (!canManage) {
     return (
@@ -53,21 +54,27 @@ export function MembersTab({ projectId, canManage, currentUserId }: MembersTabPr
     );
   }
 
-  const changeRole = (member: MemberDto, role: ProjectRole) =>
+  const ownerCount = members.data?.filter((m) => m.role === 'OWNER').length ?? 0;
+  const isSoleOwner = (member: MemberDto) => member.role === 'OWNER' && ownerCount <= 1;
+
+  const changeRole = (member: MemberDto, role: ProjectRole) => {
+    setActionError(null);
     updateRole.mutate(
       { userId: member.userId, role },
       {
         onSuccess: () => toast.success(`${member.name} is now ${ROLE_LABELS[role]}`),
-        onError: (err) => toast.error(errorMessage(err)),
+        onError: (err) => setActionError(errorMessage(err)),
       },
     );
+  };
 
   const confirmRemove = () => {
     if (!removeTarget) return;
     const target = removeTarget;
+    setActionError(null);
     removeMember.mutate(target.userId, {
       onSuccess: () => toast.success(`${target.name} removed from the project`),
-      onError: (err) => toast.error(errorMessage(err)),
+      onError: (err) => setActionError(errorMessage(err)),
       onSettled: () => setRemoveTarget(null),
     });
   };
@@ -82,6 +89,15 @@ export function MembersTab({ projectId, canManage, currentUserId }: MembersTabPr
           Add member
         </Button>
       </div>
+
+      {actionError && (
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+        >
+          {actionError}
+        </p>
+      )}
 
       {members.isPending && <TableSkeleton columns={[...SKELETON_COLUMNS]} rows={4} />}
       {members.isError &&
@@ -127,7 +143,7 @@ export function MembersTab({ projectId, canManage, currentUserId }: MembersTabPr
                   <Select
                     value={member.role}
                     onValueChange={(value) => changeRole(member, value as ProjectRole)}
-                    disabled={busyUserId === member.userId}
+                    disabled={busyUserId === member.userId || isSoleOwner(member)}
                   >
                     <SelectTrigger className="w-36" aria-label={`Role for ${member.name}`}>
                       <SelectValue />
@@ -142,9 +158,13 @@ export function MembersTab({ projectId, canManage, currentUserId }: MembersTabPr
                   </Select>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="outline" size="sm" onClick={() => setRemoveTarget(member)}>
-                    Remove
-                  </Button>
+                  {isSoleOwner(member) ? (
+                    <span className="text-sm text-muted-foreground">Only owner</span>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => setRemoveTarget(member)}>
+                      Remove
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

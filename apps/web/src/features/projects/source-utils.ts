@@ -37,3 +37,13 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
+
+/** Short label for the kind of file a document is, from its stored MIME type. */
+export function fileKindLabel(mimeType: string): string {
+  const entry = Object.entries(SOURCE_FILE_TYPES).find(([, spec]) => spec.mimeType === mimeType);
+  return entry ? entry[0].toUpperCase() : 'File';
+}
+
+export function shortHash(contentHash: string): string {
+  return contentHash.slice(0, 8);
+}

@@ -236,6 +236,7 @@ export {
   NoAccess,
   // DataTable
   DataTable,
+  DataTablePagination,
   type DataTableProps,
   type DataTableColumnDef,
   type RowAction,

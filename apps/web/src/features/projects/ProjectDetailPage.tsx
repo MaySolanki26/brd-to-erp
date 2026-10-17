@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Archive } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Archive, FileQuestion } from 'lucide-react';
 import {
   Button,
   ConfirmDialog,
@@ -18,20 +18,42 @@ import {
   toast,
 } from '@brd/ui';
 import { ProjectPermission, projectRolesWith } from '@brd/shared';
-import { FileQuestion } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { ApiClientError } from '@/lib/api-client';
 import { errorMessage, isForbidden } from '@/lib/error-message';
+import { DecisionsTab } from '@/features/decisions/components/DecisionsTab';
+import { ModulesTab } from '@/features/knowledge/components/ModulesTab';
+import { RequirementsTab } from '@/features/knowledge/components/RequirementsTab';
+import { RulesTab } from '@/features/knowledge/components/RulesTab';
+import { QuestionsTab } from '@/features/questions/components/QuestionsTab';
+import { QuestionsTabLabel } from '@/features/questions/components/QuestionsTabLabel';
+import {
+  applyQuestionFilters,
+  clearQuestionFilters,
+  type QuestionFilters,
+} from '@/features/questions/hooks/use-question-filters';
 import { MembersTab } from './components/MembersTab';
+import { OverviewTab } from './components/OverviewTab';
 import { SourcesTab } from './components/SourcesTab';
 import { useArchiveProject } from './hooks/use-project-mutations';
 import { useProject } from './hooks/use-projects';
-import { ROLE_LABELS, STATUS_TONES, formatDate } from './project-labels';
+import { STATUS_TONES } from './project-labels';
 
 const MANAGE_ROLES = projectRolesWith(ProjectPermission.MANAGE_MEMBERS);
 const ARCHIVE_ROLES = projectRolesWith(ProjectPermission.ARCHIVE_PROJECT);
 const ADD_SOURCE_ROLES = projectRolesWith(ProjectPermission.ADD_SOURCE);
 const REPROCESS_ROLES = projectRolesWith(ProjectPermission.REPROCESS);
+const ANSWER_ROLES = projectRolesWith(ProjectPermission.ANSWER_QUESTION);
+
+const BASE_TABS = [
+  'overview',
+  'sources',
+  'requirements',
+  'rules',
+  'modules',
+  'questions',
+  'decisions',
+];
 
 export function ProjectDetailPage() {
   const { projectId = '' } = useParams<{ projectId: string }>();
@@ -40,6 +62,7 @@ export function ProjectDetailPage() {
   const project = useProject(projectId);
   const archive = useArchiveProject(projectId);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   if (project.isPending) return <PageLoader />;
 
@@ -78,9 +101,35 @@ export function ProjectDetailPage() {
   const canReprocess =
     data.status !== 'ARCHIVED' &&
     (isOrgAdmin || (data.myRole !== null && REPROCESS_ROLES.includes(data.myRole)));
+  const canAnswer = isOrgAdmin || (data.myRole !== null && ANSWER_ROLES.includes(data.myRole));
   const canArchive =
     data.status !== 'ARCHIVED' &&
     (isOrgAdmin || (data.myRole !== null && ARCHIVE_ROLES.includes(data.myRole)));
+
+  const requestedTab = searchParams.get('tab') ?? 'overview';
+  const validTabs = canManage ? [...BASE_TABS, 'members'] : BASE_TABS;
+  const activeTab = validTabs.includes(requestedTab) ? requestedTab : 'overview';
+  const selectTab = (tab: string) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', tab);
+        return next;
+      },
+      { replace: true },
+    );
+
+  const openQuestions = (preset: Partial<QuestionFilters>) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', 'questions');
+        clearQuestionFilters(next);
+        applyQuestionFilters(next, preset);
+        return next;
+      },
+      { replace: true },
+    );
 
   const confirmArchive = () =>
     archive.mutate(undefined, {
@@ -109,23 +158,25 @@ export function ProjectDetailPage() {
         )}
       </InformativeBar>
       <PageShell.Body padded>
-        <Tabs defaultValue="overview">
+        <Tabs value={activeTab} onValueChange={selectTab}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="sources">Sources</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
+            <TabsTrigger value="requirements">Requirements</TabsTrigger>
+            <TabsTrigger value="rules">Rules</TabsTrigger>
+            <TabsTrigger value="modules">Modules</TabsTrigger>
+            <TabsTrigger value="questions">
+              <QuestionsTabLabel projectId={data.id} />
+            </TabsTrigger>
+            <TabsTrigger value="decisions">Decisions</TabsTrigger>
+            {canManage && <TabsTrigger value="members">Members</TabsTrigger>}
           </TabsList>
           <TabsContent value="overview" className="mt-4">
-            <dl className="grid max-w-xl grid-cols-[8rem_1fr] gap-y-3 text-sm">
-              <dt className="text-muted-foreground">Description</dt>
-              <dd>{data.description ?? 'No description'}</dd>
-              <dt className="text-muted-foreground">Your role</dt>
-              <dd>{data.myRole ? ROLE_LABELS[data.myRole] : 'Organization admin'}</dd>
-              <dt className="text-muted-foreground">Created</dt>
-              <dd>{formatDate(data.createdAt)}</dd>
-              <dt className="text-muted-foreground">Last updated</dt>
-              <dd>{formatDate(data.updatedAt)}</dd>
-            </dl>
+            <OverviewTab
+              project={data}
+              canRefreshSummary={canReprocess}
+              onOpenQuestions={openQuestions}
+            />
           </TabsContent>
           <TabsContent value="sources" className="mt-4">
             <SourcesTab
@@ -134,9 +185,26 @@ export function ProjectDetailPage() {
               canReprocess={canReprocess}
             />
           </TabsContent>
-          <TabsContent value="members" className="mt-4">
-            <MembersTab projectId={data.id} canManage={canManage} currentUserId={user?.id ?? ''} />
+          <TabsContent value="requirements" className="mt-4">
+            <RequirementsTab projectId={data.id} />
           </TabsContent>
+          <TabsContent value="rules" className="mt-4">
+            <RulesTab projectId={data.id} />
+          </TabsContent>
+          <TabsContent value="modules" className="mt-4">
+            <ModulesTab projectId={data.id} />
+          </TabsContent>
+          <TabsContent value="questions" className="mt-4">
+            <QuestionsTab projectId={data.id} canAnswer={canAnswer} />
+          </TabsContent>
+          <TabsContent value="decisions" className="mt-4">
+            <DecisionsTab projectId={data.id} />
+          </TabsContent>
+          {canManage && (
+            <TabsContent value="members" className="mt-4">
+              <MembersTab projectId={data.id} canManage currentUserId={user?.id ?? ''} />
+            </TabsContent>
+          )}
         </Tabs>
       </PageShell.Body>
       <ConfirmDialog

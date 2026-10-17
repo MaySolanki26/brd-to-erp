@@ -1,4 +1,5 @@
 import type { ApiErrorCode, ApiErrorEnvelope } from '@brd/shared';
+import { loginUrl } from './return-to';
 
 const BASE_URL = `${import.meta.env.VITE_API_URL ?? ''}/api`;
 
@@ -49,14 +50,21 @@ function withCsrf(init: RequestInit): RequestInit {
 // Reloading while already on the login page would restart the session check and loop forever.
 function redirectToLogin(): void {
   if (window.location.pathname !== LOGIN_PATH) {
-    window.location.href = LOGIN_PATH;
+    window.location.href = loginUrl(`${window.location.pathname}${window.location.search}`);
   }
 }
 
+const REFRESH_RETRY_DELAY_MS = 250;
+
+// A second tab refreshing at the same instant is refused once; by the retry its new cookie is set.
 async function silentRefresh(): Promise<void> {
-  const res = await fetch(`${BASE_URL}/auth/refresh`, withCsrf({ method: 'POST' }));
-  if (!res.ok) {
-    throw new ApiClientError(res.status, 'UNAUTHORIZED', 'Session expired');
+  for (let attempt = 0; ; attempt += 1) {
+    const res = await fetch(`${BASE_URL}/auth/refresh`, withCsrf({ method: 'POST' }));
+    if (res.ok) return;
+    if (attempt === 1 || res.status !== 401) {
+      throw new ApiClientError(res.status, 'UNAUTHORIZED', 'Session expired');
+    }
+    await new Promise((resolve) => setTimeout(resolve, REFRESH_RETRY_DELAY_MS));
   }
 }
 
@@ -125,28 +133,85 @@ function withBody(method: string) {
     });
 }
 
+export interface UploadOptions {
+  /** Called with 0-100 as bytes are sent. */
+  onProgress?: (percent: number) => void;
+  /** Aborting before the transfer ends cancels it; nothing is stored. */
+  signal?: AbortSignal;
+}
+
+/** Thrown when an upload is stopped on purpose, so callers can tell it from a failure. */
+export class UploadCanceledError extends Error {
+  constructor() {
+    super('Upload canceled');
+    this.name = 'UploadCanceledError';
+  }
+}
+
+interface RawResponse {
+  status: number;
+  text: string;
+}
+
+// fetch cannot report upload progress, so file transfers use XMLHttpRequest.
+function sendFile(
+  url: string,
+  file: File,
+  contentType: string,
+  options: UploadOptions,
+): Promise<RawResponse> {
+  return new Promise((resolve, reject) => {
+    const { signal } = options;
+    if (signal?.aborted) {
+      reject(new UploadCanceledError());
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Content-Type', contentType);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        options.onProgress?.(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+    xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText });
+    xhr.onerror = () =>
+      reject(
+        new ApiClientError(
+          0,
+          'INTERNAL_SERVER_ERROR',
+          'Upload failed. Check your connection and try again.',
+        ),
+      );
+    xhr.onabort = () => reject(new UploadCanceledError());
+    signal?.addEventListener('abort', () => xhr.abort(), { once: true });
+    xhr.send(file);
+  });
+}
+
+function parseEnvelope(text: string): ApiErrorEnvelope | null {
+  try {
+    return JSON.parse(text) as ApiErrorEnvelope;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Sends a file straight to a signed storage URL. The URL is absolute and carries its own token,
  * so this skips the /api prefix and never sends the session cookie.
  */
-async function upload(url: string, file: File, contentType: string): Promise<void> {
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': contentType },
-      body: file,
-    });
-  } catch {
-    throw new ApiClientError(
-      0,
-      'INTERNAL_SERVER_ERROR',
-      'Upload failed. Check your connection and try again.',
-    );
-  }
-  if (res.ok) return;
+async function upload(
+  url: string,
+  file: File,
+  contentType: string,
+  options: UploadOptions = {},
+): Promise<void> {
+  const res = await sendFile(url, file, contentType, options);
+  if (res.status >= 200 && res.status < 300) return;
 
-  const body = (await res.json().catch(() => null)) as ApiErrorEnvelope | null;
+  const body = parseEnvelope(res.text);
   throw new ApiClientError(
     res.status,
     body?.error?.code ?? 'INTERNAL_SERVER_ERROR',

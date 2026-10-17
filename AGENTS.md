@@ -33,3 +33,4 @@ apps/web, apps/api (api + worker entries), packages/ui, packages/shared, package
 - Finish with: files changed, what was verified, open risks.
 - Workspace packages must build before apps; always use root scripts (pnpm typecheck/test/build).
 - Every package must declare its own dependencies; never rely on another package's dependency.
+- Follow the sarvadhi-standards skills (code, db, caching, performance, security, frontend-state, theme).

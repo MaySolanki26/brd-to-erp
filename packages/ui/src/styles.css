@@ -216,6 +216,11 @@
     padding-inline: 0.125rem;
   }
 
+  .row-attention {
+    background-color: rgb(var(--tone-warning-bg) / 0.5);
+    box-shadow: inset 3px 0 0 rgb(var(--tone-warning-border));
+  }
+
   .badge-tone-success {
     background-color: rgb(var(--tone-success-bg));
     color: rgb(var(--tone-success-fg));

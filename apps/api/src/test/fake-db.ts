@@ -92,6 +92,28 @@ export interface FakeChunk {
   contextNoteId: string | null;
   projectId: string;
   organizationId: string;
+  needsReview?: boolean;
+}
+
+export type FakeKnowledgeStatus =
+  'CONFIRMED' | 'ASSUMED' | 'OPEN' | 'REJECTED' | 'NEEDS_REVALIDATION';
+
+/** One shape for requirements, rules and modules; modules also use `name` and `code`. */
+export interface FakeKnowledge {
+  id: string;
+  title: string;
+  name: string;
+  code: string;
+  description: string;
+  status: FakeKnowledgeStatus;
+  priority: number | null;
+  moduleId: string | null;
+  sourceChunkId: string;
+  projectId: string;
+  organizationId: string;
+  createdById: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface FakeSession extends SessionRecord {
@@ -110,6 +132,9 @@ export const db = {
   versions: new Map<string, FakeVersion>(),
   notes: new Map<string, FakeNote>(),
   chunks: new Map<string, FakeChunk>(),
+  requirements: new Map<string, FakeKnowledge>(),
+  rules: new Map<string, FakeKnowledge>(),
+  modules: new Map<string, FakeKnowledge>(),
   audit: [] as AuditEntry[],
   reset(): void {
     this.users.clear();
@@ -120,6 +145,9 @@ export const db = {
     this.versions.clear();
     this.notes.clear();
     this.chunks.clear();
+    this.requirements.clear();
+    this.rules.clear();
+    this.modules.clear();
     storageFiles.clear();
     this.audit.length = 0;
   },
@@ -238,6 +266,10 @@ export const authRepositoryModule = {
     session.revokedAt = now;
     return true;
   },
+  isFamilyActive: async (familyId: string, now: Date): Promise<boolean> =>
+    [...db.sessions.values()].some(
+      (s) => s.familyId === familyId && !s.revokedAt && s.expiresAt.getTime() > now.getTime(),
+    ),
   revokeFamily: async (familyId: string, now: Date): Promise<void> => {
     for (const s of db.sessions.values()) {
       if (s.familyId === familyId && !s.revokedAt) s.revokedAt = now;
@@ -282,11 +314,14 @@ export const projectsRepositoryModule = {
     userId: string;
     allInOrg: boolean;
     includeArchived: boolean;
+    search?: string;
     page: number;
     pageSize: number;
   }) => {
+    const needle = p.search?.toLowerCase();
     const mine = [...db.projects.values()]
       .filter((x) => x.organizationId === p.organizationId)
+      .filter((x) => !needle || x.name.toLowerCase().includes(needle))
       .filter((x) => p.includeArchived || x.status !== 'ARCHIVED')
       .map((x) => ({
         ...x,
@@ -373,10 +408,12 @@ export const membersRepositoryModule = {
     [...db.members.values()].filter(
       (m) => m.organizationId === organizationId && m.projectId === projectId && m.role === 'OWNER',
     ).length,
-  lockProject: async (): Promise<void> => undefined,
+  lockProject: async (_organizationId: string, projectId: string) =>
+    db.projects.get(projectId)?.status ?? null,
 };
 
 export const usersRepositoryModule = {
+  lockOrganization: async (): Promise<void> => undefined,
   listUsers: async (organizationId: string) =>
     [...db.users.values()].filter((u) => u.organizationId === organizationId).map(orgUserRecord),
   findUser: async (organizationId: string, userId: string) => {
@@ -590,6 +627,19 @@ export const documentsRepositoryModule = {
     db.versions.set(version.id, version);
     return { id: doc.id, versionId: version.id };
   },
+  lockProjectForUpload: async (): Promise<void> => undefined,
+  findDocumentIdByFileName: async (
+    organizationId: string,
+    projectId: string,
+    fileName: string,
+  ): Promise<string | null> => {
+    const match = [...db.documents.values()].find(
+      (d) =>
+        inProject(d, organizationId, projectId) &&
+        d.fileName.toLowerCase() === fileName.toLowerCase(),
+    );
+    return match?.id ?? null;
+  },
   lockDocument: async (organizationId: string, projectId: string, documentId: string) => {
     const d = db.documents.get(documentId);
     return d !== undefined && inProject(d, organizationId, projectId);
@@ -709,6 +759,196 @@ export const sourcesRepositoryModule = {
       .filter((n) => inProject(n, organizationId, projectId))
       .filter((n) => n.status === 'UPLOADED' || n.status === 'PROCESSING')
       .map((n) => ({ id: n.id, title: n.title, status: n.status })),
+  latestProcessedAt: async (organizationId: string, projectId: string): Promise<Date | null> => {
+    const times = [...db.documents.values(), ...db.notes.values()]
+      .filter((s) => inProject(s, organizationId, projectId) && s.status === 'PROCESSED')
+      .map((s) => s.updatedAt.getTime());
+    return times.length === 0 ? null : new Date(Math.max(...times));
+  },
+};
+
+type KnowledgeKindKey = 'requirements' | 'rules' | 'modules';
+
+let knowledgeClock = 0;
+
+export function addKnowledge(
+  kind: KnowledgeKindKey,
+  partial: Pick<FakeKnowledge, 'organizationId' | 'projectId' | 'sourceChunkId'> &
+    Partial<FakeKnowledge>,
+): FakeKnowledge {
+  knowledgeClock += 1;
+  const item: FakeKnowledge = {
+    id: randomUUID(),
+    title: 'Item',
+    name: partial.title ?? 'Module',
+    code: `M${String(knowledgeClock)}`,
+    description: '',
+    status: 'OPEN',
+    priority: null,
+    moduleId: null,
+    createdById: null,
+    createdAt: new Date(Date.UTC(2026, 0, 1) + knowledgeClock * 1000),
+    updatedAt: new Date(Date.UTC(2026, 0, 1) + knowledgeClock * 1000),
+    ...partial,
+  };
+  db[kind].set(item.id, item);
+  return item;
+}
+
+function chunkRecord(chunk: FakeChunk) {
+  const version = chunk.documentVersionId ? db.versions.get(chunk.documentVersionId) : undefined;
+  const document = version ? db.documents.get(version.documentId) : undefined;
+  const note = chunk.contextNoteId ? db.notes.get(chunk.contextNoteId) : undefined;
+  return {
+    id: chunk.id,
+    headingPath: chunk.headingPath,
+    needsReview: chunk.needsReview ?? false,
+    documentVersion:
+      version && document
+        ? {
+            versionNumber: version.versionNumber,
+            document: { id: document.id, title: document.title },
+          }
+        : null,
+    contextNote: note ? { id: note.id, title: note.title } : null,
+  };
+}
+
+function fromSource(chunkId: string, sourceId: string): boolean {
+  const chunk = db.chunks.get(chunkId);
+  if (!chunk) return false;
+  if (chunk.contextNoteId === sourceId) return true;
+  const version = chunk.documentVersionId ? db.versions.get(chunk.documentVersionId) : undefined;
+  return version?.documentId === sourceId;
+}
+
+interface KnowledgeListParams {
+  organizationId: string;
+  projectId: string;
+  page: number;
+  pageSize: number;
+  status?: FakeKnowledgeStatus | undefined;
+  moduleId?: string | undefined;
+  sourceId?: string | undefined;
+  search?: string | undefined;
+}
+
+function filterKnowledge(kind: KnowledgeKindKey, p: KnowledgeListParams): FakeKnowledge[] {
+  const needle = p.search?.toLowerCase();
+  return [...db[kind].values()]
+    .filter((i) => i.organizationId === p.organizationId && i.projectId === p.projectId)
+    .filter((i) => !p.status || i.status === p.status)
+    .filter((i) => kind === 'modules' || !p.moduleId || i.moduleId === p.moduleId)
+    .filter((i) => !p.sourceId || fromSource(i.sourceChunkId, p.sourceId))
+    .filter((i) => {
+      if (!needle) return true;
+      const fields =
+        kind === 'modules' ? [i.name, i.code, i.description] : [i.title, i.description];
+      return fields.some((f) => f.toLowerCase().includes(needle));
+    });
+}
+
+function creatorOf(id: string | null): { id: string; name: string } | null {
+  const user = id ? db.users.get(id) : undefined;
+  return user ? { id: user.id, name: user.name } : null;
+}
+
+function moduleRef(id: string | null): { id: string; name: string } | null {
+  const module = id ? db.modules.get(id) : undefined;
+  return module ? { id: module.id, name: module.name } : null;
+}
+
+function page<T>(items: T[], p: KnowledgeListParams): { items: T[]; total: number } {
+  const start = (p.page - 1) * p.pageSize;
+  return { items: items.slice(start, start + p.pageSize), total: items.length };
+}
+
+function newestFirst(a: FakeKnowledge, b: FakeKnowledge): number {
+  return b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id);
+}
+
+function countByStatus(items: FakeKnowledge[]) {
+  const counts = new Map<FakeKnowledgeStatus, number>();
+  for (const i of items) counts.set(i.status, (counts.get(i.status) ?? 0) + 1);
+  return [...counts].map(([status, count]) => ({ status, count }));
+}
+
+const inScope = (organizationId: string, projectId: string) => (i: FakeKnowledge) =>
+  i.organizationId === organizationId && i.projectId === projectId;
+
+export const knowledgeRepositoryModule = {
+  listRequirements: async (p: KnowledgeListParams) =>
+    page(
+      filterKnowledge('requirements', p)
+        .sort(newestFirst)
+        .map((i) => ({
+          id: i.id,
+          title: i.title,
+          description: i.description,
+          status: i.status,
+          priority: i.priority,
+          createdAt: i.createdAt,
+          updatedAt: i.updatedAt,
+          module: moduleRef(i.moduleId),
+          createdBy: creatorOf(i.createdById),
+          sourceChunk: chunkRecord(db.chunks.get(i.sourceChunkId) as FakeChunk),
+        })),
+      p,
+    ),
+  listRules: async (p: KnowledgeListParams) =>
+    page(
+      filterKnowledge('rules', p)
+        .sort(newestFirst)
+        .map((i) => ({
+          id: i.id,
+          title: i.title,
+          description: i.description,
+          status: i.status,
+          createdAt: i.createdAt,
+          updatedAt: i.updatedAt,
+          module: moduleRef(i.moduleId),
+          createdBy: creatorOf(i.createdById),
+          sourceChunk: chunkRecord(db.chunks.get(i.sourceChunkId) as FakeChunk),
+        })),
+      p,
+    ),
+  listModules: async (p: KnowledgeListParams) =>
+    page(
+      filterKnowledge('modules', p)
+        .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+        .map((i) => ({
+          id: i.id,
+          name: i.name,
+          code: i.code,
+          description: i.description,
+          status: i.status,
+          createdAt: i.createdAt,
+          updatedAt: i.updatedAt,
+          createdBy: creatorOf(i.createdById),
+          sourceChunk: chunkRecord(db.chunks.get(i.sourceChunkId) as FakeChunk),
+          _count: {
+            requirements: [...db.requirements.values()].filter((r) => r.moduleId === i.id).length,
+          },
+        })),
+      p,
+    ),
+  countRequirementsByStatus: async (organizationId: string, projectId: string) =>
+    countByStatus([...db.requirements.values()].filter(inScope(organizationId, projectId))),
+  countRulesByStatus: async (organizationId: string, projectId: string) =>
+    countByStatus([...db.rules.values()].filter(inScope(organizationId, projectId))),
+  countModulesByStatus: async (organizationId: string, projectId: string) =>
+    countByStatus([...db.modules.values()].filter(inScope(organizationId, projectId))),
+  countChunksNeedingReview: async (organizationId: string, projectId: string) =>
+    [...db.chunks.values()].filter(
+      (c) => c.organizationId === organizationId && c.projectId === projectId && c.needsReview,
+    ).length,
+  findChunk: async (organizationId: string, projectId: string, chunkId: string) => {
+    const chunk = db.chunks.get(chunkId);
+    if (!chunk || chunk.organizationId !== organizationId || chunk.projectId !== projectId) {
+      return null;
+    }
+    return { ...chunkRecord(chunk), chunkIndex: chunk.chunkIndex, content: chunk.content };
+  },
 };
 
 export const auditRepositoryModule = {

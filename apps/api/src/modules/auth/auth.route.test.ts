@@ -33,6 +33,7 @@ vi.mock(
 );
 
 import { createApp } from '../../app.js';
+import { REFRESH_REUSE_GRACE_MS } from './auth.service.js';
 import { db } from '../../test/fake-db.js';
 import { TEST_ORIGIN } from '../../test/test-env.js';
 import { as, cookieHeader, login, parseSetCookies } from '../../test/http.js';
@@ -209,12 +210,33 @@ describe('auth routes', () => {
       expect(rotated['csrf_token']).not.toBe(session.cookies['csrf_token']);
     });
 
-    it('rejects a replayed token and revokes the whole family', async () => {
+    it('treats an immediate second use of a rotated token as a concurrent refresh, not theft', async () => {
       const session = await login(app, world.ownerA.email, PASSWORD);
       const first = await request(app)
         .post('/api/auth/refresh')
         .set('Cookie', cookieHeader(session));
       const rotated = parseSetCookies(first);
+
+      const concurrent = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', cookieHeader(session));
+      expect(concurrent.status).toBe(401);
+      expect(db.audit.map((a) => a.action)).not.toContain('TOKEN_REUSE_DETECTED');
+
+      const stillValid = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', `refresh_token=${rotated['refresh_token']}`);
+      expect(stillValid.status).toBe(200);
+    });
+
+    it('rejects a replayed token and revokes the whole family', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const session = await login(app, world.ownerA.email, PASSWORD);
+      const first = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', cookieHeader(session));
+      const rotated = parseSetCookies(first);
+      vi.setSystemTime(Date.now() + REFRESH_REUSE_GRACE_MS + 1000);
 
       const replay = await request(app)
         .post('/api/auth/refresh')
@@ -265,6 +287,15 @@ describe('auth routes', () => {
         .post('/api/auth/refresh')
         .set('Cookie', cookieHeader(session));
       expect(refresh.status).toBe(401);
+    });
+
+    it('also ends the access token, not only the refresh token', async () => {
+      const session = await login(app, world.ownerA.email, PASSWORD);
+      expect((await as(app, session, 'get', '/api/auth/me')).status).toBe(200);
+
+      await as(app, session, 'post', '/api/auth/logout');
+
+      expect((await as(app, session, 'get', '/api/auth/me')).status).toBe(401);
     });
 
     it('requires the csrf header when cookies are present', async () => {

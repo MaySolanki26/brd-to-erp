@@ -39,7 +39,9 @@ describe('LocalStorageService', () => {
     it('returns a URL with a token, a UUID fileKey, and an expiry', async () => {
       const result = await service.createUploadUrl('application/pdf');
 
-      expect(result.fileKey).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      expect(result.fileKey).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
       expect(result.url).toContain('/storage/upload?token=');
       expect(result.expiresAt.getTime()).toBeGreaterThan(Date.now());
     });
@@ -115,18 +117,33 @@ describe('storage-token', () => {
 
   describe('verifyUploadToken', () => {
     it('rejects a tampered token', () => {
-      const token = createUploadToken(secret, '550e8400-e29b-41d4-a716-446655440000', 'text/plain', 300);
+      const token = createUploadToken(
+        secret,
+        '550e8400-e29b-41d4-a716-446655440000',
+        'text/plain',
+        300,
+      );
       const tampered = token.slice(0, -1) + (token.endsWith('a') ? 'b' : 'a');
       expect(() => verifyUploadToken(secret, tampered)).toThrow('Invalid upload token');
     });
 
     it('rejects a token signed with the wrong secret', () => {
-      const token = createUploadToken('wrong-secret-1234567', '550e8400-e29b-41d4-a716-446655440000', 'text/plain', 300);
+      const token = createUploadToken(
+        'wrong-secret-1234567',
+        '550e8400-e29b-41d4-a716-446655440000',
+        'text/plain',
+        300,
+      );
       expect(() => verifyUploadToken(secret, token)).toThrow('Invalid upload token');
     });
 
     it('rejects an expired token', () => {
-      const token = createUploadToken(secret, '550e8400-e29b-41d4-a716-446655440000', 'text/plain', -1);
+      const token = createUploadToken(
+        secret,
+        '550e8400-e29b-41d4-a716-446655440000',
+        'text/plain',
+        -1,
+      );
       expect(() => verifyUploadToken(secret, token)).toThrow('Upload token has expired');
     });
 

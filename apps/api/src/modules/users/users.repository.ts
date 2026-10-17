@@ -73,3 +73,11 @@ export async function updateUser(
 export async function countActiveAdmins(organizationId: string, db: DbClient): Promise<number> {
   return db.user.count({ where: { organizationId, orgRole: 'ORG_ADMIN', deletedAt: null } });
 }
+
+/** Takes the organization row lock so concurrent admin changes are applied one at a time. */
+export async function lockOrganization(organizationId: string, db: DbClient): Promise<void> {
+  await db.organization.updateMany({
+    where: { id: organizationId },
+    data: { updatedAt: new Date() },
+  });
+}

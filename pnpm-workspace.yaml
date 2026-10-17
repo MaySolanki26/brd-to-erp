@@ -4,6 +4,6 @@ packages:
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
-  argon2: set this to true or false
+  argon2: false
   esbuild: true
   prisma: true

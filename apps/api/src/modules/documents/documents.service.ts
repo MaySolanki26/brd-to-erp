@@ -271,8 +271,16 @@ async function persistUpload(
     let versionId: string;
     let versionNumber = 1;
 
-    if (ticket.documentId) {
-      documentId = ticket.documentId;
+    // Re-uploading a file name that already exists in the project adds a version to that document.
+    if (!ticket.documentId) {
+      await repo.lockProjectForUpload(user.organizationId, projectId, tx);
+    }
+    const existingId =
+      ticket.documentId ??
+      (await repo.findDocumentIdByFileName(user.organizationId, projectId, ticket.fileName, tx));
+
+    if (existingId) {
+      documentId = existingId;
       if (!(await repo.lockDocument(user.organizationId, projectId, documentId, tx))) {
         throw new NotFoundError('Document not found');
       }
@@ -313,7 +321,7 @@ async function persistUpload(
 
     await createAuditLog(
       {
-        action: ticket.documentId ? 'UPDATE' : 'CREATE',
+        action: existingId ? 'UPDATE' : 'CREATE',
         entity: 'Document',
         entityId: documentId,
         userId: user.id,

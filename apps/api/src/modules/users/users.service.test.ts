@@ -8,6 +8,7 @@ const repo = vi.hoisted(() => ({
   createUser: vi.fn(),
   updateUser: vi.fn(),
   countActiveAdmins: vi.fn(),
+  lockOrganization: vi.fn(),
 }));
 const authRepo = vi.hoisted(() => ({ updatePassword: vi.fn(), revokeAllSessions: vi.fn() }));
 vi.mock('./users.repository.js', () => repo);
@@ -100,6 +101,23 @@ describe('users.service', () => {
       statusCode: 409,
     });
     expect(repo.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('locks the organization before reading the target so concurrent demotions are serialized', async () => {
+    const order: string[] = [];
+    repo.lockOrganization.mockImplementation(async () => {
+      order.push('lock');
+    });
+    repo.findUser.mockImplementation(async () => {
+      order.push('read');
+      return record({ orgRole: 'ORG_ADMIN' });
+    });
+    repo.countActiveAdmins.mockImplementation(async () => {
+      order.push('count');
+      return 2;
+    });
+    await updateUser(actor, 'u2', { orgRole: 'MEMBER' });
+    expect(order).toEqual(['lock', 'read', 'count']);
   });
 
   it('allows demoting an admin when another admin remains', async () => {

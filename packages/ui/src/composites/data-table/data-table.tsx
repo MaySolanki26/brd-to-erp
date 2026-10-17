@@ -6,14 +6,7 @@ import {
 } from '@tanstack/react-table/legacy';
 import { flexRender, type RowSelectionState, type RowData } from '@tanstack/react-table';
 import { cn } from '../../lib/cn';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from '../../table';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../table';
 import { TableSkeleton } from '../TableSkeleton';
 import { PageError } from '../PageError';
 import { EmptyState } from '../EmptyState';
@@ -108,6 +101,7 @@ export function DataTable<TData extends RowData>({
   onSelectionChange,
   rowActions,
   onRowClick,
+  rowClassName,
   className,
   stickyHeader = false,
   compact = false,
@@ -182,8 +176,7 @@ export function DataTable<TData extends RowData>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const meta = header.column.columnDef.meta as
-                    | { align?: string; width?: number | string }
-                    | undefined;
+                    { align?: string; width?: number | string } | undefined;
                   return (
                     <TableHead
                       key={header.id}
@@ -204,13 +197,14 @@ export function DataTable<TData extends RowData>({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() ? 'selected' : undefined}
-                className={cn(onRowClick && 'cursor-pointer')}
+                className={cn(
+                  onRowClick && 'cursor-pointer',
+                  rowClassName?.(row.original as TData),
+                )}
                 onClick={onRowClick ? () => onRowClick(row.original as TData) : undefined}
               >
                 {row.getVisibleCells().map((cell) => {
-                  const meta = cell.column.columnDef.meta as
-                    | { align?: string }
-                    | undefined;
+                  const meta = cell.column.columnDef.meta as { align?: string } | undefined;
                   return (
                     <TableCell
                       key={cell.id}

@@ -60,7 +60,11 @@ export function verifyUploadToken(secret: string, token: string): VerifiedToken 
     throw new ValidationError('Invalid upload token');
   }
 
-  if (typeof payload.fk !== 'string' || typeof payload.ct !== 'string' || typeof payload.exp !== 'number') {
+  if (
+    typeof payload.fk !== 'string' ||
+    typeof payload.ct !== 'string' ||
+    typeof payload.exp !== 'number'
+  ) {
     throw new ValidationError('Invalid upload token');
   }
 

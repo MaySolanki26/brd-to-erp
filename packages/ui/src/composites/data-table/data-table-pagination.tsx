@@ -1,13 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Button } from '../../button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../select';
 import type { PaginationState } from './data-table-types';
 
 interface DataTablePaginationProps {
@@ -45,7 +39,7 @@ export function DataTablePagination({
           <span>{selectedCount} selected</span>
         ) : (
           <span>
-            Showing {from}\u2013{to} of {total}
+            Showing {from}–{to} of {total}
           </span>
         )}
       </div>
@@ -55,10 +49,7 @@ export function DataTablePagination({
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-lg">Rows</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(v) => onPageSizeChange(Number(v))}
-            >
+            <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
               <SelectTrigger className="h-7 w-[60px] text-lg">
                 <SelectValue />
               </SelectTrigger>
@@ -81,6 +72,7 @@ export function DataTablePagination({
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            aria-label="Previous page"
             disabled={page <= 1}
             onClick={() => onPageChange?.(page - 1)}
           >
@@ -90,6 +82,7 @@ export function DataTablePagination({
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            aria-label="Next page"
             disabled={page >= totalPages}
             onClick={() => onPageChange?.(page + 1)}
           >

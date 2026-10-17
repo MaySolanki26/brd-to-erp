@@ -83,5 +83,12 @@ export interface ProcessingStatusDto {
   counts: Record<SourceStatus, number>;
   /** True while any source is still waiting or being processed. */
   active: boolean;
+  /** When the most recent source finished processing; null if none has. */
+  lastProcessedAt: string | null;
+  /**
+   * True while the project's monthly LLM token budget is used up: analysis jobs are waiting and
+   * resume on their own once the budget allows. The server always sends it.
+   */
+  llmPaused?: boolean;
   sources: ProcessingSourceDto[];
 }

@@ -62,6 +62,57 @@ describe('ProjectsPage', () => {
     expect(await screen.findByText('No projects yet')).toBeInTheDocument();
   });
 
+  it('searches by name from the first page', async () => {
+    api.get.mockResolvedValue(page([project()]));
+    renderRoute(<ProjectsPage />, { path: '/projects' });
+    await screen.findByText('Alpha');
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search projects' }), 'alp');
+
+    await waitFor(() =>
+      expect(api.get).toHaveBeenLastCalledWith(expect.stringContaining('search=alp')),
+    );
+    expect(api.get).toHaveBeenLastCalledWith(expect.stringContaining('page=1'));
+  });
+
+  it('explains an empty search and clears it', async () => {
+    api.get.mockImplementation(async (url: string) =>
+      url.includes('search=zzz') ? page([]) : page([project()]),
+    );
+    renderRoute(<ProjectsPage />, { path: '/projects' });
+    await screen.findByText('Alpha');
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search projects' }), 'zzz');
+    expect(await screen.findByText('No matching projects')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show all projects' }));
+    expect(await screen.findByText('Alpha')).toBeInTheDocument();
+    expect(screen.queryByText('No matching projects')).not.toBeInTheDocument();
+  });
+
+  it('pages through long lists and hides pagination for short ones', async () => {
+    const many = Array.from({ length: 20 }, (_, i) => project({ id: `p${i}`, name: `Proj ${i}` }));
+    api.get.mockImplementation(async (url: string) =>
+      url.includes('page=2')
+        ? { items: [project({ id: 'last', name: 'Last one' })], page: 2, pageSize: 20, total: 21 }
+        : { items: many, page: 1, pageSize: 20, total: 21 },
+    );
+    renderRoute(<ProjectsPage />, { path: '/projects' });
+    await screen.findByText('Proj 0');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    expect(await screen.findByText('Last one')).toBeInTheDocument();
+    expect(api.get).toHaveBeenLastCalledWith(expect.stringContaining('page=2'));
+  });
+
+  it('shows no pagination when everything fits on one page', async () => {
+    api.get.mockResolvedValue(page([project()]));
+    renderRoute(<ProjectsPage />, { path: '/projects' });
+    await screen.findByText('Alpha');
+    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument();
+  });
+
   it('shows an error with retry', async () => {
     api.get.mockRejectedValue(new ApiClientError(500, 'INTERNAL_SERVER_ERROR', 'boom'));
     renderRoute(<ProjectsPage />, { path: '/projects' });

@@ -7,7 +7,7 @@ import type {
 } from '@brd/shared';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../errors/app-error.js';
 import { hashPassword } from '../../lib/password.js';
-import { withTransaction } from '../../lib/transaction.js';
+import { withTransaction, type DbClient } from '../../lib/transaction.js';
 import { createAuditLog } from '../audit/audit.repository.js';
 import * as authRepo from '../auth/auth.repository.js';
 import * as repo from './users.repository.js';
@@ -27,8 +27,12 @@ export function toOrgUserDto(user: repo.OrgUserRecord): OrgUserDto {
   };
 }
 
-async function requireUser(actor: UserDto, userId: string): Promise<repo.OrgUserRecord> {
-  const user = await repo.findUser(actor.organizationId, userId);
+async function requireUser(
+  actor: UserDto,
+  userId: string,
+  db?: DbClient,
+): Promise<repo.OrgUserRecord> {
+  const user = await repo.findUser(actor.organizationId, userId, db);
   if (!user) {
     throw new NotFoundError('User not found');
   }
@@ -77,18 +81,19 @@ export async function updateUser(
   userId: string,
   input: UpdateUserInput,
 ): Promise<OrgUserDto> {
-  const target = await requireUser(actor, userId);
-  const wasActive = target.deletedAt === null;
-  const nextRole = input.orgRole ?? target.orgRole;
-  const nextActive = input.active ?? wasActive;
-
-  if (target.id === actor.id && (nextRole !== target.orgRole || !nextActive)) {
-    throw new ForbiddenError(SELF_CHANGE);
-  }
-  const removesAdmin =
-    wasActive && target.orgRole === 'ORG_ADMIN' && (nextRole !== 'ORG_ADMIN' || !nextActive);
-
   return withTransaction(async (tx) => {
+    // Lock first and read the target inside, so two concurrent demotions cannot both pass the check.
+    await repo.lockOrganization(actor.organizationId, tx);
+    const target = await requireUser(actor, userId, tx);
+    const wasActive = target.deletedAt === null;
+    const nextRole = input.orgRole ?? target.orgRole;
+    const nextActive = input.active ?? wasActive;
+
+    if (target.id === actor.id && (nextRole !== target.orgRole || !nextActive)) {
+      throw new ForbiddenError(SELF_CHANGE);
+    }
+    const removesAdmin =
+      wasActive && target.orgRole === 'ORG_ADMIN' && (nextRole !== 'ORG_ADMIN' || !nextActive);
     if (removesAdmin && (await repo.countActiveAdmins(actor.organizationId, tx)) <= 1) {
       throw new ConflictError(LAST_ADMIN);
     }

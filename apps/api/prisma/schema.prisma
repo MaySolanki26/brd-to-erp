@@ -23,11 +23,12 @@ enum DocumentStatus {
   FAILED
 }
 
-enum RequirementStatus {
+enum KnowledgeStatus {
   CONFIRMED
   ASSUMED
   OPEN
-  RECOMMENDED
+  REJECTED
+  NEEDS_REVALIDATION
 }
 
 enum QuestionStatus {
@@ -66,6 +67,26 @@ enum AuditAction {
   LOGIN_FAILURE
   LOGOUT
   TOKEN_REUSE_DETECTED
+}
+
+enum LlmCallStatus {
+  OK
+  INVALID_OUTPUT
+  REFUSED
+  ERROR
+}
+
+enum QuestionReason {
+  GAP
+  AMBIGUITY
+  CONFLICT
+  MISSING_RULE
+}
+
+enum QuestionPriority {
+  CRITICAL
+  HIGH
+  NORMAL
 }
 
 enum OrgRole {
@@ -114,16 +135,22 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  organization       Organization      @relation(fields: [organizationId], references: [id])
-  answers            Answer[]
-  approvals          Approval[]
-  auditLogs          AuditLog[]
-  llmUsages          LlmUsage[]
-  projectMemberships ProjectMember[]
-  refreshSessions    RefreshSession[]
-  createdDocuments   Document[]
-  createdVersions    DocumentVersion[]
-  createdNotes       ContextNote[]
+  organization         Organization      @relation(fields: [organizationId], references: [id])
+  answers              Answer[]
+  approvals            Approval[]
+  auditLogs            AuditLog[]
+  llmUsages            LlmUsage[]
+  projectMemberships   ProjectMember[]
+  refreshSessions      RefreshSession[]
+  createdDocuments     Document[]
+  createdVersions      DocumentVersion[]
+  createdNotes         ContextNote[]
+  createdRequirements  Requirement[]     @relation("RequirementCreator")
+  createdBusinessRules BusinessRule[]    @relation("BusinessRuleCreator")
+  createdModules       Module[]          @relation("ModuleCreator")
+  createdQuestions     Question[]        @relation("QuestionCreator")
+  dismissedQuestions   Question[]        @relation("QuestionDismisser")
+  decisionsMade        Decision[]        @relation("DecisionMaker")
 
   @@index([organizationId])
   @@map("users")
@@ -140,17 +167,21 @@ model Project {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization  Organization    @relation(fields: [organizationId], references: [id])
+  organization  Organization     @relation(fields: [organizationId], references: [id])
   documents     Document[]
   requirements  Requirement[]
   businessRules BusinessRule[]
-  questions     Question[]
   reports       Report[]
   approvals     Approval[]
   llmUsages     LlmUsage[]
   members       ProjectMember[]
   contextNotes  ContextNote[]
   chunks        Chunk[]
+  modules       Module[]
+  answers       Answer[]
+  questions     Question[]
+  decisions     Decision[]
+  summaries     ProjectSummary[]
 
   @@index([organizationId])
   @@index([status])
@@ -291,6 +322,7 @@ model Chunk {
   chunkKey          String   @unique
   contentHash       String
   headingPath       String[]
+  needsReview       Boolean  @default(false)
   documentVersionId String?  @db.Uuid
   contextNoteId     String?  @db.Uuid
   projectId         String   @db.Uuid
@@ -302,6 +334,8 @@ model Chunk {
   contextNote     ContextNote?     @relation(fields: [contextNoteId], references: [id], onDelete: Restrict)
   project         Project          @relation(fields: [projectId], references: [id])
   requirements    Requirement[]
+  businessRules   BusinessRule[]
+  modules         Module[]
 
   @@unique([documentVersionId, chunkIndex])
   @@unique([contextNoteId, chunkIndex])
@@ -315,110 +349,259 @@ model Chunk {
 // ─── Requirement (soft delete) ──────────────────────────────────────────────
 
 model Requirement {
-  id             String            @id @default(uuid()) @db.Uuid
+  id             String          @id @default(uuid()) @db.Uuid
   title          String
-  description    String            @db.Text
-  status         RequirementStatus @default(OPEN)
+  description    String          @db.Text
+  status         KnowledgeStatus @default(OPEN)
   priority       Int?
-  sourceChunkId  String            @db.Uuid
-  moduleId       String?           @db.Uuid
-  projectId      String            @db.Uuid
-  organizationId String            @db.Uuid
+  sourceChunkId  String          @db.Uuid
+  moduleId       String?         @db.Uuid
+  projectId      String          @db.Uuid
+  organizationId String          @db.Uuid
+  /// Null when created by the extraction pipeline.
+  createdById    String?         @db.Uuid
   deletedAt      DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   sourceChunk   Chunk          @relation(fields: [sourceChunkId], references: [id])
   module        Module?        @relation(fields: [moduleId], references: [id])
   project       Project        @relation(fields: [projectId], references: [id])
+  createdBy     User?          @relation("RequirementCreator", fields: [createdById], references: [id])
   businessRules BusinessRule[]
+  questionLinks QuestionLink[]
 
   @@index([projectId])
   @@index([status])
   @@index([sourceChunkId])
   @@index([moduleId])
   @@index([organizationId])
+  @@index([createdById])
   @@map("requirements")
 }
 
 // ─── BusinessRule ───────────────────────────────────────────────────────────
 
 model BusinessRule {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String          @id @default(uuid()) @db.Uuid
   title          String
-  description    String   @db.Text
-  requirementId  String?  @db.Uuid
-  projectId      String   @db.Uuid
-  organizationId String   @db.Uuid
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  description    String          @db.Text
+  status         KnowledgeStatus @default(OPEN)
+  requirementId  String?         @db.Uuid
+  sourceChunkId  String          @db.Uuid
+  moduleId       String?         @db.Uuid
+  projectId      String          @db.Uuid
+  organizationId String          @db.Uuid
+  /// Null when created by the extraction pipeline.
+  createdById    String?         @db.Uuid
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  requirement Requirement? @relation(fields: [requirementId], references: [id])
-  project     Project      @relation(fields: [projectId], references: [id])
+  requirement   Requirement?   @relation(fields: [requirementId], references: [id])
+  sourceChunk   Chunk          @relation(fields: [sourceChunkId], references: [id])
+  module        Module?        @relation(fields: [moduleId], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id])
+  createdBy     User?          @relation("BusinessRuleCreator", fields: [createdById], references: [id])
+  questionLinks QuestionLink[]
 
   @@index([requirementId])
+  @@index([sourceChunkId])
+  @@index([moduleId])
   @@index([projectId])
+  @@index([status])
   @@index([organizationId])
+  @@index([createdById])
   @@map("business_rules")
 }
 
 // ─── Module ─────────────────────────────────────────────────────────────────
 
 model Module {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String          @id @default(uuid()) @db.Uuid
   name           String
   code           String
   description    String?
-  organizationId String   @db.Uuid
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  status         KnowledgeStatus @default(OPEN)
+  sourceChunkId  String          @db.Uuid
+  projectId      String          @db.Uuid
+  organizationId String          @db.Uuid
+  /// Null when created by the extraction pipeline.
+  createdById    String?         @db.Uuid
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  organization Organization  @relation(fields: [organizationId], references: [id])
-  requirements Requirement[]
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id])
+  sourceChunk   Chunk          @relation(fields: [sourceChunkId], references: [id])
+  createdBy     User?          @relation("ModuleCreator", fields: [createdById], references: [id])
+  requirements  Requirement[]
+  businessRules BusinessRule[]
+  questions     Question[]
+  questionLinks QuestionLink[]
 
-  @@unique([organizationId, code])
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([status])
+  @@index([sourceChunkId])
   @@index([organizationId])
+  @@index([createdById])
   @@map("modules")
 }
 
 // ─── Question ───────────────────────────────────────────────────────────────
 
 model Question {
-  id             String         @id @default(uuid()) @db.Uuid
-  content        String         @db.Text
-  status         QuestionStatus @default(OPEN)
-  projectId      String         @db.Uuid
-  organizationId String         @db.Uuid
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id               String           @id @default(uuid()) @db.Uuid
+  /// The question as the client reads it (exposed as `text`).
+  content          String           @db.Text
+  status           QuestionStatus   @default(OPEN)
+  reason           QuestionReason
+  priority         QuestionPriority @default(NORMAL)
+  /// Identifies the gap this question is about, so the same gap is never asked twice.
+  dedupeKey        String
+  /// Optimistic lock: bumped on every answer or dismissal; writers must present the version they read.
+  version          Int              @default(1)
+  moduleId         String?          @db.Uuid
+  /// The question whose answer led to this one (follow-ups and conflicts).
+  parentQuestionId String?          @db.Uuid
+  /// Null when created by the pipeline.
+  createdById      String?          @db.Uuid
+  dismissReason    String?          @db.Text
+  dismissedById    String?          @db.Uuid
+  dismissedAt      DateTime?
+  projectId        String           @db.Uuid
+  organizationId   String           @db.Uuid
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  project Project  @relation(fields: [projectId], references: [id])
-  answers Answer[]
+  project     Project        @relation(fields: [projectId], references: [id])
+  module      Module?        @relation(fields: [moduleId], references: [id])
+  parent      Question?      @relation("QuestionFollowUps", fields: [parentQuestionId], references: [id])
+  children    Question[]     @relation("QuestionFollowUps")
+  createdBy   User?          @relation("QuestionCreator", fields: [createdById], references: [id])
+  dismissedBy User?          @relation("QuestionDismisser", fields: [dismissedById], references: [id])
+  answers     Answer[]
+  links       QuestionLink[]
+  decisions   Decision[]
 
+  @@unique([projectId, dedupeKey])
   @@index([projectId])
   @@index([status])
   @@index([organizationId])
+  @@index([moduleId])
+  @@index([parentQuestionId])
+  @@index([createdById])
+  @@index([dismissedById])
+  @@index([projectId, status])
+  @@index([projectId, priority])
   @@map("questions")
+}
+
+// ─── QuestionLink (exactly one item per row) ────────────────────────────────
+
+/// The item a question is about. Exactly one of the three item columns is set (CHECK in the migration).
+model QuestionLink {
+  id             String   @id @default(uuid()) @db.Uuid
+  questionId     String   @db.Uuid
+  requirementId  String?  @db.Uuid
+  ruleId         String?  @db.Uuid
+  moduleId       String?  @db.Uuid
+  organizationId String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  question    Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  requirement Requirement?  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  rule        BusinessRule? @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  module      Module?       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, requirementId])
+  @@unique([questionId, ruleId])
+  @@unique([questionId, moduleId])
+  @@index([questionId])
+  @@index([requirementId])
+  @@index([ruleId])
+  @@index([moduleId])
+  @@index([organizationId])
+  @@map("question_links")
 }
 
 // ─── Answer ─────────────────────────────────────────────────────────────────
 
 model Answer {
-  id             String   @id @default(uuid()) @db.Uuid
-  content        String   @db.Text
-  questionId     String   @db.Uuid
-  answeredById   String   @db.Uuid
-  organizationId String   @db.Uuid
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id             String    @id @default(uuid()) @db.Uuid
+  content        String    @db.Text
+  questionId     String    @db.Uuid
+  answeredById   String    @db.Uuid
+  projectId      String    @db.Uuid
+  organizationId String    @db.Uuid
+  /// Set once the answer has been applied to the linked items; makes applying idempotent.
+  appliedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  question   Question @relation(fields: [questionId], references: [id])
-  answeredBy User     @relation(fields: [answeredById], references: [id])
+  question   Question  @relation(fields: [questionId], references: [id])
+  answeredBy User      @relation(fields: [answeredById], references: [id])
+  project    Project   @relation(fields: [projectId], references: [id])
+  decision   Decision?
 
   @@index([questionId])
   @@index([answeredById])
+  @@index([projectId])
   @@index([organizationId])
   @@map("answers")
+}
+
+// ─── Decision (what an answer changed) ──────────────────────────────────────
+
+model Decision {
+  id             String   @id @default(uuid()) @db.Uuid
+  answerId       String   @unique @db.Uuid
+  questionId     String   @db.Uuid
+  decidedById    String   @db.Uuid
+  projectId      String   @db.Uuid
+  organizationId String   @db.Uuid
+  /// One or two sentences on what was decided.
+  summary        String   @db.Text
+  /// Per affected item: { kind, id, before: { status, title, description }, after: {...}, reason }.
+  changes        Json
+  /// CONFIRMED items the answer contradicted and that were left untouched: { kind, id, title, explanation }.
+  conflicts      Json
+  createdAt      DateTime @default(now())
+
+  answer    Answer   @relation(fields: [answerId], references: [id])
+  question  Question @relation(fields: [questionId], references: [id])
+  decidedBy User     @relation("DecisionMaker", fields: [decidedById], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  @@index([questionId])
+  @@index([decidedById])
+  @@index([projectId, createdAt])
+  @@index([organizationId])
+  @@map("decisions")
+}
+
+// ─── ProjectSummary (versioned project memory) ──────────────────────────────
+
+/// Never edited; a new version is added instead.
+model ProjectSummary {
+  id             String   @id @default(uuid()) @db.Uuid
+  projectId      String   @db.Uuid
+  organizationId String   @db.Uuid
+  version        Int
+  content        Json
+  /// What the summary was built from (item counts), for traceability.
+  basedOn        Json
+  /// Hash of the inputs; an unchanged fingerprint means there is nothing new to summarise.
+  fingerprint    String
+  generatedAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, version])
+  @@index([projectId])
+  @@index([projectId, generatedAt])
+  @@index([organizationId])
+  @@map("project_summaries")
 }
 
 // ─── Report ─────────────────────────────────────────────────────────────────
@@ -491,17 +674,20 @@ model AuditLog {
 // ─── LlmUsage (immutable) ───────────────────────────────────────────────────
 
 model LlmUsage {
-  id               String   @id @default(uuid()) @db.Uuid
+  id               String        @id @default(uuid()) @db.Uuid
   model            String
+  promptName       String?
   promptTokens     Int
   completionTokens Int
   totalTokens      Int
+  cachedTokens     Int           @default(0)
   latencyMs        Int
+  status           LlmCallStatus @default(OK)
   endpoint         String?
-  userId           String?  @db.Uuid
-  projectId        String?  @db.Uuid
-  organizationId   String   @db.Uuid
-  createdAt        DateTime @default(now())
+  userId           String?       @db.Uuid
+  projectId        String?       @db.Uuid
+  organizationId   String        @db.Uuid
+  createdAt        DateTime      @default(now())
 
   user         User?        @relation(fields: [userId], references: [id])
   project      Project?     @relation(fields: [projectId], references: [id])
@@ -511,5 +697,6 @@ model LlmUsage {
   @@index([projectId])
   @@index([organizationId])
   @@index([createdAt])
+  @@index([projectId, createdAt])
   @@map("llm_usages")
 }

@@ -13,7 +13,13 @@ export { DelayedFallback } from './DelayedFallback';
 
 // Dialogs & Drawers
 export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
-export { FormDrawer, DrawerShell, type FormDrawerProps, type DrawerShellProps, type DrawerSize } from './FormDrawer';
+export {
+  FormDrawer,
+  DrawerShell,
+  type FormDrawerProps,
+  type DrawerShellProps,
+  type DrawerSize,
+} from './FormDrawer';
 export {
   DiscardBar,
   DiscardGuardProvider,
@@ -82,6 +88,7 @@ export { NoAccess } from './NoAccess';
 // DataTable
 export {
   DataTable,
+  DataTablePagination,
   type DataTableProps,
   type DataTableColumnDef,
   type RowAction,

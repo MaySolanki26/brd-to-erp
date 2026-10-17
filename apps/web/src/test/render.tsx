@@ -23,8 +23,10 @@ export function makeAuth(user: UserDto | null) {
     user,
     isAuthenticated: user !== null,
     isLoading: false,
+    isError: false,
+    retry: () => {},
     role: user?.orgRole ?? null,
-    logout: () => {},
+    logout: async () => {},
   };
 }
 
