@@ -1,8 +1,18 @@
-import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import type { KnowledgeStatus } from '@brd/shared';
 import { normalize } from './extraction.plan.js';
 import type { ExtractionRepository } from './extraction.repository.js';
 import type { ExistingItem, ExtractedKind } from './extraction.types.js';
+
+/**
+ * The same kind and title always get the same id, so a run over the same answers produces the same
+ * prompts (and the same fixture hashes) every time.
+ */
+export function stableItemId(kind: ExtractedKind, title: string): string {
+  const hex = createHash('sha256').update(`${kind}:${normalize(title)}`).digest('hex');
+  const variant = ((Number.parseInt(hex[16] ?? '0', 16) & 0x3) | 0x8).toString(16);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
 
 export interface FakeItem {
   kind: ExtractedKind;
@@ -106,7 +116,7 @@ export function createFakeRepository(seed: {
       };
       for (const kind of ['module', 'requirement', 'rule'] as const) {
         for (const create of plan.create.filter((c) => c.kind === kind)) {
-          const id = randomUUID();
+          const id = stableItemId(kind, create.title);
           state.items.set(id, {
             kind,
             id,

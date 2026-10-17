@@ -28,7 +28,14 @@ export function QuestionGroup({
         <h3 id={headingId} className="text-lg font-semibold">
           {group.title}
         </h3>
-        <Badge variant="secondary">{group.questions.length}</Badge>
+        <Badge variant="secondary" aria-label={`${String(group.total)} questions`}>
+          {group.total}
+        </Badge>
+        {group.questions.length < group.total && (
+          <span className="text-sm text-muted-foreground">
+            showing {group.questions.length}
+          </span>
+        )}
       </div>
       <div className="space-y-3">
         {group.questions.map((question) => (

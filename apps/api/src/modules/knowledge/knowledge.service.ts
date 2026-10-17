@@ -2,7 +2,6 @@ import type {
   BusinessRuleDto,
   ChunkDetailDto,
   KnowledgeKind,
-  KnowledgeSourceDto,
   KnowledgeStatus,
   KnowledgeSummaryDto,
   ListKnowledgeQuery,
@@ -15,30 +14,7 @@ import type {
 import { KNOWLEDGE_STATUSES } from '@brd/shared';
 import { NotFoundError } from '../../errors/app-error.js';
 import * as repo from './knowledge.repository.js';
-
-function toSource(chunk: repo.ChunkRecord): KnowledgeSourceDto {
-  const base = {
-    chunkId: chunk.id,
-    headingPath: chunk.headingPath,
-    needsReview: chunk.needsReview,
-  };
-  if (chunk.documentVersion) {
-    return {
-      ...base,
-      type: 'document',
-      sourceId: chunk.documentVersion.document.id,
-      sourceTitle: chunk.documentVersion.document.title,
-      versionNumber: chunk.documentVersion.versionNumber,
-    };
-  }
-  return {
-    ...base,
-    type: 'note',
-    sourceId: chunk.contextNote?.id ?? '',
-    sourceTitle: chunk.contextNote?.title ?? '',
-    versionNumber: null,
-  };
-}
+import { toSource } from './knowledge-source.js';
 
 function toCreator(
   createdBy: { id: string; name: string } | null,

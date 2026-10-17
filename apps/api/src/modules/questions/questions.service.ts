@@ -6,9 +6,11 @@ import {
   type DismissQuestionInput,
   type LinkedItemDto,
   type ListQuestionsQuery,
-  type PagedResult,
   type QuestionCountsDto,
   type QuestionDto,
+  type QuestionListDto,
+  type QuestionModuleCountDto,
+  type QuestionPriority,
   type UserDto,
 } from '@brd/shared';
 import { AppError, ConflictError, NotFoundError } from '../../errors/app-error.js';
@@ -16,14 +18,30 @@ import { logger } from '../../lib/logger.js';
 import { withTransaction, type DbClient } from '../../lib/transaction.js';
 import { enqueueJob } from '../../services/queue.service.js';
 import { createAuditLog } from '../audit/audit.repository.js';
+import { toSource } from '../knowledge/knowledge-source.js';
 import * as repo from './questions.repository.js';
 
 function linkedItems(question: repo.QuestionRecord): LinkedItemDto[] {
   return question.links.flatMap(({ requirement, rule, module }): LinkedItemDto[] => {
-    if (requirement) return [{ kind: 'requirement', ...requirement }];
-    if (rule) return [{ kind: 'rule', ...rule }];
-    if (module)
-      return [{ kind: 'module', id: module.id, title: module.name, status: module.status }];
+    if (requirement) {
+      const { sourceChunk, ...item } = requirement;
+      return [{ kind: 'requirement', ...item, source: toSource(sourceChunk) }];
+    }
+    if (rule) {
+      const { sourceChunk, ...item } = rule;
+      return [{ kind: 'rule', ...item, source: toSource(sourceChunk) }];
+    }
+    if (module) {
+      return [
+        {
+          kind: 'module',
+          id: module.id,
+          title: module.name,
+          status: module.status,
+          source: toSource(module.sourceChunk),
+        },
+      ];
+    }
     return [];
   });
 }
@@ -59,12 +77,29 @@ export function toQuestionDto(question: repo.QuestionRecord): QuestionDto {
   };
 }
 
+/** One entry per module (or none) with its total and its most urgent priority. */
+export function foldModuleCounts(rows: repo.ModuleCountRow[]): QuestionModuleCountDto[] {
+  const byModule = new Map<string | null, { total: number; mostUrgent: QuestionPriority }>();
+  for (const row of rows) {
+    const entry = byModule.get(row.moduleId);
+    if (!entry) {
+      byModule.set(row.moduleId, { total: row.count, mostUrgent: row.priority });
+      continue;
+    }
+    entry.total += row.count;
+    if (QUESTION_PRIORITIES.indexOf(row.priority) < QUESTION_PRIORITIES.indexOf(entry.mostUrgent)) {
+      entry.mostUrgent = row.priority;
+    }
+  }
+  return [...byModule].map(([moduleId, entry]) => ({ moduleId, ...entry }));
+}
+
 export async function listQuestions(
   user: UserDto,
   projectId: string,
   query: ListQuestionsQuery,
-): Promise<PagedResult<QuestionDto>> {
-  const { items, total } = await repo.listQuestions({
+): Promise<QuestionListDto> {
+  const { items, total, moduleCounts } = await repo.listQuestions({
     organizationId: user.organizationId,
     projectId,
     status: query.status,
@@ -74,7 +109,13 @@ export async function listQuestions(
     page: query.page,
     pageSize: query.pageSize,
   });
-  return { items: items.map(toQuestionDto), page: query.page, pageSize: query.pageSize, total };
+  return {
+    items: items.map(toQuestionDto),
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+    moduleCounts: foldModuleCounts(moduleCounts),
+  };
 }
 
 export async function getCounts(user: UserDto, projectId: string): Promise<QuestionCountsDto> {

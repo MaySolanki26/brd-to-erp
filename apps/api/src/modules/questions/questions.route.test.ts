@@ -61,6 +61,37 @@ describe('questions routes', () => {
   const dismiss = (session: Session, id: string, body: object, projectId = world.p1.id) =>
     as(app, session, 'post', `${base(projectId)}/${id}/dismiss`).send(body);
 
+  /** A note with one chunk, so items can say where they came from. */
+  function seedChunk() {
+    const now = new Date();
+    const noteId = crypto.randomUUID();
+    db.notes.set(noteId, {
+      id: noteId,
+      title: 'Kickoff call',
+      body: 'x',
+      status: 'PROCESSED',
+      errorMessage: null,
+      projectId: world.p1.id,
+      organizationId: world.orgA,
+      createdById: world.analystA.id,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const chunk = {
+      id: crypto.randomUUID(),
+      chunkIndex: 0,
+      headingPath: ['Approvals'],
+      content: 'Invoices above 10k need approval.',
+      documentVersionId: null,
+      contextNoteId: noteId,
+      projectId: world.p1.id,
+      organizationId: world.orgA,
+      needsReview: false,
+    };
+    db.chunks.set(chunk.id, chunk);
+    return chunk;
+  }
+
   beforeEach(async () => {
     vi.clearAllMocks();
     world = await buildWorld();
@@ -92,21 +123,22 @@ describe('questions routes', () => {
     });
 
     it('shows each question with its module and linked items inline', async () => {
+      const chunk = seedChunk();
       const module = addKnowledge('modules', {
         ...scope(),
-        sourceChunkId: 'c',
+        sourceChunkId: chunk.id,
         title: 'Finance',
         status: 'CONFIRMED',
       });
       const requirement = addKnowledge('requirements', {
         ...scope(),
-        sourceChunkId: 'c',
+        sourceChunkId: chunk.id,
         title: 'Invoice approval',
         status: 'OPEN',
       });
       const rule = addKnowledge('rules', {
         ...scope(),
-        sourceChunkId: 'c',
+        sourceChunkId: chunk.id,
         title: 'Limit is 10k',
         status: 'ASSUMED',
       });
@@ -122,10 +154,64 @@ describe('questions routes', () => {
 
       const [item] = (await as(app, analyst, 'get', base(world.p1.id))).body.items;
       expect(item.module).toEqual({ id: module.id, name: 'Finance' });
+      // Each linked item says where it was first found, so the text behind it can be opened.
+      const source = {
+        chunkId: chunk.id,
+        type: 'note',
+        sourceTitle: 'Kickoff call',
+        versionNumber: null,
+        headingPath: ['Approvals'],
+        needsReview: false,
+      };
       expect(item.linkedItems).toEqual([
-        { kind: 'requirement', id: requirement.id, title: 'Invoice approval', status: 'OPEN' },
-        { kind: 'rule', id: rule.id, title: 'Limit is 10k', status: 'ASSUMED' },
-        { kind: 'module', id: module.id, title: 'Finance', status: 'CONFIRMED' },
+        {
+          kind: 'requirement', id: requirement.id, title: 'Invoice approval', status: 'OPEN',
+          source: expect.objectContaining(source),
+        },
+        {
+          kind: 'rule', id: rule.id, title: 'Limit is 10k', status: 'ASSUMED',
+          source: expect.objectContaining(source),
+        },
+        {
+          kind: 'module', id: module.id, title: 'Finance', status: 'CONFIRMED',
+          source: expect.objectContaining(source),
+        },
+      ]);
+    });
+
+    it('counts every question per module across all pages, with the most urgent priority of each', async () => {
+      const chunk = seedChunk();
+      const billing = addKnowledge('modules', { ...scope(), sourceChunkId: chunk.id, title: 'Billing' });
+      const support = addKnowledge('modules', { ...scope(), sourceChunkId: chunk.id, title: 'Support' });
+      for (const priority of ['NORMAL', 'HIGH', 'NORMAL'] as const) {
+        addQuestion({ ...scope(), moduleId: billing.id, priority });
+      }
+      addQuestion({ ...scope(), moduleId: support.id, priority: 'CRITICAL' });
+      addQuestion({ ...scope(), moduleId: null, priority: 'NORMAL' });
+
+      const res = await as(app, analyst, 'get', `${base(world.p1.id)}?pageSize=2`);
+      expect(res.body.items).toHaveLength(2);
+      expect(res.body.total).toBe(5);
+      expect(res.body.moduleCounts).toEqual(
+        expect.arrayContaining([
+          { moduleId: billing.id, total: 3, mostUrgent: 'HIGH' },
+          { moduleId: support.id, total: 1, mostUrgent: 'CRITICAL' },
+          { moduleId: null, total: 1, mostUrgent: 'NORMAL' },
+        ]),
+      );
+      expect(res.body.moduleCounts).toHaveLength(3);
+    });
+
+    it('counts only the questions that match the filters, and only this project', async () => {
+      const chunk = seedChunk();
+      const billing = addKnowledge('modules', { ...scope(), sourceChunkId: chunk.id, title: 'Billing' });
+      addQuestion({ ...scope(), moduleId: billing.id, priority: 'HIGH', reason: 'GAP' });
+      addQuestion({ ...scope(), moduleId: billing.id, priority: 'NORMAL', reason: 'AMBIGUITY' });
+      addQuestion({ ...scope(), projectId: world.p2.id, moduleId: billing.id, priority: 'CRITICAL' });
+
+      const res = await as(app, analyst, 'get', `${base(world.p1.id)}?reason=AMBIGUITY`);
+      expect(res.body.moduleCounts).toEqual([
+        { moduleId: billing.id, total: 1, mostUrgent: 'NORMAL' },
       ]);
     });
 

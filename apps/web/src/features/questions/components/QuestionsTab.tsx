@@ -28,7 +28,9 @@ export function QuestionsTab({ projectId, canAnswer }: QuestionsTabProps) {
     [questions.data],
   );
   const total = questions.data?.pages[0]?.total ?? 0;
-  const groups = useMemo(() => groupQuestions(loaded), [loaded]);
+  // The newest page's counts: they describe the whole result, whichever page is showing.
+  const moduleCounts = questions.data?.pages.at(-1)?.moduleCounts;
+  const groups = useMemo(() => groupQuestions(loaded, moduleCounts), [loaded, moduleCounts]);
 
   if (questions.isError && isForbidden(questions.error)) {
     return <NoAccess description="You do not have access to this project's questions." />;

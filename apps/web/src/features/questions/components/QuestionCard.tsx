@@ -124,7 +124,7 @@ export function QuestionCard({
 
       <p className="text-base font-medium">{question.text}</p>
 
-      <LinkedItems items={question.linkedItems} />
+      <LinkedItems projectId={projectId} items={question.linkedItems} />
 
       {question.answer && (
         <div className="rounded-md bg-muted/40 p-3 text-sm">

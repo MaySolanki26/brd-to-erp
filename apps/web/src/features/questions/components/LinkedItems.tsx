@@ -1,10 +1,20 @@
+import { useState } from 'react';
 import { Badge, StatusBadge } from '@brd/ui';
 import type { LinkedItemDto } from '@brd/shared';
+import { SourceChunkDrawer } from '@/features/knowledge/components/SourceChunkDrawer';
+import { SourceLink } from '@/features/knowledge/components/SourceLink';
 import { STATUS_LABELS, STATUS_TONES } from '@/features/knowledge/knowledge-labels';
 import { KIND_LABELS } from '../question-labels';
 
 /** The items an answer would affect, shown on the question so the person knows what they decide. */
-export function LinkedItems({ items }: { items: LinkedItemDto[] }) {
+export function LinkedItems({
+  projectId,
+  items,
+}: {
+  projectId: string;
+  items: LinkedItemDto[];
+}) {
+  const [openChunkId, setOpenChunkId] = useState<string | null>(null);
   if (items.length === 0) return null;
   return (
     <div>
@@ -19,9 +29,15 @@ export function LinkedItems({ items }: { items: LinkedItemDto[] }) {
               tone={STATUS_TONES[item.status]}
               size="xs"
             />
+            <SourceLink source={item.source} onOpen={setOpenChunkId} />
           </li>
         ))}
       </ul>
+      <SourceChunkDrawer
+        projectId={projectId}
+        chunkId={openChunkId}
+        onClose={() => setOpenChunkId(null)}
+      />
     </div>
   );
 }

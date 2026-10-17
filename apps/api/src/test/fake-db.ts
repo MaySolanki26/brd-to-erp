@@ -806,7 +806,7 @@ export function addKnowledge(
   return item;
 }
 
-function chunkRecord(chunk: FakeChunk) {
+export function chunkRecord(chunk: FakeChunk) {
   const version = chunk.documentVersionId ? db.versions.get(chunk.documentVersionId) : undefined;
   const document = version ? db.documents.get(version.documentId) : undefined;
   const note = chunk.contextNoteId ? db.notes.get(chunk.contextNoteId) : undefined;

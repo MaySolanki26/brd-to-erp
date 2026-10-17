@@ -5,7 +5,8 @@ import type {
   QuestionReason,
   QuestionStatus,
 } from '../constants/questions.js';
-import type { ModuleRefDto } from './knowledge.js';
+import type { KnowledgeSourceDto, ModuleRefDto } from './knowledge.js';
+import type { PagedResult } from './project.js';
 import type { PersonRef } from './source.js';
 
 /** An item a question is about, with enough detail to show it inline. */
@@ -14,6 +15,8 @@ export interface LinkedItemDto {
   id: string;
   title: string;
   status: KnowledgeStatus;
+  /** Where the item was first found, so the text behind the question can be opened. */
+  source: KnowledgeSourceDto;
 }
 
 export interface QuestionAnswerDto {
@@ -46,6 +49,19 @@ export interface QuestionDto {
   followUpOf: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** How many questions match the current filters in one module, whatever page is showing. */
+export interface QuestionModuleCountDto {
+  /** Null for questions that belong to no module. */
+  moduleId: string | null;
+  total: number;
+  /** The most urgent priority among them, which orders the groups. */
+  mostUrgent: QuestionPriority;
+}
+
+export interface QuestionListDto extends PagedResult<QuestionDto> {
+  moduleCounts: QuestionModuleCountDto[];
 }
 
 export interface QuestionCountsDto {

@@ -20,7 +20,8 @@ import {
   MAX_EXISTING_QUESTIONS,
   applyAnswerInput,
   questionsInput,
-  selectItemsForQuestions,
+  orderItemsForQuestions,
+  questionBatch,
   summaryContext,
   summaryInput,
 } from './prompt-inputs.js';
@@ -36,7 +37,8 @@ export interface UnderstandingDeps {
 
 export type RefreshSummaryOutcome = 'created' | 'unchanged' | 'empty' | 'skipped';
 export type GenerateQuestionsOutcome =
-  { status: 'generated'; created: number } | { status: 'empty' | 'skipped' };
+  | { status: 'generated'; created: number; nextOffset: number | null }
+  | { status: 'empty' | 'skipped' };
 export type ApplyAnswerOutcome =
   | { status: 'applied'; changed: number; conflicts: number; followUps: number }
   | { status: 'already-applied' | 'skipped' };
@@ -54,7 +56,10 @@ const CONFIRMED_MEANWHILE =
 export interface UnderstandingService {
   /** Builds the next summary version, or does nothing when the items have not changed. */
   refreshSummary(payload: RefreshSummaryPayload): Promise<RefreshSummaryOutcome>;
-  /** Asks the questions the project's items raise, skipping any gap already asked. */
+  /**
+   * Asks the questions one batch of the project's items raises, skipping any gap already asked.
+   * The outcome says where the next batch starts, if there is one.
+   */
   generateQuestions(payload: GenerateQuestionsPayload): Promise<GenerateQuestionsOutcome>;
   /** Applies one recorded answer exactly once. */
   applyAnswer(payload: ApplyAnswerPayload): Promise<ApplyAnswerOutcome>;
@@ -127,7 +132,10 @@ export function createUnderstandingService(deps: UnderstandingDeps): Understandi
     if ((await repo.projectName(organizationId, projectId)) === null) return { status: 'skipped' };
 
     const items = await repo.loadItems(organizationId, projectId);
-    const candidates = selectItemsForQuestions(items);
+    const offset =
+      Number.isInteger(payload.offset) && (payload.offset ?? 0) > 0 ? (payload.offset as number) : 0;
+    const batch = questionBatch(orderItemsForQuestions(items), offset);
+    const candidates = batch.items;
     if (candidates.length === 0) return { status: 'empty' };
 
     const summary = await repo.latestSummary(organizationId, projectId);
@@ -168,7 +176,7 @@ export function createUnderstandingService(deps: UnderstandingDeps): Understandi
         );
       }
       logger.info({ projectId, created, dropped: plan.dropped }, 'Questions generated');
-      return { status: 'generated' as const, created };
+      return { status: 'generated' as const, created, nextOffset: batch.nextOffset };
     });
   }
 

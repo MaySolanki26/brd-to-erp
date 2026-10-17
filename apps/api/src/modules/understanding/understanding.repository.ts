@@ -4,15 +4,15 @@ import { prisma } from '../../lib/prisma.js';
 import type { DbClient } from '../../lib/transaction.js';
 import type { PlannedQuestion } from './plan-questions.js';
 import type { PlannedChange } from './plan-answer.js';
-import type {
-  AnswerContext,
-  ExistingQuestion,
-  ItemRef,
-  PromptItem,
+import {
+  EXCERPT_CHARS,
+  type AnswerContext,
+  type ExistingQuestion,
+  type ItemRef,
+  type PromptItem,
 } from './understanding.types.js';
 
 const ITEM_LIMIT = 2000;
-const EXCERPT_CHARS = 800;
 const chunk = { select: { content: true } } as const;
 const ORDER = [{ createdAt: 'asc' }, { id: 'asc' }] as const;
 

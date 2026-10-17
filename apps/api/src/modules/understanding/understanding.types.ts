@@ -6,6 +6,9 @@ import type {
   QuestionStatus,
 } from '@brd/shared';
 
+/** How much of the source text an item carries into prompts. */
+export const EXCERPT_CHARS = 800;
+
 export interface ItemRef {
   kind: LinkedItemKind;
   id: string;

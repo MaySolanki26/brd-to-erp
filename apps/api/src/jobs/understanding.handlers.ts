@@ -79,7 +79,15 @@ export function createUnderstandingHandlers(
     async generateQuestions(jobs) {
       for (const job of jobs) {
         await guarded(boss, JobName.GENERATE_QUESTIONS, job, async () => {
-          await service.generateQuestions(job.data);
+          const outcome = await service.generateQuestions(job.data);
+          // A long project is read in batches: the next one starts where this one ended.
+          if (outcome.status === 'generated' && outcome.nextOffset !== null) {
+            await enqueue(boss, JobName.GENERATE_QUESTIONS, {
+              organizationId: job.data.organizationId,
+              projectId: job.data.projectId,
+              offset: outcome.nextOffset,
+            });
+          }
         });
       }
     },

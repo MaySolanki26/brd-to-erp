@@ -55,4 +55,44 @@ describe('groupQuestions', () => {
     groupQuestions(input);
     expect(input.map((q) => q.id)).toEqual(['b', 'a']);
   });
+
+  describe('with the server counts for every page', () => {
+    it('reports the true size of each group, never less than what is loaded', () => {
+      const groups = groupQuestions(
+        [question({ id: 'a', module: mod('m1', 'Finance') })],
+        [
+          { moduleId: 'm1', total: 7, mostUrgent: 'NORMAL' },
+          { moduleId: null, total: 2, mostUrgent: 'HIGH' },
+        ],
+      );
+      expect(groups[0]?.total).toBe(7);
+      const loadedMore = groupQuestions(
+        [
+          question({ id: 'a', module: mod('m1', 'Finance') }),
+          question({ id: 'b', module: mod('m1', 'Finance') }),
+        ],
+        [{ moduleId: 'm1', total: 1, mostUrgent: 'NORMAL' }],
+      );
+      expect(loadedMore[0]?.total).toBe(2);
+    });
+
+    it('orders groups by the most urgent question in the whole result, not just the loaded part', () => {
+      const groups = groupQuestions(
+        [
+          question({ id: '1', module: mod('m1', 'Alpha'), priority: 'NORMAL' }),
+          question({ id: '2', module: mod('m2', 'Beta'), priority: 'NORMAL' }),
+        ],
+        [
+          { moduleId: 'm1', total: 2, mostUrgent: 'NORMAL' },
+          { moduleId: 'm2', total: 2, mostUrgent: 'CRITICAL' },
+        ],
+      );
+      expect(groups.map((g) => g.title)).toEqual(['Beta', 'Alpha']);
+    });
+
+    it('falls back to the loaded questions when no counts are given', () => {
+      const [group] = groupQuestions([question({ id: 'a' }), question({ id: 'b' })]);
+      expect(group?.total).toBe(2);
+    });
+  });
 });

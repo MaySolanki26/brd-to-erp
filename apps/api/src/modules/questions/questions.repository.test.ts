@@ -32,6 +32,30 @@ describe('questions.repository', () => {
     prismaMock.question.groupBy.mockResolvedValue([]);
   });
 
+  it('counts per module and priority over the same filters, not just the page that is shown', async () => {
+    prismaMock.question.groupBy.mockResolvedValue([
+      { moduleId: 'm1', priority: 'HIGH', _count: { _all: 2 } },
+      { moduleId: null, priority: 'NORMAL', _count: { _all: 1 } },
+    ]);
+    const result = await listQuestions({ ...scope, status: 'OPEN', page: 3, pageSize: 5 });
+    expect(result.moduleCounts).toEqual([
+      { moduleId: 'm1', priority: 'HIGH', count: 2 },
+      { moduleId: null, priority: 'NORMAL', count: 1 },
+    ]);
+    const args = prismaMock.question.groupBy.mock.calls[0]?.[0];
+    expect(args.by).toEqual(['moduleId', 'priority']);
+    expect(args.where).toEqual({ ...scope, status: 'OPEN' });
+    expect(args).not.toHaveProperty('skip');
+  });
+
+  it('selects where each linked item was first found', async () => {
+    await listQuestions({ ...scope, page: 1, pageSize: 5 });
+    const links = prismaMock.question.findMany.mock.calls[0]?.[0].select.links.select;
+    for (const key of ['requirement', 'rule', 'module']) {
+      expect(links[key].select.sourceChunk.select).toHaveProperty('headingPath', true);
+    }
+  });
+
   it('scopes the list by organization and project and applies only the filters given', async () => {
     await listQuestions({ ...scope, page: 1, pageSize: 10 });
     expect(prismaMock.question.findMany.mock.calls[0]?.[0].where).toEqual(scope);

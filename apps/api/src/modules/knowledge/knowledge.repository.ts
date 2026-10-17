@@ -1,15 +1,6 @@
 import type { KnowledgeStatus, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-
-const chunkSelect = {
-  id: true,
-  headingPath: true,
-  needsReview: true,
-  documentVersion: {
-    select: { versionNumber: true, document: { select: { id: true, title: true } } },
-  },
-  contextNote: { select: { id: true, title: true } },
-} satisfies Prisma.ChunkSelect;
+import { chunkSelect } from './knowledge-source.js';
 
 const creatorSelect = { select: { id: true, name: true } } as const;
 const extraSourcesSelect = {

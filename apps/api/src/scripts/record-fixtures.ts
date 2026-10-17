@@ -1,9 +1,15 @@
 /**
- * Records model answers for the extraction prompt over the files in evals/samples, so tests and
- * local runs with LLM_DRIVER=fixture can replay them without a network or a key.
+ * Records model answers over the files in evals/samples, so tests can replay them without a network
+ * or a key. Stage one reads every chunk with the extraction prompt; stage two writes the project
+ * summary and asks the questions (one call per batch of items) over what stage one found.
  *
- *   pnpm --filter @brd/api fixtures:record              reads each sample once and saves the answers
- *   pnpm --filter @brd/api fixtures:record -- --dry-run  only counts chunks (no key, no network, no cost)
+ *   pnpm --filter @brd/api fixtures:record                      both stages
+ *   pnpm --filter @brd/api fixtures:record -- --extraction-only  stage one only
+ *   pnpm --filter @brd/api fixtures:record -- --dry-run          only counts chunks (no key, no cost)
+ *
+ * The summary and question prompts take item ids as input and the recording uses stable ids made from
+ * each item's kind and title, so these answers replay in tests but not against a real database: run
+ * those jobs with the real model there.
  *
  * Needs LLM_DRIVER=real and ANTHROPIC_API_KEY. Only the model's answers and token counts are saved,
  * never the sample text; read the files before committing because an answer can quote the sample.
@@ -11,7 +17,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { fileURLToPath } from 'node:url';
 import { env } from '../config/env.js';
-import { runSamples, loadSamples } from '../modules/extraction/sample-run.js';
+import { extractSamples, loadSamples, runUnderstanding } from '../modules/extraction/sample-run.js';
 import { AnthropicProvider } from '../services/llm/anthropic.provider.js';
 import { RecordingProvider } from '../services/llm/fixture.provider.js';
 import { createLlmService } from '../services/llm/llm.service.js';
@@ -66,14 +72,17 @@ async function main(): Promise<void> {
     maxOutputTokens: env.LLM_MAX_OUTPUT_TOKENS,
   });
 
-  const summary = await runSamples(chunks, llm, (done, total) => {
+  const extracted = await extractSamples(chunks, llm, (done, total) => {
     if (done % 10 === 0 || done === total) console.log(`  ${String(done)}/${String(total)} chunks`);
   });
-  console.log('Extracted:', summary);
+  console.log('Extracted:', extracted.summary);
+  if (!process.argv.includes('--extraction-only')) {
+    console.log('Understanding:', await runUnderstanding(extracted, llm));
+  }
   console.log(
     `Model calls: ${String(usage.calls)}; tokens in ${String(usage.input)} (cached ${String(usage.cached)}), out ${String(usage.output)}`,
   );
-  console.log(`Fixtures are in evals/fixtures/extraction/. Review them before you commit.`);
+  console.log('Fixtures are in evals/fixtures/. Review them before you commit.');
 }
 
 main().catch((err: unknown) => {

@@ -74,6 +74,26 @@ describe('understanding handlers', () => {
       expect(send).not.toHaveBeenCalled();
     });
 
+    it('queues the next batch of questions where this one ended, until the last', async () => {
+      const { send, service, handlers, job } = setup();
+      service.generateQuestions.mockResolvedValueOnce({ status: 'generated', created: 2, nextOffset: 60 });
+      await handlers.generateQuestions(job(base));
+      expect(queued(send)).toEqual([
+        expect.objectContaining({ name: 'generate-questions', data: { ...base, offset: 60 } }),
+      ]);
+
+      send.mockClear();
+      for (const outcome of [
+        { status: 'generated', created: 0, nextOffset: null },
+        { status: 'empty' },
+        { status: 'skipped' },
+      ]) {
+        service.generateQuestions.mockResolvedValueOnce(outcome);
+        await handlers.generateQuestions(job(base));
+      }
+      expect(send).not.toHaveBeenCalled();
+    });
+
     it('passes only ids to the next job', async () => {
       const { send, service, handlers, job } = setup();
       service.refreshSummary.mockResolvedValueOnce('created');
@@ -128,7 +148,7 @@ describe('understanding handlers', () => {
 
     it('hands every job in a batch to the service', async () => {
       const { service, handlers } = setup();
-      service.generateQuestions.mockResolvedValue({ status: 'generated', created: 0 });
+      service.generateQuestions.mockResolvedValue({ status: 'generated', created: 0, nextOffset: null });
       const jobs = [
         { id: 'a', data: base },
         { id: 'b', data: { ...base, projectId: '00000000-0000-4000-8000-000000000009' } },

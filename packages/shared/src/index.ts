@@ -145,6 +145,8 @@ export {
   type QuestionDismissalDto,
   type QuestionDto,
   type QuestionCountsDto,
+  type QuestionListDto,
+  type QuestionModuleCountDto,
   type DecisionItemStateDto,
   type DecisionChangeDto,
   type DecisionConflictDto,

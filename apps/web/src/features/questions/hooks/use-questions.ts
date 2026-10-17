@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import type { PagedResult, QuestionCountsDto, QuestionDto } from '@brd/shared';
+import type { QuestionCountsDto, QuestionListDto } from '@brd/shared';
 import { apiClient } from '@/lib/api-client';
 import { STALE } from '@/lib/query-client';
 import { queryKeys } from '@/lib/query-keys';
@@ -22,7 +22,7 @@ export function useQuestions(projectId: string, filters: QuestionFilters) {
     queryKey: queryKeys.projects.questions(projectId, { ...filters }),
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
-      apiClient.get<PagedResult<QuestionDto>>(
+      apiClient.get<QuestionListDto>(
         `/projects/${projectId}/questions?${queryString(filters, pageParam)}`,
       ),
     getNextPageParam: (last) =>

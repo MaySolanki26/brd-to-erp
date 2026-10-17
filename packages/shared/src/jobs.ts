@@ -31,6 +31,8 @@ export interface RefreshSummaryPayload {
 export interface GenerateQuestionsPayload {
   organizationId: string;
   projectId: string;
+  /** Where in the project's items this batch starts. Left out for the first batch; the job queues the next. */
+  offset?: number;
 }
 
 /** Applies one recorded answer to the items its question is linked to. */

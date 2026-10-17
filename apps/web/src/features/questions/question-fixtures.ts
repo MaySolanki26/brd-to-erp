@@ -1,11 +1,15 @@
 import type {
   DecisionChangeDto,
   DecisionDto,
+  KnowledgeSourceDto,
+  LinkedItemDto,
   QuestionCountsDto,
   QuestionDto,
+  QuestionModuleCountDto,
   SummaryDto,
   SummaryResponseDto,
 } from '@brd/shared';
+import { priorityRank } from '@brd/shared';
 
 export function question(overrides: Partial<QuestionDto> = {}): QuestionDto {
   return {
@@ -35,14 +39,50 @@ export function counts(overrides: Partial<QuestionCountsDto> = {}): QuestionCoun
   };
 }
 
+export function linkedItem(overrides: Partial<LinkedItemDto> = {}): LinkedItemDto {
+  const source: KnowledgeSourceDto = {
+    chunkId: 'c1',
+    type: 'document',
+    sourceId: 'd1',
+    sourceTitle: 'Billing BRD',
+    versionNumber: 1,
+    headingPath: ['1. Scope', '1.1 Invoicing'],
+    needsReview: false,
+  };
+  return { kind: 'requirement', id: 'r1', title: 'Remind customers', status: 'OPEN', source, ...overrides };
+}
+
+/** What the server reports for the whole result, derived from the questions given. */
+function moduleCountsOf(items: unknown[]): QuestionModuleCountDto[] {
+  const byModule = new Map<string | null, QuestionModuleCountDto>();
+  for (const item of items) {
+    const q = item as Partial<QuestionDto>;
+    if (q.priority === undefined) continue;
+    const moduleId = q.module?.id ?? null;
+    const entry = byModule.get(moduleId);
+    if (!entry) byModule.set(moduleId, { moduleId, total: 1, mostUrgent: q.priority });
+    else {
+      entry.total += 1;
+      if (priorityRank(q.priority) < priorityRank(entry.mostUrgent)) entry.mostUrgent = q.priority;
+    }
+  }
+  return [...byModule.values()];
+}
+
 export const page = <T>(
   items: T[],
-  overrides: { page?: number; pageSize?: number; total?: number } = {},
+  overrides: {
+    page?: number;
+    pageSize?: number;
+    total?: number;
+    moduleCounts?: QuestionModuleCountDto[];
+  } = {},
 ) => ({
   items,
   page: overrides.page ?? 1,
   pageSize: overrides.pageSize ?? 50,
   total: overrides.total ?? items.length,
+  moduleCounts: overrides.moduleCounts ?? moduleCountsOf(items),
 });
 
 export function change(overrides: Partial<DecisionChangeDto> = {}): DecisionChangeDto {

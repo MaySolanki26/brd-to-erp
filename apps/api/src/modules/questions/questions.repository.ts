@@ -1,6 +1,7 @@
 import type { Prisma, QuestionPriority, QuestionReason, QuestionStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import type { DbClient } from '../../lib/transaction.js';
+import { chunkSelect } from '../knowledge/knowledge-source.js';
 
 const personSelect = { id: true, name: true } as const;
 
@@ -19,9 +20,13 @@ const questionSelect = {
   module: { select: { id: true, name: true } },
   links: {
     select: {
-      requirement: { select: { id: true, title: true, status: true } },
-      rule: { select: { id: true, title: true, status: true } },
-      module: { select: { id: true, name: true, status: true } },
+      requirement: {
+        select: { id: true, title: true, status: true, sourceChunk: { select: chunkSelect } },
+      },
+      rule: { select: { id: true, title: true, status: true, sourceChunk: { select: chunkSelect } } },
+      module: {
+        select: { id: true, name: true, status: true, sourceChunk: { select: chunkSelect } },
+      },
     },
   },
   answers: {
@@ -60,11 +65,17 @@ function whereOf(filter: QuestionFilter): Prisma.QuestionWhereInput {
 }
 
 /** Most urgent first (the enum is declared CRITICAL, HIGH, NORMAL), oldest first within a priority. */
+export interface ModuleCountRow {
+  moduleId: string | null;
+  priority: QuestionPriority;
+  count: number;
+}
+
 export async function listQuestions(
   filter: QuestionFilter & { page: number; pageSize: number },
-): Promise<{ items: QuestionRecord[]; total: number }> {
+): Promise<{ items: QuestionRecord[]; total: number; moduleCounts: ModuleCountRow[] }> {
   const where = whereOf(filter);
-  const [items, total] = await Promise.all([
+  const [items, total, groups] = await Promise.all([
     prisma.question.findMany({
       where,
       select: questionSelect,
@@ -73,8 +84,15 @@ export async function listQuestions(
       take: filter.pageSize,
     }),
     prisma.question.count({ where }),
+    // Over every page, not just this one, so a group can say how many questions it really has.
+    prisma.question.groupBy({ by: ['moduleId', 'priority'], where, _count: { _all: true } }),
   ]);
-  return { items, total };
+  const moduleCounts = groups.map((g) => ({
+    moduleId: g.moduleId,
+    priority: g.priority,
+    count: g._count._all,
+  }));
+  return { items, total, moduleCounts };
 }
 
 export async function countByStatus(

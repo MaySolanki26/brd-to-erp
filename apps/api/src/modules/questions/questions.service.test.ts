@@ -23,7 +23,13 @@ vi.mock('../../lib/transaction.js', () => ({
   withTransaction: <T>(fn: (tx: object) => Promise<T>) => fn({}),
 }));
 
-import { answerQuestion, dismissQuestion, getCounts, toQuestionDto } from './questions.service.js';
+import {
+  answerQuestion,
+  dismissQuestion,
+  foldModuleCounts,
+  getCounts,
+  toQuestionDto,
+} from './questions.service.js';
 
 const user: UserDto = {
   id: 'u1',
@@ -54,6 +60,23 @@ function record(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
+
+describe('foldModuleCounts', () => {
+  it('folds per-priority rows into one total per module, led by its most urgent priority', () => {
+    expect(
+      foldModuleCounts([
+        { moduleId: 'm1', priority: 'NORMAL', count: 4 },
+        { moduleId: 'm1', priority: 'CRITICAL', count: 1 },
+        { moduleId: 'm1', priority: 'HIGH', count: 2 },
+        { moduleId: null, priority: 'HIGH', count: 3 },
+      ]),
+    ).toEqual([
+      { moduleId: 'm1', total: 7, mostUrgent: 'CRITICAL' },
+      { moduleId: null, total: 3, mostUrgent: 'HIGH' },
+    ]);
+    expect(foldModuleCounts([])).toEqual([]);
+  });
+});
 
 describe('questions.service', () => {
   beforeEach(() => {

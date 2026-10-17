@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { QuestionCountsDto, QuestionDto } from '@brd/shared';
 import { renderRoute } from '@/test/render';
-import { counts, page, question } from '../question-fixtures';
+import { counts, linkedItem, page, question } from '../question-fixtures';
 
 const api = vi.hoisted(() => ({
   get: vi.fn(),
@@ -165,9 +165,9 @@ describe('QuestionsTab', () => {
       serveItems([
         question({
           linkedItems: [
-            { kind: 'requirement', id: 'r1', title: 'Approve invoices', status: 'OPEN' },
-            { kind: 'rule', id: 'u1', title: 'Limit is 10k', status: 'CONFIRMED' },
-            { kind: 'module', id: 'm1', title: 'Finance', status: 'ASSUMED' },
+            linkedItem({ kind: 'requirement', id: 'r1', title: 'Approve invoices', status: 'OPEN' }),
+            linkedItem({ kind: 'rule', id: 'u1', title: 'Limit is 10k', status: 'CONFIRMED' }),
+            linkedItem({ kind: 'module', id: 'm1', title: 'Finance', status: 'ASSUMED' }),
           ],
         }),
       ]);
@@ -183,6 +183,38 @@ describe('QuestionsTab', () => {
       expect(items[1]).toContain('Confirmed');
       expect(items[2]).toContain('Module');
       expect(items[2]).toContain('Assumed');
+    });
+
+    it('opens the exact text a linked item was taken from, so the answer can be informed', async () => {
+      api.get.mockImplementation(async (url: string) => {
+        if (url === COUNTS_URL) return { counts: counts() };
+        if (url.startsWith('/projects/p1/questions?')) {
+          return page([question({ linkedItems: [linkedItem({ title: 'Approve invoices' })] })]);
+        }
+        if (url === '/projects/p1/chunks/c1') {
+          return {
+            chunk: {
+              id: 'c1',
+              chunkIndex: 0,
+              headingPath: ['1. Scope', '1.1 Invoicing'],
+              content: 'Invoices above 10k need a second approval.',
+              needsReview: false,
+              source: { type: 'document', sourceId: 'd1', sourceTitle: 'Billing BRD', versionNumber: 1 },
+            },
+          };
+        }
+        throw new Error(`unexpected GET ${url}`);
+      });
+      view();
+      const list = await screen.findByRole('list', { name: 'Linked items' });
+      await userEvent.click(
+        within(list).getByRole('button', { name: /View source: Billing BRD v1, 1\.1 Invoicing/ }),
+      );
+
+      const dialog = await screen.findByRole('dialog');
+      expect(await within(dialog).findByText('Invoices above 10k need a second approval.')).toBeInTheDocument();
+      expect(within(dialog).getByText('1. Scope › 1.1 Invoicing')).toBeInTheDocument();
+      expect(api.get).toHaveBeenCalledWith('/projects/p1/chunks/c1');
     });
 
     it('marks follow-up questions', async () => {
@@ -243,6 +275,35 @@ describe('QuestionsTab', () => {
       view({ entry: '/?questions.status=all' });
       expect(await screen.findByText('Out of scope for phase 1')).toBeInTheDocument();
       expect(screen.getByText('Dismissed')).toBeInTheDocument();
+    });
+
+    it('tells each group its true size even before every page has loaded', async () => {
+      const finance = { id: 'm1', name: 'Finance' };
+      serve(() =>
+        page([question({ id: 'a', text: 'First', module: finance, priority: 'HIGH' })], {
+          pageSize: 1,
+          total: 4,
+          moduleCounts: [
+            { moduleId: 'm1', total: 3, mostUrgent: 'HIGH' },
+            { moduleId: null, total: 1, mostUrgent: 'NORMAL' },
+          ],
+        }),
+      );
+      view();
+      const section = (await screen.findByRole('heading', { name: 'Finance' })).closest('section');
+      expect(within(section as HTMLElement).getByLabelText('3 questions')).toBeInTheDocument();
+      expect(within(section as HTMLElement).getByText('showing 1')).toBeInTheDocument();
+    });
+
+    it('does not say "showing" once a group is fully loaded', async () => {
+      serve(() =>
+        page([question({ id: 'a', module: { id: 'm1', name: 'Finance' } })], {
+          moduleCounts: [{ moduleId: 'm1', total: 1, mostUrgent: 'NORMAL' }],
+        }),
+      );
+      view();
+      await screen.findByRole('heading', { name: 'Finance' });
+      expect(screen.queryByText(/^showing/)).not.toBeInTheDocument();
     });
 
     it('loads more pages and says how many are shown', async () => {

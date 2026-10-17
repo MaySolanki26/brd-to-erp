@@ -11,7 +11,10 @@ import {
 
 const MAX_TEXT_CHARS = 600;
 const MAX_ITEMS_PER_KIND_IN_SUMMARY = 200;
-export const MAX_ITEMS_FOR_QUESTIONS = 60;
+/** Items read by one question-generation call. */
+export const QUESTION_BATCH_SIZE = 60;
+/** At most this many batches per run, which bounds the cost of a very large project. */
+export const MAX_QUESTION_BATCHES = 20;
 export const MAX_EXISTING_QUESTIONS = 100;
 
 const clip = (text: string | null, max = MAX_TEXT_CHARS): string | null =>
@@ -58,7 +61,8 @@ export function summaryInput(projectName: string, items: KnowledgeItem[]): strin
 /** Items most in need of a look first: open or stale ones before settled ones. Rejected items are left out. */
 const ATTENTION_ORDER = ['NEEDS_REVALIDATION', 'OPEN', 'ASSUMED', 'CONFIRMED'] as const;
 
-export function selectItemsForQuestions(items: PromptItem[]): PromptItem[] {
+/** Every item worth asking about, the ones most in need of a look first. The order is stable. */
+export function orderItemsForQuestions(items: PromptItem[]): PromptItem[] {
   return items
     .filter((i) => i.status !== 'REJECTED')
     .map((item, index) => ({ item, index }))
@@ -68,8 +72,25 @@ export function selectItemsForQuestions(items: PromptItem[]): PromptItem[] {
           ATTENTION_ORDER.indexOf(b.item.status as (typeof ATTENTION_ORDER)[number]) ||
         a.index - b.index,
     )
-    .slice(0, MAX_ITEMS_FOR_QUESTIONS)
     .map(({ item }) => item);
+}
+
+export interface QuestionBatch {
+  items: PromptItem[];
+  /** Where the next batch starts, or null when this was the last one (or the cap was reached). */
+  nextOffset: number | null;
+}
+
+/**
+ * One call reads at most QUESTION_BATCH_SIZE items, so a long project is read in successive batches,
+ * each starting where the last one ended. The cap bounds the cost of a very large project.
+ */
+export function questionBatch(ordered: PromptItem[], offset: number): QuestionBatch {
+  const items = ordered.slice(offset, offset + QUESTION_BATCH_SIZE);
+  const next = offset + QUESTION_BATCH_SIZE;
+  const batchNumber = Math.floor(offset / QUESTION_BATCH_SIZE) + 1;
+  const more = next < ordered.length && batchNumber < MAX_QUESTION_BATCHES;
+  return { items, nextOffset: more ? next : null };
 }
 
 export function questionsInput(items: PromptItem[], existing: ExistingQuestion[]): string {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { db } from './fake-db.js';
+import { chunkRecord, db, type FakeChunk } from './fake-db.js';
 
 type Status = 'OPEN' | 'ANSWERED' | 'DISMISSED';
 type Reason = 'GAP' | 'AMBIGUITY' | 'CONFLICT' | 'MISSING_RULE';
@@ -180,7 +180,7 @@ function linkRecord(link: FakeLink) {
   if (!item) return { requirement: null, rule: null, module: null };
   if (link.kind === 'requirement') {
     return {
-      requirement: { id: item.id, title: item.title, status: item.status },
+      requirement: { id: item.id, title: item.title, status: item.status, sourceChunk: sourceOf(item) },
       rule: null,
       module: null,
     };
@@ -188,15 +188,19 @@ function linkRecord(link: FakeLink) {
   if (link.kind === 'rule') {
     return {
       requirement: null,
-      rule: { id: item.id, title: item.title, status: item.status },
+      rule: { id: item.id, title: item.title, status: item.status, sourceChunk: sourceOf(item) },
       module: null,
     };
   }
   return {
     requirement: null,
     rule: null,
-    module: { id: item.id, name: item.name, status: item.status },
+    module: { id: item.id, name: item.name, status: item.status, sourceChunk: sourceOf(item) },
   };
+}
+
+function sourceOf(item: { sourceChunkId: string }) {
+  return chunkRecord(db.chunks.get(item.sourceChunkId) as FakeChunk);
 }
 
 function questionRecord(q: FakeQuestion) {
@@ -259,7 +263,18 @@ export const questionsRepositoryModule = {
         a.id.localeCompare(b.id),
     );
     const start = (f.page - 1) * f.pageSize;
-    return { items: all.slice(start, start + f.pageSize).map(questionRecord), total: all.length };
+    const groups = new Map<string, { moduleId: string | null; priority: Priority; count: number }>();
+    for (const q of all) {
+      const key = `${q.moduleId ?? ''}|${q.priority}`;
+      const group = groups.get(key) ?? { moduleId: q.moduleId, priority: q.priority, count: 0 };
+      group.count += 1;
+      groups.set(key, group);
+    }
+    return {
+      items: all.slice(start, start + f.pageSize).map(questionRecord),
+      total: all.length,
+      moduleCounts: [...groups.values()],
+    };
   },
   countByStatus: async (organizationId: string, projectId: string) => {
     const counts = new Map<Status, number>();
