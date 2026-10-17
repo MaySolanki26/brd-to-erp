@@ -44,6 +44,7 @@ export const PROJECT_PERMISSIONS: Record<ProjectRole, readonly ProjectPermission
   ANALYST: ANALYST_PERMISSIONS,
   OWNER: [
     ...ANALYST_PERMISSIONS,
+    ProjectPermission.APPROVE,
     ProjectPermission.UPDATE_PROJECT,
     ProjectPermission.MANAGE_MEMBERS,
     ProjectPermission.ARCHIVE_PROJECT,

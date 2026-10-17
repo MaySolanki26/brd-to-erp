@@ -18,7 +18,7 @@
 
 - Throw typed `AppError` subclasses (`NotFoundError`, `ValidationError`, `ForbiddenError`, etc.).
 - Never catch and swallow errors silently. Let them propagate to the central error handler.
-- The central error handler logs the error with pino and returns a consistent JSON envelope: `{ success, error, requestId }`.
+- The central error handler logs the error with pino and returns a consistent JSON envelope: `{ error: { code, message, requestId } }`.
 
 ## Database (Prisma)
 
