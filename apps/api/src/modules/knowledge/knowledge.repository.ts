@@ -12,6 +12,10 @@ const chunkSelect = {
 } satisfies Prisma.ChunkSelect;
 
 const creatorSelect = { select: { id: true, name: true } } as const;
+const extraSourcesSelect = {
+  select: { chunk: { select: chunkSelect } },
+  orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+} satisfies { select: Prisma.ItemSourceSelect; orderBy: Prisma.ItemSourceOrderByWithRelationInput[] };
 
 export type ChunkRecord = Prisma.ChunkGetPayload<{ select: typeof chunkSelect }>;
 
@@ -37,6 +41,7 @@ const requirementSelect = {
   module: { select: { id: true, name: true } },
   createdBy: creatorSelect,
   sourceChunk: { select: chunkSelect },
+  extraSources: extraSourcesSelect,
 } satisfies Prisma.RequirementSelect;
 
 const ruleSelect = {
@@ -49,6 +54,7 @@ const ruleSelect = {
   module: { select: { id: true, name: true } },
   createdBy: creatorSelect,
   sourceChunk: { select: chunkSelect },
+  extraSources: extraSourcesSelect,
 } satisfies Prisma.BusinessRuleSelect;
 
 const moduleSelect = {
@@ -61,6 +67,7 @@ const moduleSelect = {
   updatedAt: true,
   createdBy: creatorSelect,
   sourceChunk: { select: chunkSelect },
+  extraSources: extraSourcesSelect,
   _count: { select: { requirements: { where: { deletedAt: null } } } },
 } satisfies Prisma.ModuleSelect;
 
@@ -71,6 +78,14 @@ export type ModuleRecord = Prisma.ModuleGetPayload<{ select: typeof moduleSelect
 /** Items extracted from any version of a document, or from a note, match that source. */
 function fromSource(sourceId: string): Prisma.ChunkWhereInput {
   return { OR: [{ documentVersion: { documentId: sourceId } }, { contextNoteId: sourceId }] };
+}
+
+/** An item belongs to a source through its first chunk or any chunk it was merged from. */
+function bySource(sourceId: string) {
+  return [
+    { sourceChunk: fromSource(sourceId) },
+    { extraSources: { some: { chunk: fromSource(sourceId) } } },
+  ];
 }
 
 function contains(search: string) {
@@ -88,7 +103,7 @@ export async function listRequirements(
     deletedAt: null,
     ...(p.status && { status: p.status }),
     ...(p.moduleId && { moduleId: p.moduleId }),
-    ...(p.sourceId && { sourceChunk: fromSource(p.sourceId) }),
+    ...(p.sourceId && { AND: [{ OR: bySource(p.sourceId) }] }),
     ...(p.search && { OR: [{ title: contains(p.search) }, { description: contains(p.search) }] }),
   };
   const [total, items] = await prisma.$transaction([
@@ -112,7 +127,7 @@ export async function listRules(
     projectId: p.projectId,
     ...(p.status && { status: p.status }),
     ...(p.moduleId && { moduleId: p.moduleId }),
-    ...(p.sourceId && { sourceChunk: fromSource(p.sourceId) }),
+    ...(p.sourceId && { AND: [{ OR: bySource(p.sourceId) }] }),
     ...(p.search && { OR: [{ title: contains(p.search) }, { description: contains(p.search) }] }),
   };
   const [total, items] = await prisma.$transaction([
@@ -135,7 +150,7 @@ export async function listModules(
     organizationId: p.organizationId,
     projectId: p.projectId,
     ...(p.status && { status: p.status }),
-    ...(p.sourceId && { sourceChunk: fromSource(p.sourceId) }),
+    ...(p.sourceId && { AND: [{ OR: bySource(p.sourceId) }] }),
     ...(p.search && {
       OR: [
         { name: contains(p.search) },

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { z } from 'zod';
 import type { ContextNoteDto, DocumentDto } from '@brd/shared';
 import {
   Badge,
@@ -13,12 +14,14 @@ import {
   TableRow,
 } from '@brd/ui';
 import { FileText } from 'lucide-react';
+import { useUrlState } from '@/hooks/use-url-state';
 import { apiUrl } from '@/lib/api-client';
 import { formatDate } from '../project-labels';
 import { fileKindLabel, formatBytes } from '../source-utils';
 import { SourceStatusBadge } from './SourceStatusBadge';
 
-type Filter = 'all' | 'documents' | 'notes';
+const URL_STATE = z.object({ sources: z.enum(['all', 'documents', 'notes']).catch('all') });
+type Filter = z.infer<typeof URL_STATE>['sources'];
 
 type Row =
   | { kind: 'document'; id: string; activity: string; document: DocumentDto }
@@ -205,7 +208,7 @@ export function SourcesList({
   onEditNote,
   onReprocess,
 }: SourcesListProps) {
-  const [filter, setFilter] = useState<Filter>('all');
+  const [{ sources: filter }, setUrlState] = useUrlState(URL_STATE);
   const [confirming, setConfirming] = useState<DocumentDto | null>(null);
 
   const rows = useMemo<Row[]>(() => {
@@ -237,7 +240,7 @@ export function SourcesList({
             size="sm"
             variant={filter === value ? 'secondary' : 'ghost'}
             aria-pressed={filter === value}
-            onClick={() => setFilter(value)}
+            onClick={() => setUrlState({ sources: value })}
           >
             {label}
           </Button>

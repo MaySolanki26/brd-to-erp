@@ -5,6 +5,12 @@ import { createBoss, ensureQueues } from '../lib/boss.js';
 export interface EnqueueOptions {
   /** Seconds to wait before the job may start. */
   startAfter?: number;
+  /**
+   * With `singletonSeconds`, at most one job with this key is queued per window, so a burst of
+   * identical requests (one per chunk, say) becomes one job.
+   */
+  singletonKey?: string;
+  singletonSeconds?: number;
 }
 
 export async function enqueue<T extends JobName>(
@@ -18,6 +24,8 @@ export async function enqueue<T extends JobName>(
     retryDelay: DEFAULT_BACKOFF.retryDelay,
     retryBackoff: DEFAULT_BACKOFF.retryBackoff,
     ...(options.startAfter !== undefined && { startAfter: options.startAfter }),
+    ...(options.singletonKey !== undefined && { singletonKey: options.singletonKey }),
+    ...(options.singletonSeconds !== undefined && { singletonSeconds: options.singletonSeconds }),
   });
 }
 

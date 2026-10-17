@@ -315,20 +315,22 @@ model ContextNote {
 // ─── Chunk ──────────────────────────────────────────────────────────────────
 
 model Chunk {
-  id                String   @id @default(uuid()) @db.Uuid
-  content           String   @db.Text
+  id                String    @id @default(uuid()) @db.Uuid
+  content           String    @db.Text
   chunkIndex        Int
   tokenCount        Int?
-  chunkKey          String   @unique
+  chunkKey          String    @unique
   contentHash       String
   headingPath       String[]
-  needsReview       Boolean  @default(false)
-  documentVersionId String?  @db.Uuid
-  contextNoteId     String?  @db.Uuid
-  projectId         String   @db.Uuid
-  organizationId    String   @db.Uuid
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  needsReview       Boolean   @default(false)
+  /// Set when the extraction job has finished with this chunk, successfully or by flagging it for review.
+  extractedAt       DateTime?
+  documentVersionId String?   @db.Uuid
+  contextNoteId     String?   @db.Uuid
+  projectId         String    @db.Uuid
+  organizationId    String    @db.Uuid
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   documentVersion DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
   contextNote     ContextNote?     @relation(fields: [contextNoteId], references: [id], onDelete: Restrict)
@@ -336,6 +338,7 @@ model Chunk {
   requirements    Requirement[]
   businessRules   BusinessRule[]
   modules         Module[]
+  itemSources     ItemSource[]
 
   @@unique([documentVersionId, chunkIndex])
   @@unique([contextNoteId, chunkIndex])
@@ -370,6 +373,7 @@ model Requirement {
   createdBy     User?          @relation("RequirementCreator", fields: [createdById], references: [id])
   businessRules BusinessRule[]
   questionLinks QuestionLink[]
+  extraSources  ItemSource[]
 
   @@index([projectId])
   @@index([status])
@@ -403,6 +407,7 @@ model BusinessRule {
   project       Project        @relation(fields: [projectId], references: [id])
   createdBy     User?          @relation("BusinessRuleCreator", fields: [createdById], references: [id])
   questionLinks QuestionLink[]
+  extraSources  ItemSource[]
 
   @@index([requirementId])
   @@index([sourceChunkId])
@@ -438,6 +443,7 @@ model Module {
   businessRules BusinessRule[]
   questions     Question[]
   questionLinks QuestionLink[]
+  extraSources  ItemSource[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -495,6 +501,36 @@ model Question {
   @@index([projectId, status])
   @@index([projectId, priority])
   @@map("questions")
+}
+
+// ─── ItemSource ─────────────────────────────────────────────────────────────
+
+/// An extra place an item was found. The item's own `sourceChunkId` is its first source; when a later
+/// chunk states the same thing, merging adds a row here instead of a duplicate item.
+/// Exactly one of the three item columns is set (CHECK in the migration).
+model ItemSource {
+  id             String   @id @default(uuid()) @db.Uuid
+  chunkId        String   @db.Uuid
+  requirementId  String?  @db.Uuid
+  ruleId         String?  @db.Uuid
+  moduleId       String?  @db.Uuid
+  organizationId String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  chunk       Chunk         @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  requirement Requirement?  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  rule        BusinessRule? @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  module      Module?       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([chunkId, requirementId])
+  @@unique([chunkId, ruleId])
+  @@unique([chunkId, moduleId])
+  @@index([chunkId])
+  @@index([requirementId])
+  @@index([ruleId])
+  @@index([moduleId])
+  @@index([organizationId])
+  @@map("item_sources")
 }
 
 // ─── QuestionLink (exactly one item per row) ────────────────────────────────

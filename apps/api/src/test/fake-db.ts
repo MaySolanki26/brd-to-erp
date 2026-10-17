@@ -109,6 +109,8 @@ export interface FakeKnowledge {
   priority: number | null;
   moduleId: string | null;
   sourceChunkId: string;
+  /** Other chunks the item was merged from, oldest first. */
+  extraChunkIds?: string[];
   projectId: string;
   organizationId: string;
   createdById: string | null;
@@ -839,7 +841,11 @@ function filterKnowledge(kind: KnowledgeKindKey, p: KnowledgeListParams): FakeKn
     .filter((i) => i.organizationId === p.organizationId && i.projectId === p.projectId)
     .filter((i) => !p.status || i.status === p.status)
     .filter((i) => kind === 'modules' || !p.moduleId || i.moduleId === p.moduleId)
-    .filter((i) => !p.sourceId || fromSource(i.sourceChunkId, p.sourceId))
+    .filter(
+      (i) =>
+        !p.sourceId ||
+        [i.sourceChunkId, ...(i.extraChunkIds ?? [])].some((id) => fromSource(id, p.sourceId as string)),
+    )
     .filter((i) => {
       if (!needle) return true;
       const fields =
@@ -892,6 +898,9 @@ export const knowledgeRepositoryModule = {
           module: moduleRef(i.moduleId),
           createdBy: creatorOf(i.createdById),
           sourceChunk: chunkRecord(db.chunks.get(i.sourceChunkId) as FakeChunk),
+          extraSources: (i.extraChunkIds ?? []).map((id) => ({
+            chunk: chunkRecord(db.chunks.get(id) as FakeChunk),
+          })),
         })),
       p,
     ),
@@ -909,6 +918,9 @@ export const knowledgeRepositoryModule = {
           module: moduleRef(i.moduleId),
           createdBy: creatorOf(i.createdById),
           sourceChunk: chunkRecord(db.chunks.get(i.sourceChunkId) as FakeChunk),
+          extraSources: (i.extraChunkIds ?? []).map((id) => ({
+            chunk: chunkRecord(db.chunks.get(id) as FakeChunk),
+          })),
         })),
       p,
     ),
@@ -926,6 +938,9 @@ export const knowledgeRepositoryModule = {
           updatedAt: i.updatedAt,
           createdBy: creatorOf(i.createdById),
           sourceChunk: chunkRecord(db.chunks.get(i.sourceChunkId) as FakeChunk),
+          extraSources: (i.extraChunkIds ?? []).map((id) => ({
+            chunk: chunkRecord(db.chunks.get(id) as FakeChunk),
+          })),
           _count: {
             requirements: [...db.requirements.values()].filter((r) => r.moduleId === i.id).length,
           },

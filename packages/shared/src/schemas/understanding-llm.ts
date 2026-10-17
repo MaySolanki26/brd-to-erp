@@ -64,3 +64,23 @@ export const applyAnswerLlmOutputSchema = z.object({
   decisionSummary: z.string(),
 });
 export type ApplyAnswerLlmOutput = z.infer<typeof applyAnswerLlmOutputSchema>;
+
+// ─── extraction.md ──────────────────────────────────────────────────────────
+
+/**
+ * What the model may return for one chunk. Lenient on lengths and counts: the pipeline trims, caps and
+ * merges afterwards, so one long title never costs the call. `moduleName` is free text; it is matched
+ * to the project's modules by name and never trusted as an id.
+ */
+const extractedItemSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  moduleName: z.string().nullable(),
+});
+
+export const extractionLlmOutputSchema = z.object({
+  modules: z.array(z.object({ name: z.string(), description: z.string() })),
+  requirements: z.array(extractedItemSchema),
+  rules: z.array(extractedItemSchema),
+});
+export type ExtractionLlmOutput = z.infer<typeof extractionLlmOutputSchema>;

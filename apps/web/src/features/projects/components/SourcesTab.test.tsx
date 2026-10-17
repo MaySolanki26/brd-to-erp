@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import type { ChunkDto, ContextNoteDto, DocumentDetailDto, DocumentDto } from '@brd/shared';
 import { makeAuth, makeUser, renderRoute } from '@/test/render';
 import { PDF, doc, note, paged, processingStatus, version } from './test-data';
@@ -212,7 +213,9 @@ describe('SourcesTab', () => {
       const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
       const tree = (id: string) => (
         <QueryClientProvider client={client}>
-          <SourcesTab projectId={id} canAddSource canReprocess />
+          <MemoryRouter>
+            <SourcesTab projectId={id} canAddSource canReprocess />
+          </MemoryRouter>
         </QueryClientProvider>
       );
 

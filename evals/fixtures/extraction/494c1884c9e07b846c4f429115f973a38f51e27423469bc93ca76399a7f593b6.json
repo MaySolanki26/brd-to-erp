@@ -1,0 +1,37 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Web Panel",
+        "description": "A web panel that lets Raghuvir record, check and close society complaints and services across all projects."
+      },
+      {
+        "name": "Role-based Mobile App",
+        "description": "A role-based mobile app for Android and iOS that lets Raghuvir and its residents record, check and close society complaints and services."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Record, check and close every society complaint and service",
+        "description": "The web panel and mobile app must let Raghuvir and its residents record, check and close every society complaint and service across all projects.",
+        "moduleName": null
+      },
+      {
+        "title": "Provide one web panel",
+        "description": "The system must include one web panel for managing society complaints and services.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Provide one role-based mobile app for Android and iOS",
+        "description": "The system must include one role-based mobile app that runs on Android and iOS.",
+        "moduleName": "Role-based Mobile App"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1520,
+    "outputTokens": 310,
+    "cachedTokens": 0
+  }
+}

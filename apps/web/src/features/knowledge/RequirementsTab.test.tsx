@@ -235,6 +235,36 @@ describe('RequirementsTab', () => {
     expect(lastRequirementsUrl()).toContain('page=2');
   });
 
+  describe('items merged from several sources', () => {
+    it('shows how many other places state the same thing and opens each of them', async () => {
+      const kickoff = source({
+        chunkId: 'c7',
+        type: 'note',
+        sourceId: NOTE_ID,
+        sourceTitle: 'Kickoff call',
+        versionNumber: null,
+        headingPath: ['Decisions'],
+      });
+      mockApi(() => page([requirement({ otherSources: [kickoff] })]));
+      view();
+      await screen.findByText('Monthly invoice run');
+
+      await userEvent.click(screen.getByRole('button', { name: '+1 more source' }));
+      expect(await screen.findByText('Also found in')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /View source: Kickoff call/ }));
+
+      await screen.findByRole('dialog');
+      expect(api.get).toHaveBeenCalledWith('/projects/p1/chunks/c7');
+    });
+
+    it('shows no extra-source control for an item found in one place', async () => {
+      mockApi(() => page([requirement()]));
+      view();
+      await screen.findByText('Monthly invoice run');
+      expect(screen.queryByRole('button', { name: /more source/ })).not.toBeInTheDocument();
+    });
+  });
+
   describe('source drawer', () => {
     const openDrawer = async () => {
       await screen.findByText('Monthly invoice run');

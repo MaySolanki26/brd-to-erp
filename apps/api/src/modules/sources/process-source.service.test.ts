@@ -36,7 +36,7 @@ vi.mock('../../lib/transaction.js', () => ({
 
 import { NotFoundError } from '../../errors/app-error.js';
 import { buildPdf } from '../../test/build-files.js';
-import { processSource } from './process-source.service.js';
+import { failSource, processSource } from './process-source.service.js';
 
 const PDF = 'application/pdf';
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -50,6 +50,8 @@ const notePayload: ProcessSourcePayload = {
   sourceType: 'note',
   sourceId: 'n1',
 };
+const FINISHED = { pendingChunkIds: [], finished: true };
+const EXTRACTING = { pendingChunkIds: ['c1', 'c2'], finished: false };
 const first = { jobId: 'j1', isLastAttempt: false };
 const last = { jobId: 'j1', isLastAttempt: true };
 
@@ -73,12 +75,12 @@ describe('processSource: documents', () => {
     vi.resetAllMocks();
     repo.findVersion.mockResolvedValue(version());
     repo.beginDocument.mockResolvedValue(true);
-    repo.finishDocument.mockResolvedValue(true);
+    repo.finishDocument.mockResolvedValue(FINISHED);
   });
 
   it('parses, chunks and stores a PDF, verifying every id first', async () => {
     serve(buildPdf(['Invoices follow delivery.', 'Payment is due in 30 days.']));
-    expect(await processSource(docPayload, first)).toBe('processed');
+    expect((await processSource(docPayload, first)).outcome).toBe('processed');
 
     expect(repo.findVersion).toHaveBeenCalledWith({
       organizationId: 'o1',
@@ -98,6 +100,29 @@ describe('processSource: documents', () => {
       ['Page 1'],
       ['Page 2'],
     ]);
+  });
+
+  it('hands the chunks that still need reading to the extraction job', async () => {
+    serve(buildPdf(['Invoices follow delivery.']));
+    repo.finishDocument.mockResolvedValue(EXTRACTING);
+    expect(await processSource(docPayload, first)).toEqual({
+      outcome: 'extracting',
+      chunkIds: ['c1', 'c2'],
+    });
+  });
+
+  it('passes the version number and the reprocess flag to the chunk step', async () => {
+    repo.findVersion.mockResolvedValue({ ...version(), versionNumber: 3 });
+    serve(buildPdf(['Same content']));
+    await processSource({ ...docPayload, reextract: true }, first);
+    expect(repo.finishDocument.mock.calls[0]?.[0]).toMatchObject({
+      versionNumber: 3,
+      reextract: true,
+    });
+
+    serve(buildPdf(['Same content']));
+    await processSource(docPayload, first);
+    expect(repo.finishDocument.mock.calls[1]?.[0].reextract).toBe(false);
   });
 
   it('keeps heading paths for DOCX files', async () => {
@@ -120,32 +145,32 @@ describe('processSource: documents', () => {
 
   it('does nothing when the ids do not match a document of this organization and project', async () => {
     repo.findVersion.mockResolvedValue(null);
-    expect(await processSource(docPayload, first)).toBe('skipped');
+    expect((await processSource(docPayload, first)).outcome).toBe('skipped');
     expect(repo.beginDocument).not.toHaveBeenCalled();
     expect(storage.getDownloadStream).not.toHaveBeenCalled();
   });
 
   it('skips a document job that names no version', async () => {
-    expect(await processSource({ ...docPayload, versionId: undefined }, first)).toBe('skipped');
+    expect((await processSource({ ...docPayload, versionId: undefined }, first)).outcome).toBe('skipped');
     expect(repo.findVersion).not.toHaveBeenCalled();
   });
 
   it('does not touch a document that is not waiting for this version', async () => {
     repo.beginDocument.mockResolvedValue(false);
-    expect(await processSource(docPayload, first)).toBe('superseded');
+    expect((await processSource(docPayload, first)).outcome).toBe('superseded');
     expect(storage.getDownloadStream).not.toHaveBeenCalled();
     expect(repo.finishDocument).not.toHaveBeenCalled();
   });
 
   it('reports superseded when a newer upload took over before the result was saved', async () => {
     serve(buildPdf(['text']));
-    repo.finishDocument.mockResolvedValue(false);
-    expect(await processSource(docPayload, first)).toBe('superseded');
+    repo.finishDocument.mockResolvedValue(null);
+    expect((await processSource(docPayload, first)).outcome).toBe('superseded');
   });
 
   it('fails a scanned PDF with the OCR message and does not retry', async () => {
     serve(buildPdf(['']));
-    expect(await processSource(docPayload, first)).toBe('failed');
+    expect((await processSource(docPayload, first)).outcome).toBe('failed');
     expect(repo.failDocument).toHaveBeenCalledWith(
       'o1',
       'd1',
@@ -157,19 +182,19 @@ describe('processSource: documents', () => {
 
   it('fails a corrupt file permanently without retrying', async () => {
     serve(Buffer.from('%PDF-1.4 broken'));
-    expect(await processSource(docPayload, first)).toBe('failed');
+    expect((await processSource(docPayload, first)).outcome).toBe('failed');
     expect(repo.failDocument).toHaveBeenCalledWith('o1', 'd1', expect.stringMatching(/corrupt/));
   });
 
   it('fails when the stored file is missing', async () => {
     storage.getDownloadStream.mockRejectedValue(new NotFoundError('gone'));
-    expect(await processSource(docPayload, first)).toBe('failed');
+    expect((await processSource(docPayload, first)).outcome).toBe('failed');
     expect(repo.failDocument).toHaveBeenCalledTimes(1);
   });
 
   it('fails a file with an unsupported stored MIME type', async () => {
     repo.findVersion.mockResolvedValue(version('text/plain'));
-    expect(await processSource(docPayload, first)).toBe('failed');
+    expect((await processSource(docPayload, first)).outcome).toBe('failed');
     expect(storage.getDownloadStream).not.toHaveBeenCalled();
   });
 
@@ -182,7 +207,7 @@ describe('processSource: documents', () => {
 
   it('marks the document failed, without throwing, after the last attempt', async () => {
     storage.getDownloadStream.mockRejectedValue(new Error('connection reset'));
-    expect(await processSource(docPayload, last)).toBe('failed');
+    expect((await processSource(docPayload, last)).outcome).toBe('failed');
     expect(repo.failDocument).toHaveBeenCalledWith(
       'o1',
       'd1',
@@ -206,11 +231,11 @@ describe('processSource: notes', () => {
     vi.resetAllMocks();
     repo.findNote.mockResolvedValue(note);
     repo.beginNote.mockResolvedValue(true);
-    repo.finishNote.mockResolvedValue(true);
+    repo.finishNote.mockResolvedValue(FINISHED);
   });
 
   it('chunks the note and stores it against the timestamp it read', async () => {
-    expect(await processSource(notePayload, first)).toBe('processed');
+    expect((await processSource(notePayload, first)).outcome).toBe('processed');
     const finish = repo.finishNote.mock.calls[0]?.[0];
     expect(finish).toMatchObject({ organizationId: 'o1', projectId: 'p1', noteId: 'n1', readAt });
     expect(finish.chunks[0]).toMatchObject({
@@ -220,25 +245,33 @@ describe('processSource: notes', () => {
   });
 
   it('writes nothing when the note was edited while it was processing', async () => {
-    repo.finishNote.mockResolvedValue(false);
-    expect(await processSource(notePayload, first)).toBe('superseded');
+    repo.finishNote.mockResolvedValue(null);
+    expect((await processSource(notePayload, first)).outcome).toBe('superseded');
+  });
+
+  it('hands note chunks that still need reading to the extraction job', async () => {
+    repo.finishNote.mockResolvedValue(EXTRACTING);
+    expect(await processSource(notePayload, first)).toEqual({
+      outcome: 'extracting',
+      chunkIds: ['c1', 'c2'],
+    });
   });
 
   it('skips notes that do not exist in this organization and project', async () => {
     repo.findNote.mockResolvedValue(null);
-    expect(await processSource(notePayload, first)).toBe('skipped');
+    expect((await processSource(notePayload, first)).outcome).toBe('skipped');
     expect(repo.beginNote).not.toHaveBeenCalled();
   });
 
   it('skips a note that is not waiting', async () => {
     repo.beginNote.mockResolvedValue(false);
-    expect(await processSource(notePayload, first)).toBe('superseded');
+    expect((await processSource(notePayload, first)).outcome).toBe('superseded');
     expect(repo.finishNote).not.toHaveBeenCalled();
   });
 
   it('fails an empty note permanently', async () => {
     repo.findNote.mockResolvedValue({ ...note, body: '   ' });
-    expect(await processSource(notePayload, first)).toBe('failed');
+    expect((await processSource(notePayload, first)).outcome).toBe('failed');
     expect(repo.failNote).toHaveBeenCalledWith('o1', 'n1', expect.stringMatching(/No text/));
   });
 
@@ -246,5 +279,16 @@ describe('processSource: notes', () => {
     repo.finishNote.mockRejectedValue(new Error('db timeout'));
     await expect(processSource(notePayload, first)).rejects.toThrow('db timeout');
     expect(repo.releaseNote).toHaveBeenCalledWith('o1', 'n1');
+  });
+});
+
+describe('failSource', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('fails the right kind of source with the given reason', async () => {
+    await failSource(docPayload, 'why');
+    expect(repo.failDocument).toHaveBeenCalledWith('o1', 'd1', 'why');
+    await failSource(notePayload, 'why');
+    expect(repo.failNote).toHaveBeenCalledWith('o1', 'n1', 'why');
   });
 });

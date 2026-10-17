@@ -1,119 +1,6 @@
-# Repository, service, job and wiring
+# Service, job and wiring
 
-> Every file below was compiled, linted and tested in a scratch copy of this repository (2026-10-17). Copy it, then rename. Paths are relative to the repository root.
-
-### `apps/api/src/modules/extraction/extraction.repository.ts`
-
-```ts
-import { summaryLlmOutputSchema, type SummaryLlmOutput } from '@brd/shared';
-import { prisma } from '../../lib/prisma.js';
-import type { DbClient } from '../../lib/transaction.js';
-
-export interface ChunkToExtract {
-  id: string;
-  content: string;
-  headingPath: string[];
-}
-
-/** Null when the chunk is not in this organization and project, so a forged id reads as missing. */
-export async function findChunk(
-  organizationId: string,
-  projectId: string,
-  chunkId: string,
-): Promise<ChunkToExtract | null> {
-  return prisma.chunk.findFirst({
-    where: { id: chunkId, organizationId, projectId },
-    select: { id: true, content: true, headingPath: true },
-  });
-}
-
-/** The newest summary, or null when none exists or the stored JSON no longer matches the schema. */
-export async function latestSummary(
-  organizationId: string,
-  projectId: string,
-): Promise<SummaryLlmOutput | null> {
-  const row = await prisma.projectSummary.findFirst({
-    where: { organizationId, projectId },
-    orderBy: { version: 'desc' },
-    select: { content: true },
-  });
-  const parsed = summaryLlmOutputSchema.safeParse(row?.content);
-  return parsed.success ? parsed.data : null;
-}
-
-/** Serializes extraction runs on one chunk, so two workers never insert the same requirement twice. */
-export async function lockChunk(
-  db: DbClient,
-  organizationId: string,
-  projectId: string,
-  chunkId: string,
-): Promise<void> {
-  await db.chunk.updateMany({
-    where: { id: chunkId, organizationId, projectId },
-    data: { updatedAt: new Date() },
-  });
-}
-
-/** Lower-cased titles of the live requirements already taken from this chunk. */
-export async function existingTitles(
-  db: DbClient,
-  organizationId: string,
-  projectId: string,
-  chunkId: string,
-): Promise<Set<string>> {
-  const rows = await db.requirement.findMany({
-    where: { organizationId, projectId, sourceChunkId: chunkId, deletedAt: null },
-    select: { title: true },
-  });
-  return new Set(rows.map((row) => row.title.toLowerCase()));
-}
-
-export async function insertRequirements(
-  db: DbClient,
-  params: {
-    organizationId: string;
-    projectId: string;
-    chunkId: string;
-    requirements: { title: string; description: string }[];
-  },
-): Promise<number> {
-  const result = await db.requirement.createMany({
-    data: params.requirements.map((requirement) => ({
-      title: requirement.title,
-      description: requirement.description,
-      status: 'OPEN' as const,
-      sourceChunkId: params.chunkId,
-      projectId: params.projectId,
-      organizationId: params.organizationId,
-      createdById: null,
-    })),
-  });
-  return result.count;
-}
-
-/** A chunk the model could not read twice in a row waits for a person to look at it. */
-export async function setNeedsReview(
-  db: DbClient,
-  organizationId: string,
-  projectId: string,
-  chunkId: string,
-  needsReview: boolean,
-): Promise<void> {
-  await db.chunk.updateMany({
-    where: { id: chunkId, organizationId, projectId },
-    data: { needsReview },
-  });
-}
-
-export type ExtractionRepository = {
-  findChunk: typeof findChunk;
-  latestSummary: typeof latestSummary;
-  lockChunk: typeof lockChunk;
-  existingTitles: typeof existingTitles;
-  insertRequirements: typeof insertRequirements;
-  setNeedsReview: typeof setNeedsReview;
-};
-```
+Real files. The repository (`extraction.repository.ts`) and the merge planner (`extraction.plan.ts`) are longer; read them next to these.
 
 ### `apps/api/src/modules/extraction/extraction.service.ts`
 
@@ -126,19 +13,24 @@ import {
 import { logger } from '../../lib/logger.js';
 import type { DbClient } from '../../lib/transaction.js';
 import { providerJsonSchema } from '../../services/llm/json-schema.js';
-import { InvalidLlmOutputError } from '../../services/llm/llm.errors.js';
+import { InvalidLlmOutputError, LlmRefusalError } from '../../services/llm/llm.errors.js';
 import type { LlmService } from '../../services/llm/llm.service.js';
 import type { createAuditLog } from '../audit/audit.repository.js';
+import { isEmptyPlan, planExtraction, sanitizeDrafts } from './extraction.plan.js';
 import type { ExtractionRepository } from './extraction.repository.js';
-import { extractionContext, extractionInput } from './prompt-input.js';
-
-export const MAX_REQUIREMENTS_PER_CHUNK = 20;
-const MAX_TITLE_CHARS = 200;
-const MAX_DESCRIPTION_CHARS = 2000;
+import { extractionInput } from './prompt-input.js';
 
 export type ExtractChunkOutcome =
-  | { status: 'extracted'; created: number }
-  | { status: 'needs-review' | 'skipped' };
+  | {
+      status: 'extracted';
+      created: number;
+      linked: number;
+      removed: number;
+      /** This was the last chunk of its source: the source is now processed. */
+      sourceFinished: boolean;
+    }
+  | { status: 'needs-review'; sourceFinished: boolean }
+  | { status: 'skipped' };
 
 export interface ExtractionDeps {
   repo: ExtractionRepository;
@@ -147,85 +39,109 @@ export interface ExtractionDeps {
   audit: typeof createAuditLog;
 }
 
-/** Trims, drops empties and repeats, and caps the count: the model's answer is a draft, not a record. */
-export function sanitizeRequirements(
-  drafts: ExtractionLlmOutput['requirements'],
-): { title: string; description: string }[] {
-  const seen = new Set<string>();
-  const kept: { title: string; description: string }[] = [];
-  for (const draft of drafts) {
-    const title = draft.title.trim().slice(0, MAX_TITLE_CHARS);
-    const description = draft.description.trim().slice(0, MAX_DESCRIPTION_CHARS);
-    if (title === '' || description === '' || seen.has(title.toLowerCase())) continue;
-    seen.add(title.toLowerCase());
-    kept.push({ title, description });
-    if (kept.length === MAX_REQUIREMENTS_PER_CHUNK) break;
-  }
-  return kept;
-}
-
 export interface ExtractionService {
-  /** Lists the requirements one chunk states. Running it again adds nothing new. */
+  /**
+   * Lists the modules, requirements and rules one chunk states and merges them into the project.
+   * Running it again on the same chunk changes nothing.
+   */
   extractChunk(payload: ExtractChunkPayload): Promise<ExtractChunkOutcome>;
+  /**
+   * The job ran out of retries. Flag the chunk for review and count it as done, so its source can
+   * finish instead of waiting forever on a chunk that keeps failing.
+   */
+  giveUp(payload: ExtractChunkPayload): Promise<ExtractChunkOutcome>;
+  /** The model cannot be used at all: fail the chunk's source so a person can reprocess it later. */
+  failSource(payload: ExtractChunkPayload, reason: string): Promise<void>;
 }
 
 export function createExtractionService(deps: ExtractionDeps): ExtractionService {
   const { repo, llm, transaction, audit } = deps;
 
+  async function flagForReview(
+    scope: { organizationId: string; projectId: string },
+    chunkId: string,
+  ): Promise<ExtractChunkOutcome> {
+    const sourceFinished = await transaction(async (tx) => {
+      await repo.lockProject(tx, scope.projectId);
+      await repo.markExtracted(tx, scope, chunkId, true);
+      return repo.finishSourceIfDone(tx, scope, chunkId);
+    });
+    logger.warn({ projectId: scope.projectId, chunkId }, 'Chunk flagged for review');
+    return { status: 'needs-review', sourceFinished };
+  }
+
   async function extractChunk(payload: ExtractChunkPayload): Promise<ExtractChunkOutcome> {
     const { organizationId, projectId, chunkId } = payload;
-    const chunk = await repo.findChunk(organizationId, projectId, chunkId);
-    if (!chunk) return { status: 'skipped' };
+    const scope = { organizationId, projectId };
 
-    const summary = await repo.latestSummary(organizationId, projectId);
+    const chunk = await repo.findChunk(organizationId, projectId, chunkId);
+    // A forged id, a chunk replaced since the job was queued, or an older version: nothing to do.
+    if (!chunk?.current) return { status: 'skipped' };
+
     let output: ExtractionLlmOutput;
     try {
       ({ output } = await llm.run({
         promptName: 'extraction',
-        cachedContext: summary ? extractionContext(summary) : undefined,
         user: extractionInput(chunk),
         schema: extractionLlmOutputSchema,
         outputJsonSchema: providerJsonSchema(extractionLlmOutputSchema),
-        context: { organizationId, projectId },
+        context: scope,
       }));
     } catch (err) {
-      // llm.run already asked twice. Retrying the job would pay for two more calls on the same text.
-      if (!(err instanceof InvalidLlmOutputError)) throw err;
-      await transaction((tx) => repo.setNeedsReview(tx, organizationId, projectId, chunkId, true));
-      logger.warn({ projectId, chunkId }, 'Chunk marked for review after unusable LLM output');
-      return { status: 'needs-review' };
+      // llm.run already asked twice, or the model declined this text. Retrying the job would pay for
+      // more calls on the same text, so a person looks at the chunk instead.
+      if (err instanceof InvalidLlmOutputError || err instanceof LlmRefusalError) {
+        return flagForReview(scope, chunkId);
+      }
+      throw err;
     }
 
-    const drafts = sanitizeRequirements(output.requirements);
+    const drafts = sanitizeDrafts(output);
     return transaction(async (tx) => {
-      await repo.lockChunk(tx, organizationId, projectId, chunkId);
-      // Another worker may have stored the same requirements while the model was thinking.
-      const existing = await repo.existingTitles(tx, organizationId, projectId, chunkId);
-      const fresh = drafts.filter((draft) => !existing.has(draft.title.toLowerCase()));
-      if (fresh.length > 0) {
-        await repo.insertRequirements(tx, {
-          organizationId,
-          projectId,
-          chunkId,
-          requirements: fresh,
-        });
+      await repo.lockProject(tx, projectId);
+      const existing = await repo.loadExisting(tx, scope, chunkId, drafts);
+      const plan = planExtraction(drafts, existing);
+      const counts = await repo.applyPlan(tx, scope, chunkId, plan);
+      await repo.markExtracted(tx, scope, chunkId, false);
+      const sourceFinished = await repo.finishSourceIfDone(tx, scope, chunkId);
+
+      if (!isEmptyPlan(plan)) {
         await audit(
           {
             action: 'CREATE',
-            entity: 'Requirement',
+            entity: 'KnowledgeItem',
             organizationId,
-            metadata: { projectId, chunkId, created: fresh.length },
+            metadata: { projectId, chunkId, ...counts },
           },
           tx,
         );
       }
-      await repo.setNeedsReview(tx, organizationId, projectId, chunkId, false);
-      logger.info({ projectId, chunkId, created: fresh.length }, 'Chunk extracted');
-      return { status: 'extracted' as const, created: fresh.length };
+      logger.info({ projectId, chunkId, ...counts }, 'Chunk extracted');
+      return {
+        status: 'extracted' as const,
+        created: counts.created,
+        linked: counts.linked,
+        removed: counts.removed,
+        sourceFinished,
+      };
     });
   }
 
-  return { extractChunk };
+  async function giveUp(payload: ExtractChunkPayload): Promise<ExtractChunkOutcome> {
+    const { organizationId, projectId, chunkId } = payload;
+    const chunk = await repo.findChunk(organizationId, projectId, chunkId);
+    if (!chunk?.current) return { status: 'skipped' };
+    return flagForReview({ organizationId, projectId }, chunkId);
+  }
+
+  async function failSource(payload: ExtractChunkPayload, reason: string): Promise<void> {
+    const { organizationId, projectId, chunkId } = payload;
+    await transaction((tx) =>
+      repo.failSourceOfChunk(tx, { organizationId, projectId }, chunkId, reason),
+    );
+  }
+
+  return { extractChunk, giveUp, failSource };
 }
 ```
 
@@ -252,57 +168,100 @@ export const extractionService = createExtractionService({
 ```ts
 import type PgBoss from 'pg-boss';
 import { JobName, type ExtractChunkPayload } from '@brd/shared';
+import { logger } from '../lib/logger.js';
+import { LlmBudgetExceededError, LlmConfigError } from '../services/llm/llm.errors.js';
 import type { ExtractionService } from '../modules/extraction/extraction.service.js';
+import { enqueue } from '../services/queue.service.js';
 import { guarded } from './understanding.handlers.js';
 
+/** One summary refresh per project per window, however many chunks finish in a burst. */
+export const SUMMARY_REFRESH_WINDOW_SECONDS = 30;
+
+export const AI_UNAVAILABLE = 'The AI service is not available. Try reprocessing later.';
+
 export function createExtractionHandler(boss: PgBoss, service: ExtractionService) {
+  /**
+   * Runs one chunk. A budget error goes up to `guarded`, which pauses the job. A misconfigured model
+   * fails the source so it can be reprocessed after the fix. Any other error is retried by pg-boss;
+   * after the last retry the chunk is flagged for review so its source can still finish.
+   */
+  async function runChunk(job: PgBoss.JobWithMetadata<ExtractChunkPayload>) {
+    try {
+      return await service.extractChunk(job.data);
+    } catch (err) {
+      if (err instanceof LlmBudgetExceededError) throw err;
+      if (err instanceof LlmConfigError) {
+        await service.failSource(job.data, AI_UNAVAILABLE);
+        return undefined;
+      }
+      if (job.retryCount < job.retryLimit) throw err;
+      logger.error({ err, jobId: job.id, chunkId: job.data.chunkId }, 'Extraction gave up');
+      return service.giveUp(job.data);
+    }
+  }
+
   return async (jobs: PgBoss.JobWithMetadata<ExtractChunkPayload>[]): Promise<void> => {
     for (const job of jobs) {
       await guarded(boss, JobName.EXTRACT_CHUNK, job, async () => {
-        await service.extractChunk(job.data);
+        const outcome = await runChunk(job);
+        if (!outcome || outcome.status === 'skipped' || !outcome.sourceFinished) return;
+
+        // New knowledge may change the summary, which then asks its questions. The source is already
+        // processed, so a failure here must not fail (and re-run) this job.
+        const { organizationId, projectId } = job.data;
+        try {
+          await enqueue(
+            boss,
+            JobName.REFRESH_SUMMARY,
+            { organizationId, projectId },
+            {
+              singletonKey: `refresh-summary:${projectId}`,
+              singletonSeconds: SUMMARY_REFRESH_WINDOW_SECONDS,
+            },
+          );
+        } catch (err) {
+          logger.warn({ err, jobId: job.id, projectId }, 'Could not queue summary refresh');
+        }
       });
     }
   };
 }
 ```
 
-### Small edits to existing files
+### Registering the job
 
 ```ts
-// apps/api/src/jobs/understanding.handlers.ts — share the failure sorting
-type UnderstandingJob =
-  typeof JobName.REFRESH_SUMMARY | typeof JobName.GENERATE_QUESTIONS | typeof JobName.APPLY_ANSWER;
-/** Every job that calls the model goes through `guarded`. */
-export type LlmJob = UnderstandingJob | typeof JobName.EXTRACT_CHUNK;
-
-export async function guarded<N extends LlmJob>(/* unchanged */) { /* unchanged */ }
-
-// apps/api/src/modules/understanding/prompt-inputs.ts
-export function wrap(data: unknown): string { /* unchanged */ }
-
-// apps/api/src/jobs/index.ts
-import { extractionService } from '../modules/extraction/extraction.runtime.js';
-import { createExtractionHandler } from './extraction.handler.js';
-// ...inside registerAllHandlers, after the existing boss.work calls:
+// apps/api/src/jobs/index.ts — inside registerAllHandlers, after the existing boss.work calls
 await boss.work(
   JobName.EXTRACT_CHUNK,
   { includeMetadata: true },
   createExtractionHandler(boss, extractionService),
 );
+
+// apps/api/src/jobs/understanding.handlers.ts
+export type LlmJob = UnderstandingJob | typeof JobName.EXTRACT_CHUNK;
+export async function guarded<N extends LlmJob>(/* ... */) { /* ... */ }
 ```
 
-### Enqueueing (from a service or a handler)
+### Enqueueing
 
 ```ts
-import { enqueueJob } from '../../services/queue.service.js';
+import { enqueue } from '../services/queue.service.js';
 import { JobName } from '@brd/shared';
 
-await enqueueJob(JobName.EXTRACT_CHUNK, { organizationId, projectId, chunkId });
+// From a handler (has the boss):
+await enqueue(boss, JobName.EXTRACT_CHUNK, { organizationId, projectId, chunkId });
+// Many identical requests in a burst become one job per window:
+await enqueue(boss, JobName.REFRESH_SUMMARY, { organizationId, projectId }, {
+  singletonKey: `refresh-summary:${projectId}`,
+  singletonSeconds: 30,
+});
 ```
 
 ## Why it looks like this
 
-- The service is a factory over `deps`, so tests script `llm.run` and the repository without mocking modules.
-- `InvalidLlmOutputError` is caught only around `llm.run`, and only for per-chunk work: the chunk is flagged and the job succeeds, instead of paying for two more calls on every pg-boss retry.
-- `lockChunk` touches the chunk row inside the transaction, so a second worker waits and then sees the first worker's titles in `existingTitles`.
-- Audit `metadata` is `{ projectId, chunkId, created }`: ids and a count, no text.
+- The service is a factory over `deps`, so tests script `llm.run` and the repository without mocking modules. `fake-repository.ts` is an in-memory repository with the real one's rules.
+- `InvalidLlmOutputError` is caught only around `llm.run`, and only for per-chunk work: the chunk is flagged for review and counts as done, instead of paying for two more calls on every pg-boss retry.
+- The planner is a pure function, so the merge rules (create, link, update, remove, unlink) are tested without a database.
+- Audit `metadata` is `{ projectId, chunkId, created, linked, updated, removed }`: ids and counts, no text.
+- The source stays `PROCESSING` until its last chunk is extracted; the call that finishes it reports `sourceFinished`, and the handler then queues one summary refresh.

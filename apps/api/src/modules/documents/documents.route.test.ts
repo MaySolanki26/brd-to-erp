@@ -466,7 +466,12 @@ describe('documents routes', () => {
       expect(res.body.document.status).toBe('UPLOADED');
       expect(queue.enqueueJob).toHaveBeenCalledWith(
         'process-source',
-        expect.objectContaining({ sourceId: seeded.id, versionId: seeded.versionId }),
+        expect.objectContaining({
+          sourceId: seeded.id,
+          versionId: seeded.versionId,
+          // A person asked again: every chunk is read again, even if its text did not change.
+          reextract: true,
+        }),
       );
     });
 

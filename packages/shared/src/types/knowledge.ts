@@ -20,7 +20,10 @@ interface KnowledgeItemBase {
   description: string | null;
   /** The extraction pipeline, or the person who added or edited it. */
   createdBy: 'AI' | PersonRef;
+  /** The first place it was found. */
   source: KnowledgeSourceDto;
+  /** Other chunks that state the same thing, merged into this item instead of duplicated. */
+  otherSources: KnowledgeSourceDto[];
   createdAt: string;
   updatedAt: string;
 }

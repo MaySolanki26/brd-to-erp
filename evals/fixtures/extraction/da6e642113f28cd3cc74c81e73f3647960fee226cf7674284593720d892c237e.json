@@ -1,0 +1,73 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Web Panel",
+        "description": "Lets Raghuvir staff manage all projects, complaints and announcements in one place."
+      },
+      {
+        "name": "Mobile App",
+        "description": "One app serving Society Managers, Residents and Watchmen, where each user sees only their own project."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Web Panel for managing projects, complaints and announcements",
+        "description": "Raghuvir staff must be able to manage all projects, complaints and announcements in one place through the Web Panel.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Single Mobile App for three user types",
+        "description": "One Mobile App must serve Society Managers, Residents and Watchmen.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Record every complaint",
+        "description": "Every complaint must be recorded, checked, tracked and closed, replacing phone calls, WhatsApp and Excel sheets.",
+        "moduleName": null
+      },
+      {
+        "title": "Visibility across all projects for Raghuvir",
+        "description": "Raghuvir must have full visibility of complaints across all projects, including which project has the most problems.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Accountability for staff and vendors on delays",
+        "description": "The system must make staff and vendors accountable for delays in resolving complaints.",
+        "moduleName": null
+      },
+      {
+        "title": "Society Manager approves residents",
+        "description": "The Society Manager must be able to approve residents.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Society Manager checks complaints",
+        "description": "The Society Manager must check complaints before they move forward.",
+        "moduleName": "Mobile App"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Users see only their own project",
+        "description": "In the Mobile App, each user sees only their own project.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Raghuvir creates the Society Manager",
+        "description": "The Society Manager account is created by Raghuvir.",
+        "moduleName": null
+      },
+      {
+        "title": "Complaint closed only with resident agreement",
+        "description": "A complaint may be closed only when the resident agrees.",
+        "moduleName": null
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1688,
+    "outputTokens": 675,
+    "cachedTokens": 1221
+  }
+}

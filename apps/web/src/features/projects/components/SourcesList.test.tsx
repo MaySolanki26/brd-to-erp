@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import type { ContextNoteDto, DocumentDto } from '@brd/shared';
 import { SourcesList } from './SourcesList';
@@ -10,6 +11,7 @@ interface Props {
   notes?: ContextNoteDto[];
   canAddSource?: boolean;
   canReprocess?: boolean;
+  initialEntry?: string;
 }
 
 function setup({
@@ -17,6 +19,7 @@ function setup({
   notes = [note()],
   canAddSource = true,
   canReprocess = true,
+  initialEntry = '/',
 }: Props = {}) {
   const handlers = {
     onViewChunks: vi.fn(),
@@ -26,15 +29,17 @@ function setup({
     onReprocess: vi.fn(),
   };
   render(
-    <SourcesList
-      projectId="p1"
-      documents={documents}
-      notes={notes}
-      canAddSource={canAddSource}
-      canReprocess={canReprocess}
-      reprocessing={false}
-      {...handlers}
-    />,
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <SourcesList
+        projectId="p1"
+        documents={documents}
+        notes={notes}
+        canAddSource={canAddSource}
+        canReprocess={canReprocess}
+        reprocessing={false}
+        {...handlers}
+      />
+    </MemoryRouter>,
   );
   return handlers;
 }
@@ -113,6 +118,18 @@ describe('SourcesList', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Documents' }));
     expect(screen.getByText('brd.pdf')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'All' }));
+    expect(screen.getByText('brd.pdf')).toBeInTheDocument();
+  });
+
+  it('restores the filter from the address, so a shared link shows the same view', () => {
+    setup({ documents: [doc()], notes: [note()], initialEntry: '/?sources=notes' });
+    expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText('brd.pdf')).not.toBeInTheDocument();
+  });
+
+  it('falls back to All for an unknown filter value', () => {
+    setup({ documents: [doc()], initialEntry: '/?sources=everything' });
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('brd.pdf')).toBeInTheDocument();
   });
 

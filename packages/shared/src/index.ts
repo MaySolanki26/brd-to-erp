@@ -7,6 +7,7 @@ export {
   type RefreshSummaryPayload,
   type GenerateQuestionsPayload,
   type ApplyAnswerPayload,
+  type ExtractChunkPayload,
   type JobPayloadMap,
 } from './jobs.js';
 
@@ -109,6 +110,8 @@ export {
   questionsLlmOutputSchema,
   generatedQuestionSchema,
   applyAnswerLlmOutputSchema,
+  extractionLlmOutputSchema,
+  type ExtractionLlmOutput,
   type SummaryLlmOutput,
   type QuestionsLlmOutput,
   type GeneratedQuestion,

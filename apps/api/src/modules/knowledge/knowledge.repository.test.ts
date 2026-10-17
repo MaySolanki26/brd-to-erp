@@ -60,9 +60,21 @@ describe('knowledge.repository', () => {
       deletedAt: null,
       status: 'CONFIRMED',
       moduleId: 'm1',
-      sourceChunk: {
-        OR: [{ documentVersion: { documentId: 's1' } }, { contextNoteId: 's1' }],
-      },
+      // An item belongs to a source through its first chunk or any chunk it was merged from.
+      AND: [
+        {
+          OR: [
+            { sourceChunk: { OR: [{ documentVersion: { documentId: 's1' } }, { contextNoteId: 's1' }] } },
+            {
+              extraSources: {
+                some: {
+                  chunk: { OR: [{ documentVersion: { documentId: 's1' } }, { contextNoteId: 's1' }] },
+                },
+              },
+            },
+          ],
+        },
+      ],
       OR: [
         { title: { contains: 'tax', mode: 'insensitive' } },
         { description: { contains: 'tax', mode: 'insensitive' } },

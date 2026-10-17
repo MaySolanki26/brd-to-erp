@@ -21,7 +21,7 @@ const clip = (text: string | null, max = MAX_TEXT_CHARS): string | null =>
  * The model gets untrusted business text as one JSON block. Every "<" is escaped, so nothing inside the
  * data can close the block early or open a tag of its own.
  */
-function wrap(data: unknown): string {
+export function wrap(data: unknown): string {
   return `<data>\n${JSON.stringify(data).replace(/</g, '\\u003c')}\n</data>`;
 }
 

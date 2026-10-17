@@ -1,0 +1,48 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaint Management",
+        "description": "A single place to record, check, assign and track resident complaints across projects."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Single place to record complaints",
+        "description": "The system must give one place to record resident complaints across projects instead of calls, WhatsApp messages and Excel notes.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Check and assign complaints",
+        "description": "The system must let complaints be checked and assigned, so that non-genuine complaints and society-level work do not reach the builder.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Track complaints to closure",
+        "description": "The system must track each complaint so it is not lost, delayed or raised again because nobody follows it.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Resident agreement before closure",
+        "description": "The system must prevent complaints from being closed without the resident agreeing.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Clear roles, steps and time limits",
+        "description": "Complaint handling must run on one system with clear roles, steps and time limits instead of depending on people and chat messages.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Data on repeated defects across projects",
+        "description": "The system must provide data on which defects repeat across projects.",
+        "moduleName": "Complaint Management"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1611,
+    "outputTokens": 440,
+    "cachedTokens": 1221
+  }
+}

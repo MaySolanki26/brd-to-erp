@@ -1,0 +1,28 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Roles and Responsibilities",
+        "description": "Defines the five roles that use the system and which role creates and runs which accounts or projects."
+      }
+    ],
+    "requirements": [],
+    "rules": [
+      {
+        "title": "Only Raghuvir creates Society Managers",
+        "description": "Raghuvir is the only role that creates Society Managers.",
+        "moduleName": "Roles and Responsibilities"
+      },
+      {
+        "title": "Society Managers run their own project",
+        "description": "Each Society Manager runs their own project.",
+        "moduleName": "Roles and Responsibilities"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1333,
+    "outputTokens": 182,
+    "cachedTokens": 1221
+  }
+}

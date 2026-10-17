@@ -26,7 +26,7 @@ export function RequirementsTab({ projectId }: { projectId: string }) {
         {
           id: 'source',
           header: 'Source',
-          cell: (r) => <SourceCell source={r.source} onOpen={openSource} />,
+          cell: (r) => <SourceCell source={r.source} otherSources={r.otherSources} onOpen={openSource} />,
         },
         {
           id: 'createdBy',

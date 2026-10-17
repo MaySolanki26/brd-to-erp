@@ -1,7 +1,9 @@
 import type PgBoss from 'pg-boss';
 import { JobName } from '@brd/shared';
 import { logger } from '../lib/logger.js';
+import { extractionService } from '../modules/extraction/extraction.runtime.js';
 import { understandingService } from '../modules/understanding/understanding.runtime.js';
+import { createExtractionHandler } from './extraction.handler.js';
 import { createProcessSourceHandler } from './process-source.handler.js';
 import { createUnderstandingHandlers } from './understanding.handlers.js';
 
@@ -20,6 +22,11 @@ export async function registerAllHandlers(boss: PgBoss): Promise<void> {
     understanding.generateQuestions,
   );
   await boss.work(JobName.APPLY_ANSWER, { includeMetadata: true }, understanding.applyAnswer);
+  await boss.work(
+    JobName.EXTRACT_CHUNK,
+    { includeMetadata: true },
+    createExtractionHandler(boss, extractionService),
+  );
 
   logger.info({ jobs: Object.values(JobName) }, 'Registered worker handlers');
 }

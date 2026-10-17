@@ -184,6 +184,7 @@ async function queueProcessing(
   projectId: string,
   documentId: string,
   versionId: string,
+  options: { reextract?: boolean } = {},
 ): Promise<boolean> {
   try {
     await enqueueJob(JobName.PROCESS_SOURCE, {
@@ -192,6 +193,7 @@ async function queueProcessing(
       sourceType: 'document',
       sourceId: documentId,
       versionId,
+      ...(options.reextract && { reextract: true }),
     });
     return true;
   } catch (err) {
@@ -356,7 +358,7 @@ export async function reprocessDocument(
     organizationId: user.organizationId,
     metadata: { projectId, reprocess: true, versionId: latest.id },
   });
-  if (!(await queueProcessing(user, projectId, documentId, latest.id))) {
+  if (!(await queueProcessing(user, projectId, documentId, latest.id, { reextract: true }))) {
     throw new AppError(503, 'SERVICE_UNAVAILABLE', QUEUE_FAILED);
   }
 

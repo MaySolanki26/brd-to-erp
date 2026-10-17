@@ -3,6 +3,7 @@ export const JobName = {
   REFRESH_SUMMARY: 'refresh-summary',
   GENERATE_QUESTIONS: 'generate-questions',
   APPLY_ANSWER: 'apply-answer',
+  EXTRACT_CHUNK: 'extract-chunk',
 } as const;
 
 export type JobName = (typeof JobName)[keyof typeof JobName];
@@ -16,6 +17,8 @@ export interface ProcessSourcePayload {
   sourceId: string;
   /** Required for documents: the version to parse. */
   versionId?: string;
+  /** A person asked to reprocess: extract every chunk again, even those whose text did not change. */
+  reextract?: boolean;
 }
 
 /** Rebuilds the versioned project summary; does nothing when the inputs have not changed. */
@@ -37,11 +40,19 @@ export interface ApplyAnswerPayload {
   answerId: string;
 }
 
+/** Lists the modules, requirements and rules one chunk states. The worker re-verifies the chunk. */
+export interface ExtractChunkPayload {
+  organizationId: string;
+  projectId: string;
+  chunkId: string;
+}
+
 export interface JobPayloadMap {
   [JobName.PROCESS_SOURCE]: ProcessSourcePayload;
   [JobName.REFRESH_SUMMARY]: RefreshSummaryPayload;
   [JobName.GENERATE_QUESTIONS]: GenerateQuestionsPayload;
   [JobName.APPLY_ANSWER]: ApplyAnswerPayload;
+  [JobName.EXTRACT_CHUNK]: ExtractChunkPayload;
 }
 
 export const DEFAULT_BACKOFF = {

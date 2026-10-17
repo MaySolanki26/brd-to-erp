@@ -10,7 +10,18 @@ import { storageService } from '../../services/storage/index.js';
 import { readStream } from '../../services/storage/read-file.js';
 import * as repo from './process-source.repository.js';
 
-export type ProcessOutcome = 'processed' | 'skipped' | 'failed' | 'superseded';
+export type ProcessOutcome = 'processed' | 'extracting' | 'skipped' | 'failed' | 'superseded';
+
+export interface ProcessResult {
+  outcome: ProcessOutcome;
+  /** For `extracting`: the chunks the extraction job must read. */
+  chunkIds: string[];
+}
+
+const done = (outcome: Exclude<ProcessOutcome, 'extracting'>): ProcessResult => ({
+  outcome,
+  chunkIds: [],
+});
 
 export interface JobAttempt {
   jobId: string;
@@ -31,39 +42,54 @@ async function handleFailure(
   attempt: JobAttempt,
   handlers: SourceHandlers,
   log: typeof logger,
-): Promise<ProcessOutcome> {
+): Promise<ProcessResult> {
   if (err instanceof PermanentJobError) {
     log.warn({ reason: err.message }, 'Source cannot be processed');
     await handlers.fail(err.message);
-    return 'failed';
+    return done('failed');
   }
   if (err instanceof NotFoundError) {
     log.warn('Stored file is missing');
     await handlers.fail(UNREADABLE_FILE);
-    return 'failed';
+    return done('failed');
   }
   if (attempt.isLastAttempt) {
     log.error({ err }, 'Processing failed after the last attempt');
     await handlers.fail(GENERIC_FAILURE);
-    return 'failed';
+    return done('failed');
   }
   log.warn({ err }, 'Processing failed, will retry');
   await handlers.release();
   throw err;
 }
 
+function resultOf(
+  synced: repo.SyncResult | null,
+  chunkCount: number,
+  log: typeof logger,
+): ProcessResult {
+  if (!synced) return done('superseded');
+  log.info(
+    { chunkCount, toExtract: synced.pendingChunkIds.length, finished: synced.finished },
+    'Source chunked',
+  );
+  return synced.finished
+    ? done('processed')
+    : { outcome: 'extracting', chunkIds: synced.pendingChunkIds };
+}
+
 async function processDocument(
   payload: ProcessSourcePayload,
   attempt: JobAttempt,
   log: typeof logger,
-): Promise<ProcessOutcome> {
+): Promise<ProcessResult> {
   const { organizationId, projectId, sourceId: documentId, versionId } = payload;
-  if (!versionId) return 'skipped';
+  if (!versionId) return done('skipped');
 
   const version = await repo.findVersion({ organizationId, projectId, documentId, versionId });
   if (!version) {
     log.warn('Document or version not found for this organization and project');
-    return 'skipped';
+    return done('skipped');
   }
   const claimed = await repo.beginDocument({
     organizationId,
@@ -73,7 +99,7 @@ async function processDocument(
   });
   if (!claimed) {
     log.info({ status: version.documentStatus }, 'Document not waiting for this version, skipping');
-    return 'superseded';
+    return done('superseded');
   }
 
   try {
@@ -86,11 +112,21 @@ async function processDocument(
     );
     const chunks: ChunkInput[] = chunkSections(version.versionId, await parseFile(fileType, data));
 
-    const finished = await withTransaction((tx) =>
-      repo.finishDocument({ organizationId, projectId, documentId, versionId, chunks }, tx),
+    const synced = await withTransaction((tx) =>
+      repo.finishDocument(
+        {
+          organizationId,
+          projectId,
+          documentId,
+          versionId,
+          versionNumber: version.versionNumber,
+          chunks,
+          reextract: payload.reextract === true,
+        },
+        tx,
+      ),
     );
-    log.info({ chunkCount: chunks.length, finished }, 'Document processed');
-    return finished ? 'processed' : 'superseded';
+    return resultOf(synced, chunks.length, log);
   } catch (err) {
     return handleFailure(
       err,
@@ -108,30 +144,29 @@ async function processNote(
   payload: ProcessSourcePayload,
   attempt: JobAttempt,
   log: typeof logger,
-): Promise<ProcessOutcome> {
+): Promise<ProcessResult> {
   const { organizationId, projectId, sourceId: noteId } = payload;
 
   const found = await repo.findNote({ organizationId, projectId, noteId });
   if (!found) {
     log.warn('Note not found for this organization and project');
-    return 'skipped';
+    return done('skipped');
   }
   if (!(await repo.beginNote({ organizationId, projectId, noteId }))) {
     log.info({ status: found.status }, 'Note not waiting to be processed, skipping');
-    return 'superseded';
+    return done('superseded');
   }
 
   try {
     // Read after claiming: the claim bumped updatedAt, and any later edit will change it again.
     const note = await repo.findNote({ organizationId, projectId, noteId });
-    if (!note) return 'skipped';
+    if (!note) return done('skipped');
 
     const chunks = chunkSections(note.id, parseNote(note.title, note.body));
-    const finished = await withTransaction((tx) =>
+    const synced = await withTransaction((tx) =>
       repo.finishNote({ organizationId, projectId, noteId, readAt: note.updatedAt, chunks }, tx),
     );
-    log.info({ chunkCount: chunks.length, finished }, 'Note processed');
-    return finished ? 'processed' : 'superseded';
+    return resultOf(synced, chunks.length, log);
   } catch (err) {
     return handleFailure(
       err,
@@ -145,10 +180,19 @@ async function processNote(
   }
 }
 
+/** Fails a source that is past its claim and cannot continue, so a person can reprocess it. */
+export async function failSource(payload: ProcessSourcePayload, reason: string): Promise<void> {
+  if (payload.sourceType === 'document') {
+    await repo.failDocument(payload.organizationId, payload.sourceId, reason);
+  } else {
+    await repo.failNote(payload.organizationId, payload.sourceId, reason);
+  }
+}
+
 export async function processSource(
   payload: ProcessSourcePayload,
   attempt: JobAttempt,
-): Promise<ProcessOutcome> {
+): Promise<ProcessResult> {
   const log = logger.child({
     jobId: attempt.jobId,
     sourceType: payload.sourceType,

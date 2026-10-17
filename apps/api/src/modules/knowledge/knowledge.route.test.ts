@@ -352,6 +352,53 @@ describe('knowledge routes', () => {
     });
   });
 
+  describe('items merged from several sources', () => {
+    it('shows the first source and the other chunks, and is found through either source', async () => {
+      addKnowledge('requirements', {
+        organizationId: world.orgA,
+        projectId: world.p1.id,
+        sourceChunkId: docChunk.id,
+        extraChunkIds: [noteChunk.id],
+        title: 'Invoice monthly',
+      });
+      const viewer = await sessionFor('viewerA');
+
+      const all = await as(app, viewer, 'get', url(world.p1.id, 'requirements'));
+      expect(all.body.items).toHaveLength(1);
+      expect(all.body.items[0].source).toMatchObject({ type: 'document', sourceId: docId });
+      expect(all.body.items[0].otherSources).toEqual([
+        expect.objectContaining({ type: 'note', sourceId: noteId, chunkId: noteChunk.id }),
+      ]);
+
+      for (const sourceId of [docId, noteId]) {
+        const filtered = await as(
+          app,
+          viewer,
+          'get',
+          `${url(world.p1.id, 'requirements')}?sourceId=${sourceId}`,
+        );
+        expect(filtered.body.items).toHaveLength(1);
+      }
+      const other = await as(
+        app,
+        viewer,
+        'get',
+        `${url(world.p1.id, 'requirements')}?sourceId=${crypto.randomUUID()}`,
+      );
+      expect(other.body.items).toEqual([]);
+    });
+
+    it('gives an item found in one place an empty list of other sources', async () => {
+      addKnowledge('requirements', {
+        organizationId: world.orgA,
+        projectId: world.p1.id,
+        sourceChunkId: docChunk.id,
+      });
+      const res = await as(app, await sessionFor('viewerA'), 'get', url(world.p1.id, 'requirements'));
+      expect(res.body.items[0].otherSources).toEqual([]);
+    });
+  });
+
   describe('GET rules and modules', () => {
     it('lists rules with their module and source', async () => {
       const mod = addKnowledge('modules', {

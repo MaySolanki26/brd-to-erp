@@ -14,6 +14,8 @@ export const BUDGET_RETRY_SECONDS = 60 * 60;
 
 type UnderstandingJob =
   typeof JobName.REFRESH_SUMMARY | typeof JobName.GENERATE_QUESTIONS | typeof JobName.APPLY_ANSWER;
+/** Every job that calls the model goes through `guarded`. */
+export type LlmJob = UnderstandingJob | typeof JobName.EXTRACT_CHUNK;
 type Jobs<N extends UnderstandingJob> = PgBoss.JobWithMetadata<JobPayloadMap[N]>[];
 
 export interface UnderstandingHandlers {
@@ -27,7 +29,7 @@ export interface UnderstandingHandlers {
  * that is misconfigured or refuses the input will not improve by retrying; anything else is retried
  * by pg-boss with backoff.
  */
-async function guarded<N extends UnderstandingJob>(
+export async function guarded<N extends LlmJob>(
   boss: PgBoss,
   name: N,
   job: PgBoss.JobWithMetadata<JobPayloadMap[N]>,

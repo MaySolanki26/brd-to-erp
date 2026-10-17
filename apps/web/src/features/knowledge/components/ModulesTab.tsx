@@ -31,7 +31,7 @@ export function ModulesTab({ projectId }: { projectId: string }) {
         {
           id: 'source',
           header: 'Source',
-          cell: (m) => <SourceCell source={m.source} onOpen={openSource} />,
+          cell: (m) => <SourceCell source={m.source} otherSources={m.otherSources} onOpen={openSource} />,
         },
         {
           id: 'createdBy',

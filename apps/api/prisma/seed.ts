@@ -80,6 +80,7 @@ async function seedChunks(
       contentHash: sha(chunk.content),
       headingPath: chunk.headingPath,
       needsReview: chunk.needsReview ?? false,
+      extractedAt: new Date(),
       projectId: scope.projectId,
       organizationId: scope.organizationId,
       ...source,

@@ -1,0 +1,59 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaint Management",
+        "description": "Records every society complaint in one flow with a clear owner and status until closure."
+      },
+      {
+        "name": "Resident Management",
+        "description": "Lets each project's Society Manager handle daily resident management."
+      },
+      {
+        "name": "Management Dashboard",
+        "description": "Gives Raghuvir one view of all projects, complaints and delays."
+      },
+      {
+        "name": "Announcements",
+        "description": "Single channel to reach all flat owners."
+      },
+      {
+        "name": "Resident and Watchman Self-Service",
+        "description": "Lets residents and watchmen handle hall booking, facilities and visitors by themselves."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Record all complaints in one flow with owner and status",
+        "description": "Every complaint must be brought into one recorded flow with a clear owner and status, so each issue is tracked to closure.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Society Manager handles daily resident management per project",
+        "description": "Daily resident management must move to each project's Society Manager, so each project runs its own daily work.",
+        "moduleName": "Resident Management"
+      },
+      {
+        "title": "Single view of all projects, complaints and delays",
+        "description": "Raghuvir must get one view of all projects, complaints and delays.",
+        "moduleName": "Management Dashboard"
+      },
+      {
+        "title": "One announcement channel for all flat owners",
+        "description": "The system must reach all flat owners through one announcement channel.",
+        "moduleName": "Announcements"
+      },
+      {
+        "title": "Self-service hall booking, facilities and visitors",
+        "description": "Residents and watchmen must be able to handle hall booking, facilities and visitors by themselves.",
+        "moduleName": "Resident and Watchman Self-Service"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1647,
+    "outputTokens": 548,
+    "cachedTokens": 1221
+  }
+}

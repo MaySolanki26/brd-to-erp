@@ -36,6 +36,7 @@ export function requirement(overrides: Partial<RequirementDto> = {}): Requiremen
     module: { id: MODULE_ID, name: 'Billing' },
     createdBy: 'AI',
     source: source(),
+    otherSources: [],
     ...stamp,
     ...overrides,
   };
@@ -50,6 +51,7 @@ export function rule(overrides: Partial<BusinessRuleDto> = {}): BusinessRuleDto 
     module: { id: MODULE_ID, name: 'Billing' },
     createdBy: 'AI',
     source: source(),
+    otherSources: [],
     ...stamp,
     ...overrides,
   };
@@ -65,6 +67,7 @@ export function moduleItem(overrides: Partial<ModuleDto> = {}): ModuleDto {
     requirementCount: 4,
     createdBy: 'AI',
     source: source(),
+    otherSources: [],
     ...stamp,
     ...overrides,
   };

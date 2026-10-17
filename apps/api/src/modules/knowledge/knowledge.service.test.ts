@@ -57,6 +57,7 @@ describe('knowledge.service', () => {
           module: null,
           createdBy: null,
           sourceChunk: docChunk,
+          extraSources: [],
         },
       ],
     });
@@ -73,7 +74,44 @@ describe('knowledge.service', () => {
         needsReview: true,
       },
     });
+    expect(result.items[0]?.otherSources).toEqual([]);
     expect(result).toMatchObject({ page: 1, pageSize: 20, total: 1 });
+  });
+
+  it('lists the other chunks an item was merged from, after its first source', async () => {
+    repo.listRequirements.mockResolvedValue({
+      total: 1,
+      items: [
+        {
+          id: 'r1',
+          title: 'T',
+          description: 'D',
+          status: 'OPEN',
+          priority: null,
+          createdAt: date,
+          updatedAt: date,
+          module: null,
+          createdBy: null,
+          sourceChunk: docChunk,
+          extraSources: [
+            {
+              chunk: {
+                id: 'c9',
+                headingPath: ['Billing'],
+                needsReview: false,
+                documentVersion: null,
+                contextNote: { id: 'n1', title: 'Call' },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const result = await listRequirements(user, 'p1', query);
+    expect(result.items[0]?.source.chunkId).toBe('c1');
+    expect(result.items[0]?.otherSources).toEqual([
+      expect.objectContaining({ chunkId: 'c9', type: 'note', sourceId: 'n1', sourceTitle: 'Call' }),
+    ]);
   });
 
   it('maps a note source without a version', async () => {
@@ -90,6 +128,7 @@ describe('knowledge.service', () => {
           updatedAt: date,
           createdBy: { id: 'u2', name: 'Ann' },
           _count: { requirements: 4 },
+          extraSources: [],
           sourceChunk: {
             id: 'c2',
             headingPath: [],
