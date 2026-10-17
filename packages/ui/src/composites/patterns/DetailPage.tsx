@@ -1,24 +1,24 @@
 import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
 import { PageShell, PageShellBody } from '../PageShell';
 import { InformativeBar } from '../InformativeBar';
-import { SwitcherBar, type SwitcherItem } from '../SwitcherBar';
 import { PageLoader } from '../PageLoader';
 import { PageError } from '../PageError';
 import { NoAccess } from '../NoAccess';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../tabs';
 
 type DetailPageState = 'loading' | 'error' | 'no-access' | 'ready';
 
 export interface DetailPageTab {
   key: string;
-  label: string;
-  icon?: LucideIcon;
-  count?: number;
+  label: ReactNode;
+  /** Rendered only while this tab is active. */
+  content: ReactNode;
 }
 
 export interface DetailPageProps {
   state: DetailPageState;
-  children: ReactNode;
+  /** Body shown when `tabs` is not used. */
+  children?: ReactNode;
 
   // Header
   title?: ReactNode;
@@ -26,19 +26,22 @@ export interface DetailPageProps {
   badge?: ReactNode;
   headerRight?: ReactNode;
 
-  // Tabs
+  // Tabs (the caller decides which tabs the user may see)
   tabs?: DetailPageTab[];
   activeTab?: string;
   onTabChange?: (key: string) => void;
 
   // Error
   errorMessage?: string;
+  errorDescription?: string;
   onRetry?: () => void;
 
   // NoAccess
   noAccessTitle?: string;
   noAccessDescription?: string;
 
+  /** Extra content after the body, such as confirm dialogs. */
+  footer?: ReactNode;
   className?: string;
 }
 
@@ -53,22 +56,17 @@ export function DetailPage({
   activeTab,
   onTabChange,
   errorMessage,
+  errorDescription,
   onRetry,
   noAccessTitle,
   noAccessDescription,
+  footer,
   className,
 }: DetailPageProps) {
-  const switcherItems: SwitcherItem[] | undefined = tabs?.map((t) => ({
-    key: t.key,
-    label: t.label,
-    icon: t.icon,
-    count: t.count,
-  }));
-
   return (
     <PageShell className={className}>
       <InformativeBar title={title} onBack={onBack} badge={badge}>
-        {headerRight}
+        {state === 'ready' ? headerRight : null}
       </InformativeBar>
 
       {state === 'loading' && (
@@ -79,7 +77,12 @@ export function DetailPage({
 
       {state === 'error' && (
         <PageShellBody scroll>
-          <PageError message={errorMessage} onRetry={onRetry} />
+          <PageError
+            variant="full"
+            message={errorMessage}
+            description={errorDescription}
+            onRetry={onRetry}
+          />
         </PageShellBody>
       )}
 
@@ -90,17 +93,28 @@ export function DetailPage({
       )}
 
       {state === 'ready' && (
-        <>
-          {switcherItems && activeTab && onTabChange && (
-            <SwitcherBar
-              items={switcherItems}
-              value={activeTab}
-              onChange={onTabChange}
-            />
+        <PageShellBody padded scroll>
+          {tabs && tabs.length > 0 ? (
+            <Tabs value={activeTab ?? tabs[0]?.key} onValueChange={onTabChange}>
+              <TabsList>
+                {tabs.map((tab) => (
+                  <TabsTrigger key={tab.key} value={tab.key}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {tabs.map((tab) => (
+                <TabsContent key={tab.key} value={tab.key} className="mt-4">
+                  {tab.content}
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            children
           )}
-          <PageShellBody scroll>{children}</PageShellBody>
-        </>
+        </PageShellBody>
       )}
+      {footer}
     </PageShell>
   );
 }

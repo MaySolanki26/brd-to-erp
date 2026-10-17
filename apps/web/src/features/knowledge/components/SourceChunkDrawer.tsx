@@ -55,7 +55,7 @@ export function SourceChunkDrawer({ projectId, chunkId, onClose }: SourceChunkDr
           {data.needsReview && (
             <p
               role="status"
-              className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+              className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning-light p-3 text-sm text-warning-fg"
             >
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               This text could not be read cleanly, so items taken from it need a person to check

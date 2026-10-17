@@ -4,11 +4,7 @@ import { FolderKanban, Plus } from 'lucide-react';
 import {
   Button,
   DataTablePagination,
-  EmptyState,
-  InformativeBar,
-  NoAccess,
-  PageError,
-  PageShell,
+  ListPage,
   SearchInput,
   StatusBadge,
   Table,
@@ -31,6 +27,14 @@ const SKELETON_COLUMNS = [
   { kind: 'text' },
 ] as const;
 
+type ProjectsQuery = ReturnType<typeof useProjects>;
+
+function projectsListState(projects: ProjectsQuery) {
+  if (projects.isPending) return 'loading';
+  if (projects.isError) return isForbidden(projects.error) ? 'no-access' : 'error';
+  return projects.data.items.length === 0 ? 'empty' : 'ready';
+}
+
 export function ProjectsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -44,15 +48,20 @@ export function ProjectsPage() {
   };
   const isSearching = search.length > 0;
 
+  const listState = projectsListState(projects);
+
   return (
-    <PageShell>
-      <InformativeBar title="Projects" info="Projects you can access">
+    <ListPage
+      state={listState}
+      title="Projects"
+      info="Projects you can access"
+      actionBarRight={
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />
           New project
         </Button>
-      </InformativeBar>
-      <PageShell.Body padded>
+      }
+      toolbar={
         <SearchInput
           value={search}
           onChange={changeSearch}
@@ -60,70 +69,31 @@ export function ProjectsPage() {
           aria-label="Search projects"
           className="mb-4 max-w-sm"
         />
-        {projects.isPending && <TableSkeleton columns={[...SKELETON_COLUMNS]} rows={5} />}
-        {projects.isError &&
-          (isForbidden(projects.error) ? (
-            <NoAccess description="You do not have access to projects." />
-          ) : (
-            <PageError
-              message="Could not load projects"
-              description={errorMessage(projects.error)}
-              onRetry={() => void projects.refetch()}
-            />
-          ))}
-        {projects.isSuccess && projects.data.items.length === 0 && isSearching && (
-          <EmptyState
-            icon={FolderKanban}
-            title="No matching projects"
-            description={`Nothing you can access matches "${search}".`}
-            actionLabel="Show all projects"
-            onAction={() => changeSearch('')}
-          />
-        )}
-        {projects.isSuccess && projects.data.items.length === 0 && !isSearching && (
-          <EmptyState
-            icon={FolderKanban}
-            title="No projects yet"
-            description="Create a project, or ask an owner to add you to one."
-            actionLabel="New project"
-            onAction={() => setCreateOpen(true)}
-          />
-        )}
-        {projects.isSuccess && projects.data.items.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Your role</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {projects.data.items.map((project) => (
-                <TableRow
-                  key={project.id}
-                  className="cursor-pointer"
-                  tabIndex={0}
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') navigate(`/projects/${project.id}`);
-                  }}
-                >
-                  <TableCell className="font-medium">{project.name}</TableCell>
-                  <TableCell>
-                    <StatusBadge label={project.status} tone={STATUS_TONES[project.status]} />
-                  </TableCell>
-                  <TableCell>
-                    {project.myRole ? ROLE_LABELS[project.myRole] : 'Admin access'}
-                  </TableCell>
-                  <TableCell>{formatDate(project.createdAt)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-        {projects.isSuccess && projects.data.total > PROJECTS_PAGE_SIZE && (
+      }
+      loadingFallback={<TableSkeleton columns={[...SKELETON_COLUMNS]} rows={5} />}
+      errorMessage="Could not load projects"
+      errorDescription={errorMessage(projects.error)}
+      onRetry={() => void projects.refetch()}
+      noAccessDescription="You do not have access to projects."
+      emptyIcon={FolderKanban}
+      emptyTitle={isSearching ? 'No matching projects' : 'No projects yet'}
+      emptyDescription={
+        isSearching
+          ? `Nothing you can access matches "${search}".`
+          : 'Create a project, or ask an owner to add you to one.'
+      }
+      emptyAction={
+        <Button
+          size="xs"
+          className="gap-2"
+          onClick={isSearching ? () => changeSearch('') : () => setCreateOpen(true)}
+        >
+          {!isSearching && <Plus className="h-4 w-4" strokeWidth={1.5} />}
+          {isSearching ? 'Show all projects' : 'New project'}
+        </Button>
+      }
+      footer={
+        projects.data && projects.data.total > PROJECTS_PAGE_SIZE ? (
           <DataTablePagination
             pagination={{
               page: projects.data.page,
@@ -132,13 +102,46 @@ export function ProjectsPage() {
             }}
             onPageChange={setPageNumber}
           />
-        )}
-      </PageShell.Body>
-      <CreateProjectDrawer
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={(project) => navigate(`/projects/${project.id}`)}
-      />
-    </PageShell>
+        ) : null
+      }
+      overlays={
+        <CreateProjectDrawer
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={(project) => navigate(`/projects/${project.id}`)}
+        />
+      }
+    >
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Your role</TableHead>
+            <TableHead>Created</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {projects.data?.items.map((project) => (
+            <TableRow
+              key={project.id}
+              className="cursor-pointer"
+              tabIndex={0}
+              onClick={() => navigate(`/projects/${project.id}`)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') navigate(`/projects/${project.id}`);
+              }}
+            >
+              <TableCell className="font-medium">{project.name}</TableCell>
+              <TableCell>
+                <StatusBadge label={project.status} tone={STATUS_TONES[project.status]} />
+              </TableCell>
+              <TableCell>{project.myRole ? ROLE_LABELS[project.myRole] : 'Admin access'}</TableCell>
+              <TableCell>{formatDate(project.createdAt)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </ListPage>
   );
 }

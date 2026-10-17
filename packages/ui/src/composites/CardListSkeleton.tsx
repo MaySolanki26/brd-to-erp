@@ -19,7 +19,7 @@ export function CardListSkeleton({
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="flex items-start justify-between rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+          className="flex items-start justify-between rounded-lg border border-border bg-surface p-4 "
         >
           <div className="flex-1 space-y-2 pr-6">
             <div className="flex items-center gap-2">

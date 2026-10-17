@@ -22,7 +22,7 @@ const Checkbox = React.forwardRef<
         'ring-offset-background focus-visible:ring-ring peer grid shrink-0 place-content-center rounded-[5px] border-[1.5px] transition-colors duration-[120ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         isSm ? 'h-3.5 w-3.5' : 'h-4 w-4',
         tone === 'gray'
-          ? 'border-gray-300 text-white data-[state=unchecked]:hover:border-gray-400 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary'
+          ? 'border-input text-primary-foreground data-[state=unchecked]:hover:border-muted-foreground data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary'
           : 'border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground',
         className,
       )}

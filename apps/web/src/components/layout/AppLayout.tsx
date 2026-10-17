@@ -1,5 +1,5 @@
 import { Suspense, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import {
   AppShell,
   AppSidebar,
@@ -7,6 +7,7 @@ import {
   AppHeader,
   ErrorBoundary,
   PageLoader,
+  ThemeToggle,
   TooltipProvider,
   useSidebarState,
   type NavItem,
@@ -15,6 +16,8 @@ import {
 } from '@brd/ui';
 import { FolderKanban, KeyRound, LayoutDashboard, Users } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
+import { useProject } from '@/features/projects/hooks/use-projects';
+import { AppBrand } from './AppBrand';
 
 const NAV_ITEMS: NavItem[] = [
   { key: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -33,9 +36,13 @@ function isActivePath(key: string, pathname: string): boolean {
   return key === '/' ? pathname === '/' : pathname === key || pathname.startsWith(`${key}/`);
 }
 
-function breadcrumbsFor(pathname: string): BreadcrumbItem[] {
+function breadcrumbsFor(
+  pathname: string,
+  projectName: string | undefined,
+  goToProjects: () => void,
+): BreadcrumbItem[] {
   if (pathname.startsWith('/projects/')) {
-    return [{ label: 'Projects' }, { label: 'Project' }];
+    return [{ label: 'Projects', onClick: goToProjects }, { label: projectName ?? 'Project' }];
   }
   return BREADCRUMB_MAP[pathname] ?? [{ label: 'Home' }];
 }
@@ -64,19 +71,10 @@ export function AppLayout() {
     ? { name: user.name, email: user.email, role: user.role.name }
     : undefined;
 
-  const breadcrumbs = breadcrumbsFor(location.pathname);
-
-  const branding = collapsed ? (
-    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xl font-bold">
-      B
-    </div>
-  ) : (
-    <div className="flex items-center gap-2">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xl font-bold">
-        B
-      </div>
-      <span className="text-2xl font-semibold text-foreground">BRD Platform</span>
-    </div>
+  const projectMatch = useMatch('/projects/:projectId');
+  const project = useProject(projectMatch?.params.projectId ?? '');
+  const breadcrumbs = breadcrumbsFor(location.pathname, project.data?.name, () =>
+    navigate('/projects'),
   );
 
   return (
@@ -88,7 +86,7 @@ export function AppLayout() {
             activeKey={activeKey}
             collapsed={collapsed}
             onToggle={toggle}
-            branding={branding}
+            branding={<AppBrand collapsed={collapsed} />}
             user={appUser}
             onLogout={logout}
           />
@@ -99,14 +97,7 @@ export function AppLayout() {
           activeKey={activeKey}
           open={mobileOpen}
           onOpenChange={setMobileOpen}
-          branding={
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xl font-bold">
-                B
-              </div>
-              <span className="text-2xl font-semibold text-foreground">BRD Platform</span>
-            </div>
-          }
+          branding={<AppBrand />}
           user={appUser}
           onLogout={logout}
         />
@@ -116,6 +107,7 @@ export function AppLayout() {
           user={appUser}
           onLogout={logout}
           onMobileMenuOpen={() => setMobileOpen(true)}
+          actions={<ThemeToggle />}
           userMenuActions={[
             {
               key: 'change-password',

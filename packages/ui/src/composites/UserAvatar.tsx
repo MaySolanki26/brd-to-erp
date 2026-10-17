@@ -21,7 +21,7 @@ export function UserAvatar({ name, src, className, fallbackClassName }: UserAvat
         />
       ) : null}
       <AvatarFallback
-        className={cn('font-medium text-white', getAvatarColor(initials), fallbackClassName)}
+        className={cn('font-medium text-background', getAvatarColor(initials), fallbackClassName)}
       >
         {initials}
       </AvatarFallback>

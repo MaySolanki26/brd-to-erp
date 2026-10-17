@@ -18,7 +18,7 @@ const Slider = React.forwardRef<
     {(props.value ?? props.defaultValue ?? []).map((_, idx) => (
       <SliderPrimitive.Thumb
         key={idx}
-        className="block h-3.5 w-3.5 rounded-full border border-primary bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
+        className="block h-3.5 w-3.5 rounded-full border border-primary bg-background shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
       />
     ))}
   </SliderPrimitive.Root>

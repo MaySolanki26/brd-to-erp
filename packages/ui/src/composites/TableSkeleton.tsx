@@ -19,11 +19,11 @@ export function TableSkeleton({ rows = 8, columns, className }: TableSkeletonPro
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950',
+        'overflow-hidden rounded-lg border border-border bg-surface ',
         className,
       )}
     >
-      <div className="flex items-center gap-4 border-b border-slate-200 bg-slate-50 px-4 py-2 text-lg dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center gap-4 border-b border-border bg-muted px-4 py-2 text-lg ">
         {columns.map((_, i) => (
           <Skeleton
             key={i}
@@ -37,7 +37,7 @@ export function TableSkeleton({ rows = 8, columns, className }: TableSkeletonPro
           key={rowIdx}
           className={cn(
             'flex items-center gap-4 px-4 py-3',
-            rowIdx < rows - 1 && 'border-b border-slate-100 dark:border-slate-800',
+            rowIdx < rows - 1 && 'border-b border-border ',
           )}
         >
           {columns.map((col, colIdx) => (

@@ -10,12 +10,12 @@ export function getInitials(name: string): string {
 }
 
 const AVATAR_COLORS = [
-  'bg-indigo-500',
-  'bg-emerald-500',
-  'bg-violet-500',
-  'bg-rose-500',
-  'bg-sky-500',
-  'bg-amber-500',
+  'bg-primary',
+  'bg-success',
+  'bg-violet',
+  'bg-destructive',
+  'bg-info',
+  'bg-warning',
 ] as const;
 
 /** Deterministic avatar background Tailwind class from initials. */

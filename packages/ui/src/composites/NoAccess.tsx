@@ -20,12 +20,12 @@ export function NoAccess({
         'flex flex-col items-center justify-center text-center',
         variant === 'full'
           ? 'h-full'
-          : 'mt-4 rounded-xl border border-gray-100 bg-white py-12',
+          : 'mt-4 rounded-xl border border-border bg-surface py-12',
         className,
       )}
     >
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50">
-        <ShieldX className="h-5 w-5 text-amber-500" strokeWidth={1.5} />
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-warning-light">
+        <ShieldX className="h-5 w-5 text-warning" strokeWidth={1.5} />
       </div>
 
       <p className="text-foreground text-xl font-medium">{title}</p>

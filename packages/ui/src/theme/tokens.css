@@ -1,0 +1,289 @@
+/*
+ * Design tokens — the only place colors, scales and shadows are defined.
+ *
+ * Colors are space-separated RGB triplets so Tailwind can apply opacity:
+ *   rgb(var(--color-primary) / <alpha-value>)
+ *
+ * Layers: primitive (raw palette) -> semantic (--color-*) -> legacy aliases
+ * (--background, --primary, ...) that the Tailwind preset and styles.css read.
+ * Components use semantic tokens through Tailwind utilities, never primitives.
+ *
+ * Type scale note: the Tailwind font sizes are intentionally shifted
+ * (text-sm = 11px, text-lg = 13px, text-2xl = 16px). Snippets copied from
+ * the Tailwind docs will render at a different size.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── Primitive palette ─────────────────────────────── */
+  --indigo-50: 238 242 255;
+  --indigo-400: 129 140 248;
+  --indigo-600: 79 70 229;
+  --indigo-950: 30 27 75;
+  --gray-50: 249 250 251;
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-500: 107 114 128;
+  --gray-700: 55 65 81;
+  --gray-900: 17 24 39;
+  --gray-950: 11 17 32;
+  --white: 255 255 255;
+
+  /* ── Semantic colors (light) ───────────────────────── */
+  --color-bg: var(--white);
+  --color-surface: var(--white);
+  --color-text: 28 29 33;
+  --color-text-muted: 99 106 120;
+  --color-border: var(--gray-200);
+  --color-muted: var(--gray-100);
+  --color-accent: var(--gray-100);
+  --color-accent-text: var(--gray-700);
+  --color-card: var(--white);
+  --color-card-text: var(--gray-700);
+  --color-primary: var(--indigo-600);
+  --color-primary-contrast: var(--white);
+  --color-primary-light: var(--indigo-50);
+  --color-focus-ring: var(--indigo-600);
+
+  --color-danger: 220 38 38;
+  --color-danger-contrast: var(--white);
+  --color-danger-light: 254 242 242;
+  --color-danger-text: 185 28 28;
+
+  --color-success: 22 128 61;
+  --color-success-light: 231 246 236;
+  --color-success-text: 21 101 52;
+
+  --color-warning: 180 83 9;
+  --color-warning-light: 253 242 227;
+  --color-warning-text: 146 64 14;
+
+  --color-info: 29 78 216;
+  --color-info-light: 234 241 255;
+  --color-info-text: 30 64 175;
+
+  /* Decorative hues (avatars, charts, tags) */
+  --orange: 249 115 22;
+  --orange-light: 255 237 213;
+  --orange-fg: 194 65 12;
+  --violet: 133 82 224;
+  --violet-light: 241 236 253;
+  --violet-fg: 107 53 201;
+  --cyan: 22 163 160;
+  --cyan-light: 228 246 246;
+  --cyan-fg: 15 122 120;
+  --pink: 224 83 154;
+  --pink-light: 252 235 243;
+  --pink-fg: 189 42 115;
+
+  --search-highlight: 254 240 138;
+  --search-highlight-fg: 113 63 18;
+
+  /* Status tones (badges, dots, row attention) */
+  --tone-success-bg: 240 253 244;
+  --tone-success-fg: 21 128 61;
+  --tone-success-border: 187 247 208;
+  --tone-warning-bg: 255 251 235;
+  --tone-warning-fg: 180 83 9;
+  --tone-warning-border: 253 230 138;
+  --tone-danger-bg: 254 242 242;
+  --tone-danger-fg: 185 28 28;
+  --tone-danger-border: 254 202 202;
+  --tone-info-bg: 239 246 255;
+  --tone-info-fg: 29 78 216;
+  --tone-info-border: 191 219 254;
+  --tone-brand-bg: 238 242 255;
+  --tone-brand-fg: 67 56 202;
+  --tone-brand-border: 199 210 254;
+  --tone-neutral-bg: 249 250 251;
+  --tone-neutral-fg: 75 85 99;
+  --tone-neutral-border: 229 231 235;
+
+  /* Component tokens */
+  --overlay: 0 0 0;
+  --scrollbar-thumb: 0 0 0;
+  --sidebar-bg: var(--color-surface);
+  --table-row-hover: var(--color-muted);
+  --skeleton: var(--color-muted);
+
+  /* ── Legacy aliases (read by the preset and styles.css) ── */
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --surface: var(--color-surface);
+  --muted: var(--color-muted);
+  --muted-foreground: var(--color-text-muted);
+  --border: var(--color-border);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-primary-contrast);
+  --primary-light: var(--color-primary-light);
+  --accent: var(--color-accent);
+  --accent-foreground: var(--color-accent-text);
+  --card: var(--color-card);
+  --card-foreground: var(--color-card-text);
+  --ring: var(--color-focus-ring);
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--color-danger-contrast);
+  --destructive-light: var(--color-danger-light);
+  --danger-fg: var(--color-danger-text);
+  --success: var(--color-success);
+  --success-light: var(--color-success-light);
+  --success-fg: var(--color-success-text);
+  --warning: var(--color-warning);
+  --warning-light: var(--color-warning-light);
+  --warning-fg: var(--color-warning-text);
+  --info: var(--color-info);
+  --info-light: var(--color-info-light);
+  --info-fg: var(--color-info-text);
+
+  /* ── Spacing (4px grid) ────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+
+  /* ── Radius ────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ───────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgb(17 24 39 / 0.03);
+  --shadow-md: 0 2px 8px rgb(17 24 39 / 0.04);
+  --shadow-lg: 0 4px 16px rgb(17 24 39 / 0.06);
+  --shadow-xl: 0 8px 24px rgb(17 24 39 / 0.08);
+  --shadow-overlay: 0 8px 24px -6px rgb(17 24 39 / 0.18), 0 4px 8px -4px rgb(17 24 39 / 0.12);
+  --shadow-pop: 0 4px 16px -2px rgb(17 24 39 / 0.12), 0 2px 6px -2px rgb(17 24 39 / 0.08);
+  --shadow-modal: 0 24px 60px -12px rgb(17 24 39 / 0.28), 0 8px 24px -8px rgb(17 24 39 / 0.16);
+
+  /* ── Typography ────────────────────────────────────── */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-xxs: 9px;
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-md: 12px;
+  --text-lg: 13px;
+  --text-xl: 14px;
+  --text-2xl: 16px;
+  --text-3xl: 18px;
+  --text-4xl: 20px;
+  --text-5xl: 24px;
+  --text-6xl: 30px;
+  --text-7xl: 36px;
+  --text-8xl: 48px;
+  --text-9xl: 96px;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ── Z-index ───────────────────────────────────────── */
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-modal: 1300;
+  --z-toast: 1400;
+
+  /* ── Motion ────────────────────────────────────────── */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: var(--gray-950);
+  --color-surface: var(--gray-900);
+  --color-text: 229 231 235;
+  --color-text-muted: 156 163 175;
+  --color-border: 55 65 81;
+  --color-muted: 31 41 55;
+  --color-accent: 31 41 55;
+  --color-accent-text: 229 231 235;
+  --color-card: var(--gray-900);
+  --color-card-text: 229 231 235;
+  --color-primary: var(--indigo-400);
+  --color-primary-contrast: var(--gray-950);
+  --color-primary-light: var(--indigo-950);
+  --color-focus-ring: var(--indigo-400);
+
+  --color-danger: 248 113 113;
+  --color-danger-contrast: var(--gray-950);
+  --color-danger-light: 69 10 10;
+  --color-danger-text: 252 165 165;
+
+  --color-success: 74 222 128;
+  --color-success-light: 5 46 22;
+  --color-success-text: 134 239 172;
+
+  --color-warning: 251 191 36;
+  --color-warning-light: 69 26 3;
+  --color-warning-text: 252 211 77;
+
+  --color-info: 96 165 250;
+  --color-info-light: 23 37 84;
+  --color-info-text: 147 197 253;
+
+  --orange: 251 146 60;
+  --orange-light: 67 20 7;
+  --orange-fg: 253 186 116;
+  --violet: 167 139 250;
+  --violet-light: 46 16 101;
+  --violet-fg: 196 181 253;
+  --cyan: 34 211 238;
+  --cyan-light: 8 51 68;
+  --cyan-fg: 103 232 249;
+  --pink: 244 114 182;
+  --pink-light: 80 7 36;
+  --pink-fg: 249 168 212;
+
+  --search-highlight: 133 77 14;
+  --search-highlight-fg: 254 240 138;
+
+  --tone-success-bg: 5 46 22;
+  --tone-success-fg: 134 239 172;
+  --tone-success-border: 22 101 52;
+  --tone-warning-bg: 69 26 3;
+  --tone-warning-fg: 252 211 77;
+  --tone-warning-border: 146 64 14;
+  --tone-danger-bg: 69 10 10;
+  --tone-danger-fg: 252 165 165;
+  --tone-danger-border: 153 27 27;
+  --tone-info-bg: 23 37 84;
+  --tone-info-fg: 147 197 253;
+  --tone-info-border: 30 64 175;
+  --tone-brand-bg: 30 27 75;
+  --tone-brand-fg: 199 210 254;
+  --tone-brand-border: 67 56 202;
+  --tone-neutral-bg: 31 41 55;
+  --tone-neutral-fg: 209 213 219;
+  --tone-neutral-border: 55 65 81;
+
+  --scrollbar-thumb: 255 255 255;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 4px 16px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 8px 24px rgb(0 0 0 / 0.45);
+  --shadow-overlay: 0 8px 24px -6px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.45);
+  --shadow-pop: 0 4px 16px -2px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+  --shadow-modal: 0 24px 60px -12px rgb(0 0 0 / 0.65), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+  }
+}

@@ -64,7 +64,7 @@ export function KnowledgeCountsPanel({ projectId }: { projectId: string }) {
             </TableBody>
           </Table>
           {query.data.chunksNeedingReview > 0 && (
-            <p role="status" className="flex items-center gap-2 text-sm text-amber-900">
+            <p role="status" className="flex items-center gap-2 text-sm text-warning-fg">
               <ShieldAlert className="h-4 w-4" aria-hidden />
               {query.data.chunksNeedingReview} part
               {query.data.chunksNeedingReview === 1 ? '' : 's'} of your sources could not be read

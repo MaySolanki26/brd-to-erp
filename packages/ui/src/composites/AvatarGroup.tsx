@@ -45,12 +45,12 @@ export function AvatarGroup({ participants, max = 4, size = 'sm' }: AvatarGroupP
                 className={cn(
                   avatarSize,
                   border,
-                  'border-white',
+                  'border-background',
                   index > 0 && overlap,
                 )}
               >
                 <AvatarImage src={participant.avatarUrl} alt={participant.name} />
-                <AvatarFallback className={cn(fontSize, 'bg-gray-100 text-gray-600')}>
+                <AvatarFallback className={cn(fontSize, 'bg-muted text-muted-foreground')}>
                   {getInitials(participant.name)}
                 </AvatarFallback>
               </Avatar>
@@ -68,7 +68,7 @@ export function AvatarGroup({ participants, max = 4, size = 'sm' }: AvatarGroupP
                 className={cn(
                   avatarSize,
                   overlap,
-                  'rounded-full border-white bg-zinc-100',
+                  'rounded-full border-background bg-muted',
                   border,
                   'flex items-center justify-center',
                   fontSize,

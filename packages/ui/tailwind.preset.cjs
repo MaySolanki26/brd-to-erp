@@ -1,6 +1,6 @@
 /** @type {Partial<import('tailwindcss').Config>} */
 module.exports = {
-  darkMode: 'class',
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     container: {
       center: true,
@@ -11,10 +11,11 @@ module.exports = {
       colors: {
         border: 'rgb(var(--border) / <alpha-value>)',
         input: 'rgb(var(--border) / <alpha-value>)',
-        ring: 'rgb(var(--primary) / <alpha-value>)',
+        ring: 'rgb(var(--ring) / <alpha-value>)',
         background: 'rgb(var(--background) / <alpha-value>)',
         foreground: 'rgb(var(--foreground) / <alpha-value>)',
         surface: 'rgb(var(--surface) / <alpha-value>)',
+        overlay: 'rgb(var(--overlay) / <alpha-value>)',
         primary: {
           DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
           foreground: 'rgb(var(--primary-foreground) / <alpha-value>)',
@@ -82,26 +83,47 @@ module.exports = {
           foreground: 'rgb(var(--card-foreground) / <alpha-value>)',
         },
       },
+      fontFamily: {
+        sans: 'var(--font-sans)',
+        mono: 'var(--font-mono)',
+      },
       fontSize: {
-        xxs: '9px',
-        xs: '10px',
-        sm: '11px',
-        md: '12px',
-        lg: '13px',
-        xl: '14px',
-        '2xl': '16px',
-        '3xl': '18px',
-        '4xl': '20px',
-        '5xl': '24px',
-        '6xl': '30px',
-        '7xl': '36px',
-        '8xl': '48px',
-        '9xl': '96px',
+        xxs: 'var(--text-xxs)',
+        xs: 'var(--text-xs)',
+        sm: 'var(--text-sm)',
+        md: 'var(--text-md)',
+        lg: 'var(--text-lg)',
+        xl: 'var(--text-xl)',
+        '2xl': 'var(--text-2xl)',
+        '3xl': 'var(--text-3xl)',
+        '4xl': 'var(--text-4xl)',
+        '5xl': 'var(--text-5xl)',
+        '6xl': 'var(--text-6xl)',
+        '7xl': 'var(--text-7xl)',
+        '8xl': 'var(--text-8xl)',
+        '9xl': 'var(--text-9xl)',
       },
       borderRadius: {
         lg: 'var(--radius-lg)',
         md: 'var(--radius-md)',
         sm: 'var(--radius-sm)',
+        full: 'var(--radius-full)',
+      },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
+      },
+      zIndex: {
+        sticky: 'var(--z-sticky)',
+        dropdown: 'var(--z-dropdown)',
+        modal: 'var(--z-modal)',
+        toast: 'var(--z-toast)',
+      },
+      transitionDuration: {
+        fast: 'var(--duration-fast)',
+        normal: 'var(--duration-normal)',
       },
       keyframes: {
         'icon-pop': {
@@ -143,6 +165,7 @@ module.exports = {
         },
       },
       transitionTimingFunction: {
+        standard: 'var(--ease-standard)',
         spring: 'cubic-bezier(0.16, 1, 0.3, 1)',
         smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
       },

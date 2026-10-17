@@ -10,7 +10,7 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
   return (
-    <div className="flex items-center rounded-lg border border-gray-200 p-0.5">
+    <div className="flex items-center rounded-lg border border-border p-0.5">
       <Button
         variant={view === 'expanded' ? 'secondary' : 'ghost'}
         size="icon"

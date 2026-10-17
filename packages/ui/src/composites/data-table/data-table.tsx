@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, type ReactNode } from 'react';
 import {
   useLegacyTable,
   getCoreRowModel,
@@ -15,6 +15,7 @@ import { DataTableSortHeader } from './data-table-header';
 import { createSelectionColumn } from './data-table-selection';
 import { DataTableRowActions } from './data-table-actions';
 import { DataTablePagination } from './data-table-pagination';
+import { DataTableToolbar } from './data-table-toolbar';
 
 function buildColumns<TData extends RowData>(
   columns: DataTableColumnDef<TData>[],
@@ -90,6 +91,11 @@ export function DataTable<TData extends RowData>({
   emptyDescription = 'No data to display.',
   emptyIcon,
   emptyAction,
+  search,
+  filters,
+  filterValues,
+  onFilterChange,
+  onClearFilters,
   sort,
   onSort,
   pagination,
@@ -142,26 +148,40 @@ export function DataTable<TData extends RowData>({
     enableRowSelection: selectable,
   });
 
-  // Loading state
+  const toolbar = (
+    <DataTableToolbar
+      search={search}
+      filters={filters}
+      filterValues={filterValues}
+      onFilterChange={onFilterChange}
+      onClearFilters={onClearFilters}
+    />
+  );
+  // The toolbar stays mounted in every state so filters can always be changed or cleared.
+  const withToolbar = (content: ReactNode) => (
+    <div className={cn('flex flex-col', className)}>
+      {toolbar}
+      {content}
+    </div>
+  );
+
   if (loading) {
     const skeletonCols = columns.map(() => ({ kind: 'text' as const }));
-    return <TableSkeleton columns={skeletonCols} rows={pagination?.pageSize ?? 10} />;
+    return withToolbar(<TableSkeleton columns={skeletonCols} rows={pagination?.pageSize ?? 10} />);
   }
 
-  // Error state
   if (error) {
-    return <PageError message={error.message} onRetry={error.onRetry} />;
+    return withToolbar(<PageError message={error.message} onRetry={error.onRetry} />);
   }
 
-  // Empty state
   if (data.length === 0) {
-    return (
+    return withToolbar(
       <EmptyState
         title={emptyTitle}
         description={emptyDescription}
         icon={emptyIcon}
         action={emptyAction}
-      />
+      />,
     );
   }
 
@@ -169,6 +189,7 @@ export function DataTable<TData extends RowData>({
 
   return (
     <div className={cn('flex flex-col', className)}>
+      {toolbar}
       <div className="flex-1 overflow-auto">
         <Table>
           <TableHeader className={cn(stickyHeader && 'sticky top-0 z-10 bg-surface')}>

@@ -89,6 +89,11 @@ export { NoAccess } from './NoAccess';
 export {
   DataTable,
   DataTablePagination,
+  DataTableToolbar,
+  type DataTableSearch,
+  type DataTableFilterDef,
+  type DataTableFilterOption,
+  type DataTableFilterValues,
   type DataTableProps,
   type DataTableColumnDef,
   type RowAction,

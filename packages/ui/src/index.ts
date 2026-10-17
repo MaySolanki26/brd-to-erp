@@ -1,5 +1,9 @@
+// Theme
+export * from './theme';
+
 // Utilities
 export { cn } from './lib/cn';
+export { safeStorage } from './lib/safe-storage';
 export { getInitials, getAvatarColor } from './lib/avatar';
 
 // Primitives
@@ -237,6 +241,11 @@ export {
   // DataTable
   DataTable,
   DataTablePagination,
+  DataTableToolbar,
+  type DataTableSearch,
+  type DataTableFilterDef,
+  type DataTableFilterOption,
+  type DataTableFilterValues,
   type DataTableProps,
   type DataTableColumnDef,
   type RowAction,

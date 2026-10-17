@@ -1,3 +1,5 @@
+@import './theme/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,7 +18,7 @@
     scrollbar-color: transparent transparent;
   }
   .scrollbar-thin:hover {
-    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    scrollbar-color: rgb(var(--scrollbar-thumb) / 0.15) transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 4px;
@@ -29,7 +31,7 @@
     border-radius: 9999px;
   }
   .scrollbar-thin:hover::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
+    background: rgb(var(--scrollbar-thumb) / 0.15);
   }
 
   .scrollbar-fade {
@@ -49,17 +51,17 @@
     transition: background 0.3s ease 1.5s;
   }
   .scrollbar-fade.is-scrolling::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.18);
+    background: rgb(var(--scrollbar-thumb) / 0.18);
     transition: background 0.15s ease 0s;
   }
   .scrollbar-fade:hover::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.18);
+    background: rgb(var(--scrollbar-thumb) / 0.18);
     transition: background 0.15s ease 0s;
   }
 
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgb(var(--scrollbar-thumb) / 0.2) transparent;
   }
   .custom-scrollbar::-webkit-scrollbar {
     width: 2px;
@@ -69,125 +71,11 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgb(var(--scrollbar-thumb) / 0.2);
     border-radius: 9999px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.35);
-  }
-}
-
-@layer base {
-  :root {
-    /* Background & Foreground */
-    --background: 255 255 255;
-    --foreground: 28 29 33;
-    --surface: 255 255 255;
-
-    /* Muted */
-    --muted: 243 244 246;
-    --muted-foreground: 154 156 165;
-
-    /* Border */
-    --border: 237 237 240;
-
-    /* Primary */
-    --primary: 99 102 241;
-    --primary-foreground: 255 255 255;
-    --primary-light: 238 242 255;
-
-    /* Accent */
-    --accent: 243 244 246;
-    --accent-foreground: 55 65 81;
-
-    /* Card */
-    --card: 255 255 255;
-    --card-foreground: 55 65 81;
-
-    /* Destructive */
-    --destructive: 224 70 63;
-    --destructive-foreground: 255 255 255;
-    --destructive-light: 253 236 236;
-
-    /* Success */
-    --success: 31 157 84;
-    --success-light: 231 246 236;
-
-    /* Warning */
-    --warning: 221 155 28;
-    --warning-light: 253 242 227;
-
-    /* Search highlight */
-    --search-highlight: 254 240 138;
-    --search-highlight-fg: 113 63 18;
-
-    /* Orange */
-    --orange: 249 115 22;
-    --orange-light: 255 237 213;
-
-    /* Info */
-    --info: 59 110 240;
-    --info-light: 234 241 255;
-
-    /* Violet */
-    --violet: 133 82 224;
-    --violet-light: 241 236 253;
-
-    /* Cyan */
-    --cyan: 22 163 160;
-    --cyan-light: 228 246 246;
-
-    /* Pink */
-    --pink: 224 83 154;
-    --pink-light: 252 235 243;
-
-    /* Foreground-on-light for each hue */
-    --success-fg: 26 127 67;
-    --warning-fg: 154 101 18;
-    --orange-fg: 194 65 12;
-    --info-fg: 36 81 196;
-    --danger-fg: 180 35 30;
-    --violet-fg: 107 53 201;
-    --cyan-fg: 15 122 120;
-    --pink-fg: 189 42 115;
-
-    /* Status tone triplets */
-    --tone-success-bg: 240 253 244;
-    --tone-success-fg: 21 128 61;
-    --tone-success-border: 187 247 208;
-
-    --tone-warning-bg: 255 251 235;
-    --tone-warning-fg: 180 83 9;
-    --tone-warning-border: 253 230 138;
-
-    --tone-danger-bg: 254 242 242;
-    --tone-danger-fg: 185 28 28;
-    --tone-danger-border: 254 202 202;
-
-    --tone-info-bg: 239 246 255;
-    --tone-info-fg: 29 78 216;
-    --tone-info-border: 191 219 254;
-
-    --tone-brand-bg: 238 242 255;
-    --tone-brand-fg: 67 56 202;
-    --tone-brand-border: 199 210 254;
-
-    --tone-neutral-bg: 249 250 251;
-    --tone-neutral-fg: 75 85 99;
-    --tone-neutral-border: 229 231 235;
-
-    /* Border Radius */
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --radius-2xl: 24px;
-
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.06);
-    --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.08);
+    background: rgb(var(--scrollbar-thumb) / 0.35);
   }
 }
 
@@ -197,15 +85,14 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
     font-feature-settings: 'cv11', 'ss01';
   }
 }
 
 @layer utilities {
   .shadow-overlay {
-    box-shadow:
-      0 8px 24px -6px rgb(17 24 39 / 0.18),
-      0 4px 8px -4px rgb(17 24 39 / 0.12);
+    box-shadow: var(--shadow-overlay);
   }
 
   .search-highlight,
@@ -272,15 +159,11 @@
   }
 
   .shadow-pop {
-    box-shadow:
-      0 4px 16px -2px rgb(20 22 30 / 0.12),
-      0 2px 6px -2px rgb(20 22 30 / 0.08);
+    box-shadow: var(--shadow-pop);
   }
 
   .shadow-modal {
-    box-shadow:
-      0 24px 60px -12px rgb(20 22 30 / 0.28),
-      0 8px 24px -8px rgb(20 22 30 / 0.16);
+    box-shadow: var(--shadow-modal);
   }
 
   @keyframes field-pulse {

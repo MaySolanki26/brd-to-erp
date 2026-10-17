@@ -15,10 +15,11 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "lint": "eslint src/",
+    "lint": "eslint src/ && node scripts/check-no-hardcoded-colors.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests yet\"",
-    "clean": "rm -rf dist"
+    "test": "node scripts/check-contrast.mjs",
+    "clean": "rm -rf dist",
+    "check:contrast": "node scripts/check-contrast.mjs"
   },
   "peerDependencies": {
     "react": "^19.0.0",

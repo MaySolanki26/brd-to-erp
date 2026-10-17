@@ -30,6 +30,29 @@ export interface PaginationState {
   total: number;
 }
 
+/* ── Search & filters ───────────────────────────────── */
+
+export interface DataTableSearch {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  ariaLabel?: string;
+}
+
+export interface DataTableFilterOption {
+  value: string;
+  label: string;
+}
+
+export interface DataTableFilterDef {
+  id: string;
+  label: string;
+  options: DataTableFilterOption[];
+}
+
+/** Selected value per filter id. An empty string or missing id means "all". */
+export type DataTableFilterValues = Record<string, string>;
+
 /* ── Row actions ────────────────────────────────────── */
 
 export interface RowAction<TData> {
@@ -67,6 +90,13 @@ export interface DataTableProps<TData> {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
   pageSizeOptions?: number[];
+
+  // Server-driven search and filters (the page owns the state, e.g. in the URL)
+  search?: DataTableSearch;
+  filters?: DataTableFilterDef[];
+  filterValues?: DataTableFilterValues;
+  onFilterChange?: (id: string, value: string) => void;
+  onClearFilters?: () => void;
 
   // Selection
   selectable?: boolean;

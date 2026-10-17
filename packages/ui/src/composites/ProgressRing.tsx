@@ -52,7 +52,7 @@ export function ProgressRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-gray-200"
+          className="text-border"
         />
         <circle
           cx={svgSize / 2}

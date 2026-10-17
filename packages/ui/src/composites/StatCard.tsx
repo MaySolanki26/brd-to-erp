@@ -21,8 +21,8 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'bg-surface flex items-center gap-3 rounded-2xl border border-gray-100 p-3.5',
-        highlight && 'border-amber-200 bg-amber-50/30',
+        'bg-surface flex items-center gap-3 rounded-2xl border border-border p-3.5',
+        highlight && 'border-warning/30 bg-warning-light/30',
       )}
     >
       <div

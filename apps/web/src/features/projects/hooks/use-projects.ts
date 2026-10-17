@@ -29,5 +29,6 @@ export function useProject(projectId: string) {
     queryKey: queryKeys.projects.detail(projectId),
     queryFn: async () =>
       (await apiClient.get<{ project: ProjectDto }>(`/projects/${projectId}`)).project,
+    enabled: projectId !== '',
   });
 }

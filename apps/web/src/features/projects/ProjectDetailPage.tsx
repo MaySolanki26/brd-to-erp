@@ -5,17 +5,10 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  InformativeBar,
-  NoAccess,
-  PageError,
-  PageLoader,
-  PageShell,
+  DetailPage,
   StatusBadge,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   toast,
+  type DetailPageTab,
 } from '@brd/ui';
 import { ProjectPermission, projectRolesWith } from '@brd/shared';
 import { useAuth } from '@/features/auth/hooks/use-auth';
@@ -45,16 +38,6 @@ const ADD_SOURCE_ROLES = projectRolesWith(ProjectPermission.ADD_SOURCE);
 const REPROCESS_ROLES = projectRolesWith(ProjectPermission.REPROCESS);
 const ANSWER_ROLES = projectRolesWith(ProjectPermission.ANSWER_QUESTION);
 
-const BASE_TABS = [
-  'overview',
-  'sources',
-  'requirements',
-  'rules',
-  'modules',
-  'questions',
-  'decisions',
-];
-
 export function ProjectDetailPage() {
   const { projectId = '' } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -64,7 +47,7 @@ export function ProjectDetailPage() {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  if (project.isPending) return <PageLoader />;
+  if (project.isPending) return <DetailPage state="loading" onBack={() => navigate('/projects')} />;
 
   if (project.isError) {
     if (project.error instanceof ApiClientError && project.error.status === 404) {
@@ -80,13 +63,20 @@ export function ProjectDetailPage() {
       );
     }
     if (isForbidden(project.error)) {
-      return <NoAccess variant="full" description="You do not have access to this project." />;
+      return (
+        <DetailPage
+          state="no-access"
+          onBack={() => navigate('/projects')}
+          noAccessDescription="You do not have access to this project."
+        />
+      );
     }
     return (
-      <PageError
-        variant="full"
-        message="Could not load the project"
-        description={errorMessage(project.error)}
+      <DetailPage
+        state="error"
+        onBack={() => navigate('/projects')}
+        errorMessage="Could not load the project"
+        errorDescription={errorMessage(project.error)}
         onRetry={() => void project.refetch()}
       />
     );
@@ -106,19 +96,6 @@ export function ProjectDetailPage() {
     data.status !== 'ARCHIVED' &&
     (isOrgAdmin || (data.myRole !== null && ARCHIVE_ROLES.includes(data.myRole)));
 
-  const requestedTab = searchParams.get('tab') ?? 'overview';
-  const validTabs = canManage ? [...BASE_TABS, 'members'] : BASE_TABS;
-  const activeTab = validTabs.includes(requestedTab) ? requestedTab : 'overview';
-  const selectTab = (tab: string) =>
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('tab', tab);
-        return next;
-      },
-      { replace: true },
-    );
-
   const openQuestions = (preset: Partial<QuestionFilters>) =>
     setSearchParams(
       (prev) => {
@@ -126,6 +103,60 @@ export function ProjectDetailPage() {
         next.set('tab', 'questions');
         clearQuestionFilters(next);
         applyQuestionFilters(next, preset);
+        return next;
+      },
+      { replace: true },
+    );
+
+  const tabs: DetailPageTab[] = [
+    {
+      key: 'overview',
+      label: 'Overview',
+      content: (
+        <OverviewTab
+          project={data}
+          canRefreshSummary={canReprocess}
+          onOpenQuestions={openQuestions}
+        />
+      ),
+    },
+    {
+      key: 'sources',
+      label: 'Sources',
+      content: (
+        <SourcesTab projectId={data.id} canAddSource={canAddSource} canReprocess={canReprocess} />
+      ),
+    },
+    {
+      key: 'requirements',
+      label: 'Requirements',
+      content: <RequirementsTab projectId={data.id} />,
+    },
+    { key: 'rules', label: 'Rules', content: <RulesTab projectId={data.id} /> },
+    { key: 'modules', label: 'Modules', content: <ModulesTab projectId={data.id} /> },
+    {
+      key: 'questions',
+      label: <QuestionsTabLabel projectId={data.id} />,
+      content: <QuestionsTab projectId={data.id} canAnswer={canAnswer} />,
+    },
+    { key: 'decisions', label: 'Decisions', content: <DecisionsTab projectId={data.id} /> },
+    ...(canManage
+      ? [
+          {
+            key: 'members',
+            label: 'Members',
+            content: <MembersTab projectId={data.id} canManage currentUserId={user?.id ?? ''} />,
+          },
+        ]
+      : []),
+  ];
+  const requestedTab = searchParams.get('tab') ?? 'overview';
+  const activeTab = tabs.some((tab) => tab.key === requestedTab) ? requestedTab : 'overview';
+  const selectTab = (tab: string) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', tab);
         return next;
       },
       { replace: true },
@@ -144,79 +175,34 @@ export function ProjectDetailPage() {
     });
 
   return (
-    <PageShell>
-      <InformativeBar
-        title={data.name}
-        badge={<StatusBadge label={data.status} tone={STATUS_TONES[data.status]} />}
-        onBack={() => navigate('/projects')}
-      >
-        {canArchive && (
+    <DetailPage
+      state="ready"
+      title={data.name}
+      badge={<StatusBadge label={data.status} tone={STATUS_TONES[data.status]} />}
+      onBack={() => navigate('/projects')}
+      headerRight={
+        canArchive ? (
           <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
             <Archive className="mr-1 h-4 w-4" />
             Archive
           </Button>
-        )}
-      </InformativeBar>
-      <PageShell.Body padded>
-        <Tabs value={activeTab} onValueChange={selectTab}>
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="sources">Sources</TabsTrigger>
-            <TabsTrigger value="requirements">Requirements</TabsTrigger>
-            <TabsTrigger value="rules">Rules</TabsTrigger>
-            <TabsTrigger value="modules">Modules</TabsTrigger>
-            <TabsTrigger value="questions">
-              <QuestionsTabLabel projectId={data.id} />
-            </TabsTrigger>
-            <TabsTrigger value="decisions">Decisions</TabsTrigger>
-            {canManage && <TabsTrigger value="members">Members</TabsTrigger>}
-          </TabsList>
-          <TabsContent value="overview" className="mt-4">
-            <OverviewTab
-              project={data}
-              canRefreshSummary={canReprocess}
-              onOpenQuestions={openQuestions}
-            />
-          </TabsContent>
-          <TabsContent value="sources" className="mt-4">
-            <SourcesTab
-              projectId={data.id}
-              canAddSource={canAddSource}
-              canReprocess={canReprocess}
-            />
-          </TabsContent>
-          <TabsContent value="requirements" className="mt-4">
-            <RequirementsTab projectId={data.id} />
-          </TabsContent>
-          <TabsContent value="rules" className="mt-4">
-            <RulesTab projectId={data.id} />
-          </TabsContent>
-          <TabsContent value="modules" className="mt-4">
-            <ModulesTab projectId={data.id} />
-          </TabsContent>
-          <TabsContent value="questions" className="mt-4">
-            <QuestionsTab projectId={data.id} canAnswer={canAnswer} />
-          </TabsContent>
-          <TabsContent value="decisions" className="mt-4">
-            <DecisionsTab projectId={data.id} />
-          </TabsContent>
-          {canManage && (
-            <TabsContent value="members" className="mt-4">
-              <MembersTab projectId={data.id} canManage currentUserId={user?.id ?? ''} />
-            </TabsContent>
-          )}
-        </Tabs>
-      </PageShell.Body>
-      <ConfirmDialog
-        open={archiveOpen}
-        onOpenChange={setArchiveOpen}
-        title="Archive project?"
-        description="Archived projects are hidden from the project list and become read-only."
-        variant="destructive"
-        confirmLabel="Archive"
-        isPending={archive.isPending}
-        onConfirm={confirmArchive}
-      />
-    </PageShell>
+        ) : null
+      }
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={selectTab}
+      footer={
+        <ConfirmDialog
+          open={archiveOpen}
+          onOpenChange={setArchiveOpen}
+          title="Archive project?"
+          description="Archived projects are hidden from the project list and become read-only."
+          variant="destructive"
+          confirmLabel="Archive"
+          isPending={archive.isPending}
+          onConfirm={confirmArchive}
+        />
+      }
+    />
   );
 }
