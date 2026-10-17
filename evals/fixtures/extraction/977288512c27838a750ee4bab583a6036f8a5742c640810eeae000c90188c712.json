@@ -1,0 +1,43 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "UI/UX Design",
+        "description": "The visual design direction and design system for the Web and Mobile apps."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Follow platform design standards",
+        "description": "The app must follow Material 3 for Android and Apple design guidelines for iOS.",
+        "moduleName": "UI/UX Design"
+      },
+      {
+        "title": "Single design system for Web and Mobile",
+        "description": "Web and Mobile must share one design system with the same colours, fonts, spacing, icons and buttons.",
+        "moduleName": "UI/UX Design"
+      },
+      {
+        "title": "Clean, uncrowded screen layout",
+        "description": "Screens must have plenty of white space, no crowding and no extra decoration.",
+        "moduleName": "UI/UX Design"
+      },
+      {
+        "title": "Light mode support",
+        "description": "Light mode is required.",
+        "moduleName": "UI/UX Design"
+      },
+      {
+        "title": "Dark mode support (Should Have)",
+        "description": "Dark mode is a Should Have item.",
+        "moduleName": "UI/UX Design"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1418,
+    "outputTokens": 340,
+    "cachedTokens": 1221
+  }
+}

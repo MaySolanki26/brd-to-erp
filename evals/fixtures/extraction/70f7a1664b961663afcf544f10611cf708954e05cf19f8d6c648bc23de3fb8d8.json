@@ -1,0 +1,74 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Facilities",
+        "description": "Lets residents view shared facilities (gym, pool) with live count and free slots, book slots, and check in and out."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Show facilities with live count and free slots",
+        "description": "Residents open Facilities and see each facility with its live count (for example \"12 inside / 30 capacity\") and free slots.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Book date and slot for facilities",
+        "description": "When a facility needs booking, the resident picks a date and slot, and the booking is made if the slot has space.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Check In with family member count",
+        "description": "On arrival the resident taps Check In and adds how many family members came along.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Live count rises on check-in",
+        "description": "On check-in the live count goes up and is visible to everyone in the project.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Check Out lowers live count",
+        "description": "On leaving, the resident taps Check Out and the live count goes down.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Show next free slots when slot is full",
+        "description": "If the chosen slot is full, the system shows the next free slots.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Automatic check-out for forgotten check-outs",
+        "description": "If a resident forgets to check out, the system checks them out automatically at slot end or closing time.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Notify booked users of maintenance closure",
+        "description": "When a facility is marked closed for maintenance, users who have booked are notified.",
+        "moduleName": "Facilities"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Block check-in at capacity",
+        "description": "When a facility is at capacity, check-in is blocked and a message is shown.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Free unused booked slots after set minutes",
+        "description": "If a resident booked but did not come, the slot is freed after a set number of minutes, which Raghuvir Admin sets.",
+        "moduleName": "Facilities"
+      },
+      {
+        "title": "Only Approve bookings members can close facility",
+        "description": "A member with the Approve bookings permission marks a facility closed for maintenance.",
+        "moduleName": "Facilities"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1659,
+    "outputTokens": 737,
+    "cachedTokens": 1221
+  }
+}

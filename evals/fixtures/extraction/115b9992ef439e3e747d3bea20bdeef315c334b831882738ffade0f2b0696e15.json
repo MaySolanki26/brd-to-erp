@@ -1,0 +1,74 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Resident Registration",
+        "description": "Lets residents and tenants register with mobile number and OTP and have their flat request approved or rejected."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Register with mobile number and OTP",
+        "description": "Resident enters mobile number and OTP to start registration.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Select Project, Building and Flat and enter name",
+        "description": "Resident selects Project, Building, Flat and enters their name.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Flag flats that already have an active customer",
+        "description": "System checks whether the flat already has an active customer. If so, the request is flagged Flat Already Taken for the Society Manager.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Grant full access and notify on approval",
+        "description": "When the request is approved, the resident gets full access and a notification.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Show rejection reason and allow reapplication",
+        "description": "When the request is rejected, the reason is shown and the resident can apply again.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Hold request and alert Raghuvir Admin when no Society Manager",
+        "description": "If the project has no Society Manager, the request waits and Raghuvir Admin is alerted.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Send reminders and alerts for pending requests",
+        "description": "A request pending more than 3 days triggers a reminder to the Society Manager. At 7 days, Raghuvir Admin is alerted.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Link new flat to existing account for registered mobile number",
+        "description": "If the mobile number is already registered, the new flat is linked to the same account.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Tenant registration with owner name and rent agreement end date",
+        "description": "Tenant registration follows the same steps. The tenant picks Tenant and adds the owner's name and rent agreement end date.",
+        "moduleName": "Resident Registration"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Request goes only to the project's Society Manager",
+        "description": "A registration request is routed only to the Society Manager of the selected project.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Tenant approval needs Approve residents permission",
+        "description": "Tenant registrations are approved by any member who has the Approve residents permission.",
+        "moduleName": "Resident Registration"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1620,
+    "outputTokens": 801,
+    "cachedTokens": 1221
+  }
+}

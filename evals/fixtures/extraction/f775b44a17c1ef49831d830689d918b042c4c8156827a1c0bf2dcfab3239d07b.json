@@ -1,0 +1,103 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Roles and Permissions",
+        "description": "Defines which of Raghuvir Admin, Society Manager, Resident, Assigned Person and Watchman may do each piece of work."
+      }
+    ],
+    "requirements": [],
+    "rules": [
+      {
+        "title": "Only Raghuvir Admin creates projects, buildings, flats",
+        "description": "Raghuvir Admin alone may create projects, buildings and flats. Society Manager, Resident, Assigned Person and Watchman may not.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Only Raghuvir Admin creates or replaces Society Manager",
+        "description": "Creating or replacing a Society Manager is allowed only for Raghuvir Admin.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Watchman creation and removal by Admin and Manager",
+        "description": "Raghuvir Admin and Society Manager may create or remove a Watchman. Residents, Assigned Persons and Watchmen may not.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Resident add or approval by Society Manager",
+        "description": "Only the Society Manager may add or approve residents. Raghuvir Admin has view-only access.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Only Residents self-register",
+        "description": "Self-registration is done by Residents only.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Complaints raised for own flat only",
+        "description": "Society Manager and Resident may raise a complaint, only for their own flat. No other role may raise one.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Genuineness check by Society Manager",
+        "description": "Only the Society Manager checks whether a complaint is genuine.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Builder-responsibility complaints assigned by Admin",
+        "description": "Only Raghuvir Admin assigns a builder-responsibility complaint.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Society-responsibility complaints assigned by Manager",
+        "description": "Only the Society Manager assigns a society-responsibility complaint.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Who may mark a complaint Fixed",
+        "description": "The Society Manager may mark a complaint Fixed for society vendors. The Assigned Person may also mark it Fixed.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Closure approval or reopen by complainant only",
+        "description": "Only the Resident who raised the complaint may approve its closure or reopen it.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Announcement to all projects by Admin only",
+        "description": "Only Raghuvir Admin may send an announcement to all projects.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Announcement to own project by Manager only",
+        "description": "Only the Society Manager may send an announcement to their own project.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Contact directory permissions",
+        "description": "Raghuvir Admin manages the common directory and the Society Manager manages the directory for their own project. Residents can only view it.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Society documents permissions",
+        "description": "Only the Society Manager manages society documents. Raghuvir Admin and Residents have view access.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Hall or facility booking by Manager and Resident",
+        "description": "Society Manager and Resident may book a hall or facility. Other roles may not.",
+        "moduleName": "Roles and Permissions"
+      },
+      {
+        "title": "Hall booking approval by Society Manager only",
+        "description": "Only the Society Manager may approve a hall booking.",
+        "moduleName": "Roles and Permissions"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 2008,
+    "outputTokens": 1250,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaint Management",
+        "description": "Lets Raghuvir Admin view, assign and monitor complaints across projects, categories and statuses."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Admin dashboard of complaints",
+        "description": "When the Raghuvir Admin opens the dashboard, the system shows complaints by project, category and status.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Assign builder complaint to a person",
+        "description": "The Raghuvir Admin can assign a builder complaint, and the system notifies the Assigned Person.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Delayed complaints list",
+        "description": "The Raghuvir Admin can open a delayed list showing complaints that are past their time limit.",
+        "moduleName": "Complaint Management"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1429,
+    "outputTokens": 272,
+    "cachedTokens": 1221
+  }
+}

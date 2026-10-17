@@ -1,0 +1,23 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaints",
+        "description": "Handles complaints raised by Society Managers and their review by a committee member or Raghuvir Admin."
+      }
+    ],
+    "requirements": [],
+    "rules": [
+      {
+        "title": "Society Manager complaints checked by others",
+        "description": "When a complaint is raised by a Society Manager, the other committee member or the Raghuvir Admin checks it.",
+        "moduleName": "Complaints"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1351,
+    "outputTokens": 140,
+    "cachedTokens": 1221
+  }
+}

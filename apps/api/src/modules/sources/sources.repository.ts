@@ -1,4 +1,5 @@
 import type { DocumentStatus } from '@prisma/client';
+import { STALE_CHUNK_INDEX_BASE } from '../../jobs/chunker.js';
 import { prisma } from '../../lib/prisma.js';
 
 export interface StatusCount {
@@ -80,4 +81,27 @@ export async function latestProcessedAt(
   ]);
   const times = [document._max.updatedAt, note._max.updatedAt].filter((t): t is Date => t !== null);
   return times.length === 0 ? null : new Date(Math.max(...times.map((t) => t.getTime())));
+}
+
+export interface ChunkProgress {
+  total: number;
+  extracted: number;
+  needingReview: number;
+}
+
+/**
+ * How many parts the project's sources are cut into, how many the extraction has finished with, and
+ * how many it flagged. Parts kept only because they still hold confirmed items are not counted.
+ */
+export async function chunkProgress(
+  organizationId: string,
+  projectId: string,
+): Promise<ChunkProgress> {
+  const where = { organizationId, projectId, chunkIndex: { lt: STALE_CHUNK_INDEX_BASE } };
+  const [total, extracted, needingReview] = await Promise.all([
+    prisma.chunk.count({ where }),
+    prisma.chunk.count({ where: { ...where, extractedAt: { not: null } } }),
+    prisma.chunk.count({ where: { ...where, needsReview: true } }),
+  ]);
+  return { total, extracted, needingReview };
 }

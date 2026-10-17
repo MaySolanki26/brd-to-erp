@@ -1,0 +1,44 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Accessibility and Language",
+        "description": "UI/UX standards for accessibility and language support across the Customer Support App screens."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Text contrast meets WCAG 2.1 AA",
+        "description": "Text contrast on the app screens must meet WCAG 2.1 AA.",
+        "moduleName": "Accessibility and Language"
+      },
+      {
+        "title": "Support phone's large-text setting",
+        "description": "The app supports the phone's large-text setting without breaking the layout.",
+        "moduleName": "Accessibility and Language"
+      },
+      {
+        "title": "Support English, Gujarati and Hindi",
+        "description": "The app supports English, Gujarati and Hindi, with every screen fully in one language.",
+        "moduleName": "Accessibility and Language"
+      },
+      {
+        "title": "Icons carry text labels",
+        "description": "Icons always carry a text label.",
+        "moduleName": "Accessibility and Language"
+      }
+    ],
+    "rules": [
+      {
+        "title": "No mixed languages on a screen",
+        "description": "Every screen must be fully in one language (English, Gujarati or Hindi), never mixed.",
+        "moduleName": "Accessibility and Language"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1398,
+    "outputTokens": 370,
+    "cachedTokens": 1221
+  }
+}

@@ -21,7 +21,9 @@ export function DataTableToolbar({
   onFilterChange,
   onClearFilters,
 }: DataTableToolbarProps) {
-  const activeCount = filters?.filter((filter) => (filterValues[filter.id] ?? '') !== '').length ?? 0;
+  const activeCount =
+    (filters?.filter((filter) => (filterValues[filter.id] ?? '') !== '').length ?? 0) +
+    (search?.value ? 1 : 0);
 
   if (!search && (!filters || filters.length === 0)) return null;
 
@@ -46,7 +48,9 @@ export function DataTableToolbar({
             <SelectValue placeholder={filter.label} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL_VALUE}>All {filter.label.toLowerCase()}</SelectItem>
+            <SelectItem value={ALL_VALUE}>
+              {filter.allLabel ?? `All ${filter.label.toLowerCase()}`}
+            </SelectItem>
             {filter.options.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}

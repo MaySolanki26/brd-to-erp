@@ -23,6 +23,7 @@ function queryString(filters: KnowledgeFilters, kind: KnowledgeKind): string {
   if (filters.moduleId && kind !== 'modules') params.set('moduleId', filters.moduleId);
   if (filters.sourceId) params.set('sourceId', filters.sourceId);
   if (filters.search) params.set('search', filters.search);
+  if (filters.needsReview) params.set('needsReview', 'true');
   return params.toString();
 }
 

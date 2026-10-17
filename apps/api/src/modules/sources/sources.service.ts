@@ -9,14 +9,22 @@ export async function getProcessingStatus(
   projectId: string,
 ): Promise<ProcessingStatusDto> {
   const org = user.organizationId;
-  const [documentCounts, noteCounts, activeDocuments, activeNotes, lastProcessed, tokensUsed] =
-    await Promise.all([
+  const [
+    documentCounts,
+    noteCounts,
+    activeDocuments,
+    activeNotes,
+    lastProcessed,
+    tokensUsed,
+    chunks,
+  ] = await Promise.all([
       repo.countDocumentsByStatus(org, projectId),
       repo.countNotesByStatus(org, projectId),
       repo.listActiveDocuments(org, projectId),
       repo.listActiveNotes(org, projectId),
       repo.latestProcessedAt(org, projectId),
       tokensUsedSince(org, projectId, startOfUtcMonth(new Date())),
+      repo.chunkProgress(org, projectId),
     ]);
 
   const counts: Record<SourceStatus, number> = {
@@ -31,6 +39,7 @@ export async function getProcessingStatus(
 
   return {
     counts,
+    chunks,
     active: counts.UPLOADED + counts.PROCESSING > 0,
     lastProcessedAt: lastProcessed ? lastProcessed.toISOString() : null,
     llmPaused: tokensUsed >= env.LLM_PROJECT_MONTHLY_TOKEN_BUDGET,

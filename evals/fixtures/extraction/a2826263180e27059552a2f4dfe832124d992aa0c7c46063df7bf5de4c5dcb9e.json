@@ -1,0 +1,62 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaint Management",
+        "description": "Lets residents raise complaints and lets admins and assigned persons track and close them with status visibility."
+      },
+      {
+        "name": "Visitor Management",
+        "description": "Lets gate security check or add visitors quickly and keep a record in place of the paper register."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Admin view of all complaints across projects",
+        "description": "The Raghuvir Admin must be able to see and control all complaints across 10+ projects and know each complaint's status without a phone call.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Assigned person task list",
+        "description": "The Assigned Person must see a clear task list showing which work to do and where.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Close work with a photo",
+        "description": "The Assigned Person must be able to close work with a photo.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Resident raises complaint and sees status",
+        "description": "A Resident must be able to raise a complaint once and see it through to closure, including whether anyone is working on it.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Quick approvals and checks for Society Manager",
+        "description": "The Society Manager must be able to approve and check requests in a few taps on mobile.",
+        "moduleName": null
+      },
+      {
+        "title": "Mobile-first access for Society Manager, Resident and Watchman",
+        "description": "The Society Manager, Resident and Watchman work on mobile only or mainly, so the system must be usable on mobile.",
+        "moduleName": null
+      },
+      {
+        "title": "Gujarati and Hindi language support",
+        "description": "The Resident may prefer Gujarati and the Watchman prefers Gujarati or Hindi, so the system must support these languages.",
+        "moduleName": null
+      },
+      {
+        "title": "Fast visitor check and entry",
+        "description": "The Watchman must be able to check or add a visitor in under 30 seconds and keep a record of visitors.",
+        "moduleName": "Visitor Management"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1867,
+    "outputTokens": 639,
+    "cachedTokens": 1221
+  }
+}

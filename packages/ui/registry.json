@@ -704,7 +704,7 @@
         "onPageChange": "(page) => void",
         "onPageSizeChange": "(size) => void",
         "search": "{ value; onChange; placeholder?; ariaLabel? }",
-        "filters": "{ id; label; options: { value; label }[] }[]",
+        "filters": "{ id; label; allLabel?; options: { value; label }[] }[]",
         "filterValues": "Record<string, string> ('' = all)",
         "onFilterChange": "(id, value) => void",
         "onClearFilters": "() => void",

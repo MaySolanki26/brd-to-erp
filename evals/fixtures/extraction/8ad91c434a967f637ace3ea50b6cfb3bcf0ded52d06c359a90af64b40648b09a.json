@@ -1,0 +1,89 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Visitor Entry",
+        "description": "Handles expected and walk-in visitor entry and exit recording by the Watchman, with resident pre-registration and notifications."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Resident pre-registers expected visitor",
+        "description": "Resident can add a visitor with name, mobile, date and purpose. Advance entry is optional and independent of the walk-in flow.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Today's Visitors list for Watchman",
+        "description": "Expected visitors appear in the Watchman's Today's Visitors list on the day of the visit.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Find expected visitor by name, mobile or pass code",
+        "description": "Watchman can find an expected visitor by name, mobile or pass code.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Allow Entry action saves entry time",
+        "description": "Watchman taps Allow Entry for an expected visitor and the entry time is saved.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Exit action saves exit time",
+        "description": "When the visitor leaves, Watchman taps Exit and the exit time is saved.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Watchman adds walk-in visitor",
+        "description": "Watchman can add a walk-in visitor with name, mobile, flat, purpose and an optional photo. Entry and exit times are saved.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Information notification to resident on walk-in",
+        "description": "The resident receives an information notification when a walk-in visitor entry is saved.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Call resident from the app",
+        "description": "Watchman can tap to call the resident from the app to confirm a visitor.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Alert Society Manager on blocked entry",
+        "description": "When entry is blocked because of a wrong flat number or no approved resident, the Society Manager is alerted.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Offline saving of visitor records",
+        "description": "With a weak network, visitor records are saved on the phone and sent when the network returns.",
+        "moduleName": "Visitor Entry"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Walk-in entry needs no resident approval",
+        "description": "A walk-in visitor's entry is saved at once without resident approval.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Wrong-date expected visitor treated as walk-in",
+        "description": "An expected visitor who arrives on the wrong date is handled as a walk-in.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Block entry for wrong flat or no approved resident",
+        "description": "Entry is blocked if the flat number is wrong or the flat has no approved resident.",
+        "moduleName": "Visitor Entry"
+      },
+      {
+        "title": "Unrecorded exit marked at midnight",
+        "description": "If an exit is not recorded, the visit is marked Exit Not Recorded at midnight.",
+        "moduleName": "Visitor Entry"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1725,
+    "outputTokens": 1021,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Resident Approval",
+        "description": "Lets the Society Manager approve resident requests so residents get access to the app."
+      },
+      {
+        "name": "Complaint Management",
+        "description": "Lets the Society Manager review complaints, mark them genuine and have them routed by category."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Pending list of requests and complaints",
+        "description": "The Society Manager can open a pending list that shows resident requests and complaints.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Grant access and notify on resident approval",
+        "description": "When the Society Manager approves a resident, the resident gets access and a notification.",
+        "moduleName": "Resident Approval"
+      },
+      {
+        "title": "Route genuine complaints by category",
+        "description": "When the Society Manager marks a complaint genuine, the system routes the complaint by its category.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Reminder then escalation on no action",
+        "description": "If the Society Manager takes no action in time, the system sends a reminder and then escalates to the Raghuvir Admin.",
+        "moduleName": null
+      }
+    ],
+    "rules": [
+      {
+        "title": "Society Manager sees own project only",
+        "description": "The pending list shows requests and complaints of the Society Manager's own project only.",
+        "moduleName": null
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1465,
+    "outputTokens": 407,
+    "cachedTokens": 1221
+  }
+}

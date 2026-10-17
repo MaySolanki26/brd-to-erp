@@ -1,0 +1,28 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "UI/UX",
+        "description": "The look, feel and interaction design of the Customer Support App."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Modern, clean, minimal and compact design",
+        "description": "The design must be modern, neat, clean, minimal and compact.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Main task in 3 taps or fewer",
+        "description": "Every user must be able to finish their main task in 3 taps or fewer.",
+        "moduleName": "UI/UX"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1339,
+    "outputTokens": 173,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaint Management",
+        "description": "Lets residents raise, track, approve and reopen complaints, with notifications to the Society Manager and the resident."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Raise complaint with photo",
+        "description": "A resident can fill in a complaint and add a photo. The system creates a complaint number and notifies the Society Manager.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Track complaint status and timeline",
+        "description": "When a resident opens a complaint, the system shows its status and timeline.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Notify resident when complaint is fixed",
+        "description": "The resident gets a notification when the complaint is fixed. The system shows the fix remark and photo.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Resident approves fix to close complaint",
+        "description": "When the resident taps Approve, the system closes the complaint and removes it from her list.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Reopen complaint with reason",
+        "description": "If the resident is not satisfied with the fix, she can reopen the complaint and must give a reason.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Show rejection reason to resident",
+        "description": "If a complaint is rejected as not genuine, the resident can see the reason for the rejection.",
+        "moduleName": "Complaint Management"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1555,
+    "outputTokens": 459,
+    "cachedTokens": 1221
+  }
+}

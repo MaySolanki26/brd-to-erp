@@ -1,0 +1,120 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Registration and Consent",
+        "description": "Registration screens that show the consent screen and privacy notice and collect the neighbour-visibility choice."
+      },
+      {
+        "name": "Complaint Records",
+        "description": "Complaint handling that carries the Builder Responsibility tag and keeps complaint records with photos."
+      },
+      {
+        "name": "Family Member Data",
+        "description": "Storage of family members' names and ages, including children, under the DPDP Act."
+      },
+      {
+        "name": "Neighbours List",
+        "description": "Display of a resident's name and occupation to neighbours, based on consent."
+      },
+      {
+        "name": "OTP Login",
+        "description": "Login by OTP sent through SMS under TRAI DLT rules."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Consent screen and privacy notice at registration",
+        "description": "The system must show a consent screen and a privacy notice at registration, as the DPDP Act requires.",
+        "moduleName": "Registration and Consent"
+      },
+      {
+        "title": "User deletion requests",
+        "description": "Users must be able to ask for deletion of their data.",
+        "moduleName": "Registration and Consent"
+      },
+      {
+        "title": "Breach notification",
+        "description": "The system must support informing users and the authority of a data breach.",
+        "moduleName": null
+      },
+      {
+        "title": "Builder Responsibility tag",
+        "description": "Complaints must be taggable with a Builder Responsibility tag to support RERA defect responsibility.",
+        "moduleName": "Complaint Records"
+      },
+      {
+        "title": "Complaint record with photos",
+        "description": "A full complaint record with photos must be kept as proof of action.",
+        "moduleName": "Complaint Records"
+      },
+      {
+        "title": "Register SMS sender ID and templates",
+        "description": "The sender ID and SMS templates must be registered under TRAI DLT before launch so OTP SMS is not blocked.",
+        "moduleName": "OTP Login"
+      },
+      {
+        "title": "Consent from head of family",
+        "description": "Consent must be collected from the head of family when members are added.",
+        "moduleName": "Family Member Data"
+      },
+      {
+        "title": "Log member list downloads",
+        "description": "Every download of the member list must be logged.",
+        "moduleName": "Family Member Data"
+      },
+      {
+        "title": "Remove member data when family leaves",
+        "description": "Members' data must be removed when a family leaves, after the retention period.",
+        "moduleName": "Family Member Data"
+      },
+      {
+        "title": "Show me to neighbours choice",
+        "description": "Registration must ask for consent with a clear \"Show me to neighbours\" choice.",
+        "moduleName": "Neighbours List"
+      },
+      {
+        "title": "Change neighbour visibility in Profile",
+        "description": "Users must be able to change their neighbour-visibility choice anytime in Profile.",
+        "moduleName": "Neighbours List"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Collect only needed data",
+        "description": "Only the data that is needed may be collected, as per the DPDP Act.",
+        "moduleName": "Registration and Consent"
+      },
+      {
+        "title": "Delete visitor data after 90 days",
+        "description": "Visitor data is deleted after 90 days (to be confirmed).",
+        "moduleName": null
+      },
+      {
+        "title": "Keep complaint records at least 5 years",
+        "description": "Complaint records with photos must be kept for at least 5 years, matching the RERA defect responsibility period.",
+        "moduleName": "Complaint Records"
+      },
+      {
+        "title": "Store birth year only",
+        "description": "For family members, only the birth year is stored, not the full birth date.",
+        "moduleName": "Family Member Data"
+      },
+      {
+        "title": "Children's details restricted",
+        "description": "Children's details are shown only to the Society Manager and Raghuvir Admin.",
+        "moduleName": "Family Member Data"
+      },
+      {
+        "title": "Neighbour listing needs consent",
+        "description": "A person's name and occupation may be shown to neighbours only with that person's consent.",
+        "moduleName": "Neighbours List"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1935,
+    "outputTokens": 1201,
+    "cachedTokens": 1221
+  }
+}

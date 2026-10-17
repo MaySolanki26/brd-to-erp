@@ -166,6 +166,7 @@ export {
   type ConfirmUploadDto,
   type ContextNoteDto,
   type ProcessingSourceDto,
+  type ChunkProgressDto,
   type ProcessingStatusDto,
 } from './types/source.js';
 

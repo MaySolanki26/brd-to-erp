@@ -1,0 +1,88 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Mobile App UI/UX",
+        "description": "The mobile app interface rules covering home screens, menus, buttons, forms, notifications, loading, empty and error states, and animations."
+      },
+      {
+        "name": "Watchman screen",
+        "description": "A dedicated mobile screen for watchmen with extra-large controls and text in Gujarati and Hindi."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Role-based home screen",
+        "description": "Each user sees only what they need on the home screen, with the most-used action at the top.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Notifications open exact screen",
+        "description": "Tapping a notification opens the exact relevant screen, not the home screen.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Auto-fill known details in forms",
+        "description": "Forms auto-fill known details such as flat and name.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Camera button for photos in forms",
+        "description": "Forms provide a camera button for adding photos.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Placeholder blocks while loading",
+        "description": "Loading states use placeholder blocks instead of blank screens or spinners.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Empty screens with message and one action",
+        "description": "Empty screens show a simple message and one action, for example \"No complaints. Raise one\".",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Plain-language error messages",
+        "description": "Errors use plain words that say what to do next and never show technical messages.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Watchman screen with large controls",
+        "description": "The watchman screen has extra-large buttons and text, is in Gujarati and Hindi, and is usable with one hand.",
+        "moduleName": "Watchman screen"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Bottom menu limit",
+        "description": "The bottom menu has at most 4–5 items per role.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "One main button per screen",
+        "description": "Each screen has one main button, which must be clearly visible.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Minimum touch target size",
+        "description": "Touch targets must be at least 48 × 48 px for easy thumb use.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Required fields only in forms",
+        "description": "Forms ask for required fields only.",
+        "moduleName": "Mobile App UI/UX"
+      },
+      {
+        "title": "Animation duration limit",
+        "description": "Animations are short and subtle, lasting only 150–250 ms.",
+        "moduleName": "Mobile App UI/UX"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1615,
+    "outputTokens": 898,
+    "cachedTokens": 1221
+  }
+}

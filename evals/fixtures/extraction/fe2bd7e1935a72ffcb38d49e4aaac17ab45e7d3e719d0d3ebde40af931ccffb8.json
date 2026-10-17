@@ -1,0 +1,133 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Web Panel",
+        "description": "Administrative web interface for project setup, Society Manager creation, complaint control, family and member dashboard, notices, events, contact directory, reports and activity log."
+      },
+      {
+        "name": "Mobile App",
+        "description": "A single role-based mobile app for residents, managers and watchmen covering login, registration, complaints, documents, bookings, visitors, family, notices and event replies."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Web Panel project, building and flat setup",
+        "description": "The Web Panel must support setup of projects, buildings and flats.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Society Manager creation",
+        "description": "The Web Panel must allow Society Managers to be created.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Complaint control in Web Panel",
+        "description": "The Web Panel must provide control over complaints.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Family and member dashboard",
+        "description": "The Web Panel must include a family and member dashboard.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Notice board and event invites in Web Panel",
+        "description": "The Web Panel must support a notice board and event invites.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Contact directory in Web Panel",
+        "description": "The Web Panel must include a contact directory.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Reports and activity log",
+        "description": "The Web Panel must provide reports and an activity log.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "OTP login on mobile app",
+        "description": "The Mobile App must support login using OTP.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Self-registration with approval",
+        "description": "The Mobile App must allow users to self-register, with the registration subject to approval.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Complaints on mobile app",
+        "description": "The Mobile App must support complaints.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Contact directory and society documents on mobile app",
+        "description": "The Mobile App must provide a contact directory and access to society documents.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Hall booking and facility use",
+        "description": "The Mobile App must support hall booking and facility use.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Visitors and Watchman view",
+        "description": "The Mobile App must support visitors and include a Watchman view.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "My Family",
+        "description": "The Mobile App must include a My Family feature.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Notice board and event replies on mobile app",
+        "description": "The Mobile App must show the notice board and let users reply to events.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Single role-based mobile app",
+        "description": "There must be one mobile app serving all roles, with features based on role.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "One common backend for all projects",
+        "description": "The system must use one common backend for all projects.",
+        "moduleName": null
+      },
+      {
+        "title": "Integration with SMS provider, push service and file storage",
+        "description": "The system must connect with an SMS provider for OTP, a push notification service, and file storage for photos and documents.",
+        "moduleName": null
+      }
+    ],
+    "rules": [
+      {
+        "title": "Phase 1 scope limited to 57 features",
+        "description": "Phase 1 covers the 57 features in Section 5; billing, accounting and payments stay out.",
+        "moduleName": null
+      },
+      {
+        "title": "Access by role and project",
+        "description": "Access to the system is based on the user's role and project.",
+        "moduleName": null
+      },
+      {
+        "title": "Out of scope: bill collection, payments and accounting",
+        "description": "Maintenance bill collection and payments, and society accounting, are not part of this system.",
+        "moduleName": null
+      },
+      {
+        "title": "No contact with Raghuvir sales, booking or accounting systems",
+        "description": "The system must not touch Raghuvir's sales, booking or accounting systems.",
+        "moduleName": null
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1861,
+    "outputTokens": 1290,
+    "cachedTokens": 1221
+  }
+}

@@ -79,8 +79,18 @@ export interface ProcessingSourceDto {
   status: SourceStatus;
 }
 
+/** How far the reading of the project's text has come. Parts are the chunks sources are cut into. */
+export interface ChunkProgressDto {
+  total: number;
+  /** Parts the extraction has finished with, successfully or by flagging them. */
+  extracted: number;
+  /** Parts a person has to check because the model could not read them cleanly. */
+  needingReview: number;
+}
+
 export interface ProcessingStatusDto {
   counts: Record<SourceStatus, number>;
+  chunks: ChunkProgressDto;
   /** True while any source is still waiting or being processed. */
   active: boolean;
   /** When the most recent source finished processing; null if none has. */

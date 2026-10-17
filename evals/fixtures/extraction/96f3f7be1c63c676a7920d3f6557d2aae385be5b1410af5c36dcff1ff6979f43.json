@@ -1,0 +1,49 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Neighbours",
+        "description": "Lets a resident see limited details of flats on the same floor of their building."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Show same-floor neighbours list",
+        "description": "When a resident opens Neighbours, the system shows only flats on the same floor of the same building, with flat number, main person's name and occupation.",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Update list when main person changes",
+        "description": "When the main person of a flat changes (owner change or new tenant), the neighbours list updates at once.",
+        "moduleName": "Neighbours"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Restrict neighbour list to same floor and building",
+        "description": "Only flats on the same floor of the same building as the resident may be shown.",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Hide private details of neighbours",
+        "description": "Phone, email, family, and owner or tenant status are never shown in the neighbours list.",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Hide vacant or unregistered flats",
+        "description": "A flat that is vacant or not registered is not shown in the neighbours list.",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Respect \"Show me to neighbours\" setting",
+        "description": "If the main person turned off \"Show me to neighbours\", the flat is shown as flat number only.",
+        "moduleName": "Neighbours"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1480,
+    "outputTokens": 451,
+    "cachedTokens": 1221
+  }
+}

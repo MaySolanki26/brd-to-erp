@@ -1,0 +1,54 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Family and Members",
+        "description": "Shows family and member counts, lists, drill-downs and downloads for Raghuvir Admin and Society Manager users."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Per-project family and member summary for Raghuvir Admin",
+        "description": "Raghuvir Admin sees, per project, families, total members, each age group, Age Not Given, owner-living and tenant-living families, vacant flats and average members per family, with a grand total row.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Drill-down from project to building to flat",
+        "description": "When a project row is clicked on the web, the same counts show by building, then by flat.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Filters for counts and list",
+        "description": "On the web, filters for project, building, age group, and owner or tenant update the counts and the list.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Download member list as Excel",
+        "description": "On the web, Raghuvir Admin can download the member list as an Excel file, and the download is saved in the activity log. Priority is Should.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Society Manager summary on mobile",
+        "description": "On mobile, a user with View family data permission sees own project counts by building, including owners vs tenants, plus the member list (view only).",
+        "moduleName": "Family and Members"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Residents and Watchmen cannot see other families",
+        "description": "A Resident or Watchman must not see any other family's details or counts, on web or mobile.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Family and member definitions",
+        "description": "A Family is one approved flat. A Member is a person added under that flat. A person belongs to one flat only.",
+        "moduleName": "Family and Members"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1766,
+    "outputTokens": 578,
+    "cachedTokens": 1221
+  }
+}

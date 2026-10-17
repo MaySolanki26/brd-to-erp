@@ -93,6 +93,7 @@ export interface FakeChunk {
   projectId: string;
   organizationId: string;
   needsReview?: boolean;
+  extractedAt?: Date | null;
 }
 
 export type FakeKnowledgeStatus =
@@ -761,6 +762,14 @@ export const sourcesRepositoryModule = {
       .filter((n) => inProject(n, organizationId, projectId))
       .filter((n) => n.status === 'UPLOADED' || n.status === 'PROCESSING')
       .map((n) => ({ id: n.id, title: n.title, status: n.status })),
+  chunkProgress: async (organizationId: string, projectId: string) => {
+    const chunks = [...db.chunks.values()].filter((c) => inProject(c, organizationId, projectId));
+    return {
+      total: chunks.length,
+      extracted: chunks.filter((c) => c.extractedAt !== undefined && c.extractedAt !== null).length,
+      needingReview: chunks.filter((c) => c.needsReview === true).length,
+    };
+  },
   latestProcessedAt: async (organizationId: string, projectId: string): Promise<Date | null> => {
     const times = [...db.documents.values(), ...db.notes.values()]
       .filter((s) => inProject(s, organizationId, projectId) && s.status === 'PROCESSED')
@@ -833,6 +842,7 @@ interface KnowledgeListParams {
   moduleId?: string | undefined;
   sourceId?: string | undefined;
   search?: string | undefined;
+  needsReview?: boolean | undefined;
 }
 
 function filterKnowledge(kind: KnowledgeKindKey, p: KnowledgeListParams): FakeKnowledge[] {
@@ -841,6 +851,11 @@ function filterKnowledge(kind: KnowledgeKindKey, p: KnowledgeListParams): FakeKn
     .filter((i) => i.organizationId === p.organizationId && i.projectId === p.projectId)
     .filter((i) => !p.status || i.status === p.status)
     .filter((i) => kind === 'modules' || !p.moduleId || i.moduleId === p.moduleId)
+    .filter(
+      (i) =>
+        !p.needsReview ||
+        [i.sourceChunkId, ...(i.extraChunkIds ?? [])].some((id) => db.chunks.get(id)?.needsReview),
+    )
     .filter(
       (i) =>
         !p.sourceId ||

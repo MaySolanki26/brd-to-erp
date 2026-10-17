@@ -1,0 +1,124 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Login",
+        "description": "Web panel sign-in for Admin and Assigned Person using password plus OTP."
+      },
+      {
+        "name": "Dashboard",
+        "description": "Admin overview of complaints, residents, flats and live facility counts."
+      },
+      {
+        "name": "Project, Building, Floor, Flat setup",
+        "description": "Admin setup of the property hierarchy of projects, buildings, floors and flats."
+      },
+      {
+        "name": "Amenities setup",
+        "description": "Admin configuration of amenities per project."
+      },
+      {
+        "name": "Admin staff and project access",
+        "description": "Admin creation of staff and assignment of project access."
+      },
+      {
+        "name": "Society Manager and permissions",
+        "description": "Admin management of committee members and their permissions."
+      },
+      {
+        "name": "Resident list",
+        "description": "View-only list of owners and tenants across projects for Admin."
+      },
+      {
+        "name": "Complaint category setup",
+        "description": "Admin configuration of complaint categories and their handling settings."
+      },
+      {
+        "name": "Complaint management",
+        "description": "Admin handling of complaints across projects."
+      },
+      {
+        "name": "My Tasks",
+        "description": "Assigned Person's view of their own complaints and work updates."
+      },
+      {
+        "name": "Notice Board",
+        "description": "Admin posting of announcements, celebrations and events."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Password and OTP login",
+        "description": "Admin and Assigned Person log in to the web panel with a password plus OTP.",
+        "moduleName": "Login"
+      },
+      {
+        "title": "Admin dashboard metrics",
+        "description": "The dashboard shows complaints by project, category and status, delays, approved residents vs total flats, family and member totals, owner vs tenant flats, and live facility counts.",
+        "moduleName": "Dashboard"
+      },
+      {
+        "title": "Unlimited project hierarchy setup",
+        "description": "Admin can set up any number of projects, buildings, floors and flats.",
+        "moduleName": "Project, Building, Floor, Flat setup"
+      },
+      {
+        "title": "Per-project amenity setup",
+        "description": "Admin can add any amenity per project as Bookable (hall) or Shared (gym, pool), with capacity, open hours, slot length and rules.",
+        "moduleName": "Amenities setup"
+      },
+      {
+        "title": "Create staff with project access",
+        "description": "Admin can create staff and give them access to selected projects.",
+        "moduleName": "Admin staff and project access"
+      },
+      {
+        "title": "Manage committee members and permissions",
+        "description": "Admin can create, replace or deactivate committee members and give or remove permissions.",
+        "moduleName": "Society Manager and permissions"
+      },
+      {
+        "title": "View residents across projects",
+        "description": "Admin can view owners and tenants across projects in a view-only list.",
+        "moduleName": "Resident list"
+      },
+      {
+        "title": "Configure complaint categories",
+        "description": "Admin can set category, builder or society responsibility, time limits, default Assigned Person and reminder days.",
+        "moduleName": "Complaint category setup"
+      },
+      {
+        "title": "Admin complaint handling across projects",
+        "description": "Admin can view, assign, reassign and override complaints across projects.",
+        "moduleName": "Complaint management"
+      },
+      {
+        "title": "Assigned Person task updates",
+        "description": "Assigned Person can mark own complaints as Work Started or Fixed with photo.",
+        "moduleName": "My Tasks"
+      },
+      {
+        "title": "Post notices to projects",
+        "description": "Admin can post announcements, celebrations and events to all or selected projects.",
+        "moduleName": "Notice Board"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Resident list is view only",
+        "description": "The resident list of owners and tenants can only be viewed, not edited.",
+        "moduleName": "Resident list"
+      },
+      {
+        "title": "Assigned Person sees own complaints only",
+        "description": "In My Tasks, an Assigned Person can see and act on only their own complaints.",
+        "moduleName": "My Tasks"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1965,
+    "outputTokens": 1204,
+    "cachedTokens": 1221
+  }
+}

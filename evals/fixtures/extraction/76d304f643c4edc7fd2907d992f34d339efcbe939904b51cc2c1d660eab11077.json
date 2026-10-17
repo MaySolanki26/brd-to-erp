@@ -1,0 +1,83 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "UI/UX",
+        "description": "Effort targets for key user tasks in the Customer Support App for society management."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Log in with mobile number and OTP",
+        "description": "All users log in with a mobile number and OTP, and the OTP is read automatically on Android.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Raise a complaint in 3 taps",
+        "description": "A Resident must be able to raise a complaint in 3 taps and under 60 seconds.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Approve fixed complaint in 2 taps from notification",
+        "description": "A Resident must be able to approve a fixed complaint in 2 taps, straight from the notification.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Approve a resident in 2 taps",
+        "description": "A Society Manager must be able to approve a resident in 2 taps.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Check a complaint in 2 taps",
+        "description": "A Society Manager must be able to check a complaint in 2 taps.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Book the hall in 4 taps",
+        "description": "A Resident must be able to book the hall in 4 taps.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Visitor entry in 3 taps under 30 seconds",
+        "description": "A Watchman must be able to record a visitor entry in 3 taps and under 30 seconds.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Assign a complaint in 2 clicks",
+        "description": "A Raghuvir Admin must be able to assign a complaint in 2 clicks.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Learnable in under 5 minutes without training",
+        "description": "Any new user must be able to learn the app in under 5 minutes with no training.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Add a family member in 3 taps",
+        "description": "Adding a family member must take no more than 3 taps.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Check in to a facility in 1 tap",
+        "description": "Checking in to a facility must take 1 tap.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Post a notice in under 1 minute",
+        "description": "Posting a notice must take under 1 minute.",
+        "moduleName": "UI/UX"
+      },
+      {
+        "title": "Family dashboard layout",
+        "description": "The family dashboard shows counts as number cards on top and a bar per project split by age group, with the table below.",
+        "moduleName": "UI/UX"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1706,
+    "outputTokens": 844,
+    "cachedTokens": 1221
+  }
+}

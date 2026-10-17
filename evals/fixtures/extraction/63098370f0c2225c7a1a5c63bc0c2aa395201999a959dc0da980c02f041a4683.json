@@ -1,0 +1,44 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Neighbours",
+        "description": "Mobile feature that lets a resident see limited details of other registered flats on the same floor of the same building."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Occupation field on registration and profile",
+        "description": "Occupation can be entered (optional) at registration or in the profile.",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Show me to neighbours setting",
+        "description": "A resident can turn off the setting that shows them to neighbours. When it is off, neighbours see the flat number only.",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Live update of neighbour list",
+        "description": "When a main user changes their details, the neighbour list updates at once.",
+        "moduleName": "Neighbours"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Same floor only",
+        "description": "A resident sees only other registered flats on the same floor of the same building. For example, a resident on floor 4 of Building B sees only registered flats on floor 4 of Building B.",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Limited neighbour details",
+        "description": "A neighbour shows only flat number, main person's name and occupation. Phone, email, family and owner/tenant status are never shown.",
+        "moduleName": "Neighbours"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1711,
+    "outputTokens": 401,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Reports and Activity Log",
+        "description": "Dashboards, reports and a log of user actions for Raghuvir Admin and Society Managers."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Admin dashboard",
+        "description": "On web, the Raghuvir Admin sees complaints by project, category, status and delays, and approved residents vs flats. Priority is Must.",
+        "moduleName": "Reports and Activity Log"
+      },
+      {
+        "title": "Reports by date range",
+        "description": "On web, for a chosen date range, reports show closure time, delays, reopen count and top categories. Priority is Must.",
+        "moduleName": "Reports and Activity Log"
+      },
+      {
+        "title": "Society Manager summary",
+        "description": "On mobile, a Society Manager sees a summary of their own project. Priority is Should.",
+        "moduleName": "Reports and Activity Log"
+      },
+      {
+        "title": "Activity log",
+        "description": "On web, any approval, rejection, status change, role change or delete is recorded in an activity log. Priority is Must.",
+        "moduleName": "Reports and Activity Log"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Society Manager sees own project only",
+        "description": "A Society Manager's summary shows only the summary of their own project.",
+        "moduleName": "Reports and Activity Log"
+      },
+      {
+        "title": "Log user and time for changes",
+        "description": "For any approval, rejection, status or role change, or delete, the user and the time must be saved.",
+        "moduleName": "Reports and Activity Log"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1634,
+    "outputTokens": 472,
+    "cachedTokens": 1221
+  }
+}

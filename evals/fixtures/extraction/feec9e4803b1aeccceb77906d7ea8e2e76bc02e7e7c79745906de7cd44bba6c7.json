@@ -1,0 +1,93 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Family Members",
+        "description": "Management and viewing of family members and member counts for flats and projects."
+      },
+      {
+        "name": "Notice Board",
+        "description": "Posting and viewing notices and event invites, with event replies and reply counts."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Download member list with logging",
+        "description": "Raghuvir Admin can download the member list, and each download is logged.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Reply Going / Not Going to events",
+        "description": "Society Managers and Residents can reply Going or Not Going to an event invite.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Create event invites",
+        "description": "Raghuvir Admin can create event invites for all or selected projects, and Society Managers for their own project.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Post on notice board",
+        "description": "Raghuvir Admin can post for all or selected projects, and Society Managers for their own project.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "See event reply counts",
+        "description": "Raghuvir Admin sees reply counts for own posts and Society Manager sees them for own project.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Set age group limits",
+        "description": "Raghuvir Admin can set age group limits.",
+        "moduleName": "Family Members"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Family member add, edit, remove access",
+        "description": "Society Managers and Residents can add, edit and remove family members for their own flat only. Raghuvir Admin and Watchman cannot.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Family and member count visibility",
+        "description": "Raghuvir Admin sees counts for all projects and Society Manager for own project. Residents and Watchmen cannot see them.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Family member list visibility",
+        "description": "Raghuvir Admin has view-only access by project access. Society Manager has view-only access for own project. Resident sees own family only. Watchman cannot see it.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Member list download restricted",
+        "description": "Only Raghuvir Admin may download the member list. Society Manager, Resident and Watchman may not.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Age group limits set by Admin only",
+        "description": "Only Raghuvir Admin may set age group limits.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Notice board posting scope",
+        "description": "Only Raghuvir Admin (all or selected projects) and Society Manager (own project) may post. Residents and Watchmen may not.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Notice board viewing scope",
+        "description": "Raghuvir Admin sees all notices. Society Manager, Resident and Watchman see their own project only.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Event reply access",
+        "description": "Only Society Manager and Resident may reply Going or Not Going. Raghuvir Admin and Watchman may not.",
+        "moduleName": "Notice Board"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1709,
+    "outputTokens": 984,
+    "cachedTokens": 1221
+  }
+}

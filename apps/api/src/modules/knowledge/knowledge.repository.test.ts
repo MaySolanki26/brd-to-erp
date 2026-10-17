@@ -82,6 +82,34 @@ describe('knowledge.repository', () => {
     });
   });
 
+  it('narrows to items whose source was flagged, through their first source or a merged one', async () => {
+    await listRequirements({ ...base, needsReview: true });
+    expect(prismaMock.requirement.count.mock.calls[0]?.[0].where).toEqual({
+      organizationId: 'o1',
+      projectId: 'p1',
+      deletedAt: null,
+      AND: [
+        {
+          OR: [
+            { sourceChunk: { needsReview: true } },
+            { extraSources: { some: { chunk: { needsReview: true } } } },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('combines the source and review filters instead of letting one replace the other', async () => {
+    await listRules({ ...base, sourceId: 's1', needsReview: true });
+    const and = prismaMock.businessRule.count.mock.calls[0]?.[0].where.AND;
+    expect(and).toHaveLength(2);
+  });
+
+  it('leaves the review filter out when it is not asked for', async () => {
+    await listRules({ ...base, needsReview: false });
+    expect(prismaMock.businessRule.count.mock.calls[0]?.[0].where).not.toHaveProperty('AND');
+  });
+
   it('scopes rules and modules the same way', async () => {
     await listRules({ ...base, status: 'OPEN' });
     expect(prismaMock.businessRule.count.mock.calls[0]?.[0].where).toEqual({

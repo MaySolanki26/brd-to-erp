@@ -1,0 +1,76 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Facility Check-in",
+        "description": "Lets residents check in at a shared facility with a tap in the app."
+      },
+      {
+        "name": "Complaint Management",
+        "description": "Handles builder and society complaints, their assignment, status updates, routing and closure."
+      },
+      {
+        "name": "Hall and Facility Booking",
+        "description": "Lets residents book halls and facilities, free of charge."
+      },
+      {
+        "name": "Login",
+        "description": "Signs users in with an OTP sent by SMS."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Tap-based check-in at shared facilities",
+        "description": "Check-in at a shared facility is a tap in the app, with no QR code or gate device.",
+        "moduleName": "Facility Check-in"
+      },
+      {
+        "title": "Web Panel for builder complaint Assigned People",
+        "description": "Assigned People for builder complaints use the Web Panel to handle them.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Status updates for society vendor complaints",
+        "description": "A member with the Assign society complaints permission updates status on behalf of society vendors, who have no login.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Watchmen use the shared mobile app",
+        "description": "Watchmen use the same mobile app as other users, with no separate gate app.",
+        "moduleName": null
+      },
+      {
+        "title": "Complaint routing from categories and tags",
+        "description": "Routing uses the complaint categories, responsibility tags and time limits supplied by Raghuvir.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "OTP login by SMS",
+        "description": "Login relies on an OTP sent through the SMS provider using an approved sender ID and template.",
+        "moduleName": "Login"
+      }
+    ],
+    "rules": [
+      {
+        "title": "One main user per flat",
+        "description": "Each flat has one main user, the owner or tenant who lives there.",
+        "moduleName": null
+      },
+      {
+        "title": "Closed complaints hidden from residents",
+        "description": "Closed complaints are fully hidden from residents, with no history screen.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Hall and facility booking is free",
+        "description": "Hall and facility booking carries no payment in this phase; payment is deferred to Phase 2.",
+        "moduleName": "Hall and Facility Booking"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1846,
+    "outputTokens": 718,
+    "cachedTokens": 1221
+  }
+}

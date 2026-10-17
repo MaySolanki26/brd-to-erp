@@ -1,0 +1,69 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Family and Members",
+        "description": "Lets a resident keep a family list of members with relations and birth years, grouped by age group and counted for the flat and project."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Auto-add head of family",
+        "description": "When a resident (owner or tenant) is approved, they are added automatically as member 1 with relation Self.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Add, edit, remove member",
+        "description": "A resident can add, edit and remove a member using name, relation and birth year. The member shows in My Family and counts update on save.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Age group from birth year",
+        "description": "Each member is placed in the matching age group based on their birth year.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Yearly age group update",
+        "description": "On 1 January, members move to their new age group automatically.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Age group setup",
+        "description": "Raghuvir Admin sets age group names and limits on web, with defaults Kids 0–17, Adults 18–59 and Seniors 60+. All counts recalculate after a change.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Age Not Given count",
+        "description": "A member with no birth year is counted under Age Not Given.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Duplicate member warning",
+        "description": "A warning shows on mobile when the same name and birth year exist in another flat of the project. This is a Should priority.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Handle owner or tenant change",
+        "description": "When a main user is deactivated, that family leaves all counts and its history is kept.",
+        "moduleName": "Family and Members"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Only resident can edit members",
+        "description": "Only the resident can edit their family members.",
+        "moduleName": "Family and Members"
+      },
+      {
+        "title": "Member limit of 15 per flat",
+        "description": "A flat with 15 members cannot add another. The addition is blocked with a message.",
+        "moduleName": "Family and Members"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 2079,
+    "outputTokens": 667,
+    "cachedTokens": 1221
+  }
+}

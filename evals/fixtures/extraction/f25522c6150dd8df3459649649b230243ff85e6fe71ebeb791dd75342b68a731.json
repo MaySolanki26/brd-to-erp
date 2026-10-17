@@ -1,0 +1,53 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Web Panel",
+        "description": "The web-based admin interface with a side menu, top bar, project selector, list tables and detail side panel."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Left side menu, top bar and project selector",
+        "description": "The web panel has a left side menu, a clean top bar and a project selector.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Searchable, filterable, sortable tables",
+        "description": "Tables offer search, filters by project, status, category and date, sorting, and saved filters.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Status as colour labels with text",
+        "description": "Status is shown as colour labels that also carry text.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Details open in a side panel",
+        "description": "Record details open in a side panel so the user keeps their place in the list.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Bulk actions where useful",
+        "description": "Bulk actions are supported where useful, such as assigning many complaints at once.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Support screens 1280 px and wider",
+        "description": "The web panel works well on screens 1280 px and wider.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Tablet support (Should Have)",
+        "description": "Tablet support is a Should Have.",
+        "moduleName": "Web Panel"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1451,
+    "outputTokens": 450,
+    "cachedTokens": 1221
+  }
+}

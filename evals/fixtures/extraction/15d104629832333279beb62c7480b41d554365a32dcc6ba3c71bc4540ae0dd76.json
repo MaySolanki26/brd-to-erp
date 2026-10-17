@@ -1,0 +1,67 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Web Panel",
+        "description": "Web platform with 20 features used by Raghuvir Admin and Assigned Person."
+      },
+      {
+        "name": "Mobile App",
+        "description": "Single mobile app with 39 features that shows a different home screen and menu for each role: Common, Resident, Society Manager and Watchman."
+      },
+      {
+        "name": "Common Backend",
+        "description": "One backend shared by all platforms that serves the Web Panel and the Mobile App."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Role-based home screen and menu in Mobile App",
+        "description": "The one Mobile App must show a different home screen and menu for each role.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Common features for all app users",
+        "description": "The Mobile App must provide 7 common features that are used by all app users.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Resident features in Mobile App",
+        "description": "The Mobile App must provide 12 features for residents, who are owners or tenants living in the flat.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Society Manager features in Mobile App",
+        "description": "The Mobile App must provide 14 features for Society Managers, who are committee members with permissions.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Watchman features in Mobile App",
+        "description": "The Mobile App must provide 6 features for Watchmen, who are gate security.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Web Panel features for Admin and Assigned Person",
+        "description": "The Web Panel must provide 20 features used by Raghuvir Admin and Assigned Person.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Single common backend for all platforms",
+        "description": "All platforms must use one common backend.",
+        "moduleName": "Common Backend"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Users see only their own project's data",
+        "description": "Every user sees only the data of their own project. This check runs on the server for every request.",
+        "moduleName": "Common Backend"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1585,
+    "outputTokens": 640,
+    "cachedTokens": 1221
+  }
+}

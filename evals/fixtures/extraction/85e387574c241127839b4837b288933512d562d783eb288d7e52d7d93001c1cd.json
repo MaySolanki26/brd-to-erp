@@ -1,0 +1,113 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaint Management",
+        "description": "Lets residents raise complaints with photos and tracks them through genuineness check, assignment and closure."
+      },
+      {
+        "name": "Reports Dashboard",
+        "description": "Shows complaints of all projects in one dashboard."
+      },
+      {
+        "name": "Resident Registration",
+        "description": "Handles resident self-registration, Society Manager approval and owner changes."
+      },
+      {
+        "name": "Notice Board",
+        "description": "Project notice board where Raghuvir posts announcements to all or selected projects."
+      },
+      {
+        "name": "Visitor Management",
+        "description": "Shows today's visitor list and records walk-in entries with entry and exit time."
+      },
+      {
+        "name": "Hall Booking",
+        "description": "Allows in-app booking of the hall with a clash check."
+      },
+      {
+        "name": "Event Invites",
+        "description": "Sends event invites and collects reply counts."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Resident raises complaint in app with photos",
+        "description": "Residents raise complaints in the app with photos instead of calling or sending WhatsApp to the office.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Automatic complaint number",
+        "description": "A complaint number is created automatically when a complaint is recorded.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Assign complaints by category and responsibility",
+        "description": "Complaints are assigned by category and responsibility rather than staff calling vendors manually.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Single dashboard for all projects' complaints",
+        "description": "All projects' complaints are visible in one dashboard.",
+        "moduleName": "Reports Dashboard"
+      },
+      {
+        "title": "Resident self-registration",
+        "description": "Residents register themselves in the system, replacing the Excel kept by builder staff.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Handle owner change",
+        "description": "On an owner change, the old user is deactivated and the new one is approved.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Project notice board announcements",
+        "description": "Each project has a notice board, and Raghuvir can post announcements to all or selected projects.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Today's visitor list and walk-in entry",
+        "description": "The system shows today's visitor list and records walk-in entries with entry and exit time.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "In-app hall booking with clash check",
+        "description": "Hall bookings are made in the app and the system checks for clashes.",
+        "moduleName": "Hall Booking"
+      },
+      {
+        "title": "Family and member counts by age group",
+        "description": "The system records family and member counts by age group (Kids, Adults, Seniors) for every project.",
+        "moduleName": "Resident Registration"
+      },
+      {
+        "title": "Event invites with reply counts",
+        "description": "Event invites are sent and reply counts are tracked instead of guessing attendance.",
+        "moduleName": "Event Invites"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Society Manager checks complaint genuineness first",
+        "description": "The Society Manager checks each complaint for genuineness before it proceeds.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Closure only on resident approval",
+        "description": "A complaint is closed only when the resident approves, not when staff say it is done.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Society Manager approves resident registration",
+        "description": "Self-registered residents need Society Manager approval.",
+        "moduleName": "Resident Registration"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1819,
+    "outputTokens": 1112,
+    "cachedTokens": 1221
+  }
+}

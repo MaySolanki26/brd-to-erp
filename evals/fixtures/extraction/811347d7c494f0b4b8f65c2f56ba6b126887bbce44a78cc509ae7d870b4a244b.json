@@ -1,0 +1,73 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Society Manager Permissions",
+        "description": "Permission-based assignment of Society Manager work to committee members by Raghuvir Admin."
+      },
+      {
+        "name": "Owners and Tenants",
+        "description": "Registration of residents as owner or tenant, flat occupancy status, and tenant agreement tracking."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Assign permissions to committee members",
+        "description": "Raghuvir Admin can give each committee member (President, Secretary or any other member) one or more permissions from the defined list.",
+        "moduleName": "Society Manager Permissions"
+      },
+      {
+        "title": "Support the eight defined permissions",
+        "description": "Permissions are Approve residents, Check complaints, Assign society complaints, Manage documents, Approve bookings, Post notices, Manage watchmen and View family data, each allowing the actions listed in the document.",
+        "moduleName": "Society Manager Permissions"
+      },
+      {
+        "title": "Mark each flat as owner-living, tenant-living or vacant",
+        "description": "Every flat carries one of three statuses: owner-living, tenant-living or vacant.",
+        "moduleName": "Owners and Tenants"
+      },
+      {
+        "title": "Resident registers as Owner or Tenant",
+        "description": "A resident chooses to register as either Owner or Tenant.",
+        "moduleName": "Owners and Tenants"
+      },
+      {
+        "title": "Capture owner name and rent agreement end date for tenants",
+        "description": "A tenant also gives the owner's name and the rent agreement end date.",
+        "moduleName": "Owners and Tenants"
+      },
+      {
+        "title": "Send rent agreement end reminder",
+        "description": "15 days before the agreement end date, the tenant and the Society Manager get a reminder.",
+        "moduleName": "Owners and Tenants"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Society Manager work is given by permission, not title",
+        "description": "What a Society Manager can do depends on the permissions granted, not on their title.",
+        "moduleName": "Society Manager Permissions"
+      },
+      {
+        "title": "Keep at least one holder of key permissions per project",
+        "description": "Every project must keep at least one person with Approve residents and at least one with Check complaints. The system blocks removing the last one.",
+        "moduleName": "Society Manager Permissions"
+      },
+      {
+        "title": "One main user per flat",
+        "description": "Each flat has one main user, the person who lives there (owner or tenant).",
+        "moduleName": "Owners and Tenants"
+      },
+      {
+        "title": "Tenant access ends only after Society Manager confirms",
+        "description": "Tenant access does not end automatically at the agreement end date; it ends only after a Society Manager confirms.",
+        "moduleName": "Owners and Tenants"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1856,
+    "outputTokens": 846,
+    "cachedTokens": 1221
+  }
+}

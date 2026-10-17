@@ -1,0 +1,34 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Design Deliverables",
+        "description": "The design outputs to be produced, reviewed and handed over for the Customer Support App."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Clickable Figma design of all key flows",
+        "description": "A clickable design of all key flows must be delivered in Figma before development.",
+        "moduleName": "Design Deliverables"
+      },
+      {
+        "title": "Design system shared with developers",
+        "description": "A design system covering colours, fonts and components must be shared with developers.",
+        "moduleName": "Design Deliverables"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Client approval of design before development",
+        "description": "The client must review and approve the design before development starts.",
+        "moduleName": "Design Deliverables"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1413,
+    "outputTokens": 228,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Mobile App – Watchman",
+        "description": "The watchman's mobile app for handling visitor entry and exit at the society gate."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Show today's expected visitors",
+        "description": "The watchman app must show the list of visitors expected today.",
+        "moduleName": "Mobile App – Watchman"
+      },
+      {
+        "title": "Search visitors by name, mobile or pass code",
+        "description": "The watchman must be able to search for a visitor by name, mobile number or pass code.",
+        "moduleName": "Mobile App – Watchman"
+      },
+      {
+        "title": "Add walk-in visitor with automatic resident notification",
+        "description": "The watchman must be able to add a walk-in visitor, and the resident is informed automatically.",
+        "moduleName": "Mobile App – Watchman"
+      },
+      {
+        "title": "Tap to call flat's resident",
+        "description": "The watchman must be able to tap to call the resident of a flat when needed.",
+        "moduleName": "Mobile App – Watchman"
+      },
+      {
+        "title": "Record visitor entry and exit time",
+        "description": "The app must record the entry time and exit time of visitors.",
+        "moduleName": "Mobile App – Watchman"
+      },
+      {
+        "title": "Offline entry saving with later sync",
+        "description": "The app must save entries when there is no network and send them later.",
+        "moduleName": "Mobile App – Watchman"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1471,
+    "outputTokens": 438,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Family Management",
+        "description": "Lets residents record family members and gives admins and managers counts of families and members."
+      },
+      {
+        "name": "Notice Board",
+        "description": "Lets admins and society managers post events and celebrations to projects."
+      },
+      {
+        "name": "Customer Registration and Approvals",
+        "description": "Covers registration of owners and tenants and the approval rights given to committee members."
+      },
+      {
+        "name": "Amenities",
+        "description": "Shows residents how many people are currently in the gym or pool."
+      },
+      {
+        "name": "Neighbours",
+        "description": "Lets residents see the names of their same-floor neighbours."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Residents add family members once",
+        "description": "A Resident can add their family members once so the society knows who lives in their flat (US-15, FR-FAM-02).",
+        "moduleName": "Family Management"
+      },
+      {
+        "title": "Families by age group and owner/tenant per project",
+        "description": "A Raghuvir Admin can see families by age group and owners vs tenants per project, to plan events, facilities and senior care (US-16, FR-FAM-10).",
+        "moduleName": "Family Management"
+      },
+      {
+        "title": "Member counts by building",
+        "description": "A Society Manager can see member counts by building to plan society events and needs for the project (US-17, FR-FAM-14).",
+        "moduleName": "Family Management"
+      },
+      {
+        "title": "Post event to selected projects only",
+        "description": "A Raghuvir Admin can post an event to selected projects only so only the right projects see it (US-18, FR-NB-02).",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Post celebrations on project notice board",
+        "description": "A Society Manager can post celebrations on their project's notice board so everyone in the project gets the news in one place (US-19, FR-NB-03).",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Tenants register and use app like owners",
+        "description": "A Tenant can register and use the app like an owner to raise complaints and book facilities where they live (US-20, FR-CUS-06).",
+        "moduleName": "Customer Registration and Approvals"
+      },
+      {
+        "title": "Live gym and pool occupancy",
+        "description": "A Resident can see how many people are in the gym or pool now so they can go when it is less crowded (US-21, FR-AMN-07).",
+        "moduleName": "Amenities"
+      },
+      {
+        "title": "See same-floor neighbours' names",
+        "description": "A Resident can see the names of same-floor neighbours without phone numbers being shared (US-22, FR-NBR-01).",
+        "moduleName": "Neighbours"
+      },
+      {
+        "title": "Admin grants approval rights to committee members",
+        "description": "A Raghuvir Admin can give approval rights to any committee member so work continues even if the Secretary is busy (US-23, FR-CUS-02).",
+        "moduleName": "Customer Registration and Approvals"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1847,
+    "outputTokens": 904,
+    "cachedTokens": 1221
+  }
+}

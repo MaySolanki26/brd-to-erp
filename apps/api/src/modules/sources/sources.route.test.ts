@@ -131,6 +131,24 @@ describe('GET /api/projects/:id/processing-status', () => {
     );
   });
 
+  it('reports how many parts have been read and how many were flagged, per project', async () => {
+    const mk = (projectId: string, extractedAt: Date | null, needsReview = false) => {
+      const id = crypto.randomUUID();
+      db.chunks.set(id, {
+        id, chunkIndex: db.chunks.size, headingPath: [], content: 'x',
+        documentVersionId: null, contextNoteId: null, projectId,
+        organizationId: world.orgA, needsReview, extractedAt,
+      });
+    };
+    mk(world.p1.id, new Date());
+    mk(world.p1.id, new Date(), true);
+    mk(world.p1.id, null);
+    mk(world.p2.id, new Date());
+    const session = await login(app, world.viewerA.email, PASSWORD);
+    const res = await as(app, session, 'get', url(world.p1.id));
+    expect(res.body.status.chunks).toEqual({ total: 3, extracted: 2, needingReview: 1 });
+  });
+
   it('reports inactive when everything has finished', async () => {
     seed(world, world.p1.id, 'PROCESSED', 'doc');
     seed(world, world.p1.id, 'FAILED', 'note');

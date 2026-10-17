@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import type { DbClient } from '../../lib/transaction.js';
-import type { ChunkInput } from '../../jobs/chunker.js';
+import { STALE_CHUNK_INDEX_BASE, type ChunkInput } from '../../jobs/chunker.js';
 import { markOlderVersionItems, releaseChunkItems } from '../extraction/extraction.repository.js';
 
 export interface SourceVersionRecord {
@@ -86,8 +86,6 @@ export async function beginDocument(params: {
 type ChunkSource = { documentVersionId: string } | { contextNoteId: string };
 type Scope = { organizationId: string; projectId: string };
 
-/** Chunks whose text disappeared but still hold confirmed or person-made items move out of the way. */
-const STALE_INDEX_BASE = 1_000_000;
 
 export interface SyncResult {
   /** Chunks the extraction job must still read, in reading order. */
@@ -118,11 +116,11 @@ async function syncChunks(
   const wanted = new Set(indexOfKey.keys());
   const kept = new Set(stored.filter((chunk) => wanted.has(chunk.chunkKey)).map((c) => c.chunkKey));
 
-  let staleIndex = Math.max(STALE_INDEX_BASE, ...stored.map((chunk) => chunk.chunkIndex + 1));
+  let staleIndex = Math.max(STALE_CHUNK_INDEX_BASE, ...stored.map((chunk) => chunk.chunkIndex + 1));
   for (const chunk of stored.filter((c) => !wanted.has(c.chunkKey))) {
     if (await releaseChunkItems(db, scope, chunk.id)) {
       await db.chunk.delete({ where: { id: chunk.id } });
-    } else if (chunk.chunkIndex < STALE_INDEX_BASE) {
+    } else if (chunk.chunkIndex < STALE_CHUNK_INDEX_BASE) {
       await db.chunk.update({ where: { id: chunk.id }, data: { chunkIndex: staleIndex } });
       staleIndex += 1;
     }
@@ -144,7 +142,7 @@ async function syncChunks(
   }
 
   const pending = await db.chunk.findMany({
-    where: { ...where, extractedAt: null, chunkIndex: { lt: STALE_INDEX_BASE } },
+    where: { ...where, extractedAt: null, chunkIndex: { lt: STALE_CHUNK_INDEX_BASE } },
     select: { id: true },
     orderBy: { chunkIndex: 'asc' },
   });

@@ -1,0 +1,69 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Family Members",
+        "description": "Lets residents maintain the members of their flat, grouped by age group, with counts shown to the Society Manager and Raghuvir dashboard."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Add customer as first member on approval",
+        "description": "When a resident is approved, the system adds the customer as the first family member with relation Self.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "My Family screen to add members",
+        "description": "Resident opens My Family and adds each member with name, relation and birth year; gender and mobile are optional.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Assign age group from birth year",
+        "description": "The system places each member in an age group based on birth year: Kids (0–17), Adults (18–59) or Seniors (60+).",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Raghuvir Admin can change age group limits",
+        "description": "Raghuvir Admin can change the age limits that define the Kids, Adults and Seniors groups.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Immediate count updates on summary and dashboard",
+        "description": "Member counts update at once on the Society Manager summary and the Raghuvir dashboard.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Yearly automatic age group update",
+        "description": "Every year on 1 January the system automatically moves members into their new age group.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Warn on duplicate member in another flat",
+        "description": "If the same name and birth year already exist in another flat of the project, a warning is shown and the resident confirms or corrects the entry.",
+        "moduleName": "Family Members"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Missing birth year counted as Age Not Given",
+        "description": "A member with no birth year given is counted under Age Not Given.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Deactivated flat members removed from counts",
+        "description": "When a flat is deactivated due to an owner change, its members are removed from all counts, but history is kept.",
+        "moduleName": "Family Members"
+      },
+      {
+        "title": "Maximum 15 members per flat",
+        "description": "More than 15 members in one flat is blocked, with a message to contact the Society Manager.",
+        "moduleName": "Family Members"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1662,
+    "outputTokens": 724,
+    "cachedTokens": 1221
+  }
+}

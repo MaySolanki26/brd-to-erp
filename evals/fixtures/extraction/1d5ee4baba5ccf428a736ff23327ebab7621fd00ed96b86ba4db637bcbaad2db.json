@@ -1,0 +1,64 @@
+{
+  "output": {
+    "modules": [],
+    "requirements": [
+      {
+        "title": "Simple screens in Gujarati for residents",
+        "description": "To reduce the risk that residents, mainly elderly, do not use the app, screens must be simple and available in Gujarati, with onboarding led by the Society Manager.",
+        "moduleName": null
+      },
+      {
+        "title": "Reminders and auto-escalation for approvals",
+        "description": "To prevent an inactive Society Manager from blocking approvals, the system sends reminders and escalates automatically.",
+        "moduleName": null
+      },
+      {
+        "title": "Server-side project check on data",
+        "description": "The system checks the project on the server side so that one project's data is not shown in another, and this is tested each release.",
+        "moduleName": null
+      },
+      {
+        "title": "Watchman-friendly interface",
+        "description": "For the watchman, the app uses large buttons, needs only 3 taps for actions, and is in the local language.",
+        "moduleName": null
+      },
+      {
+        "title": "Raghuvir Admin override of approvals",
+        "description": "Raghuvir Admin can override approvals when the Society Manager is inactive.",
+        "moduleName": null
+      },
+      {
+        "title": "Society Manager can raise complaints for residents",
+        "description": "The Society Manager can raise complaints on behalf of residents who do not use the app.",
+        "moduleName": null
+      },
+      {
+        "title": "Deactivate and log fake registrations",
+        "description": "The system allows a fake registration to be deactivated and the action logged.",
+        "moduleName": null
+      }
+    ],
+    "rules": [
+      {
+        "title": "Society Manager approval of registrations",
+        "description": "Registrations need Society Manager approval and a one-flat check to prevent fake registrations.",
+        "moduleName": null
+      },
+      {
+        "title": "Fixed Phase 1 scope with change approval",
+        "description": "Phase 1 scope is fixed and new feature requests need change approval; unapproved asks move to the Phase 2 list.",
+        "moduleName": null
+      },
+      {
+        "title": "Agreed category list for builder vs society responsibility",
+        "description": "Responsibility between builder and society is decided using a category list agreed with Raghuvir; Raghuvir Admin decides disputes.",
+        "moduleName": null
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1874,
+    "outputTokens": 662,
+    "cachedTokens": 1221
+  }
+}

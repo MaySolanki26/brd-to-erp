@@ -1,0 +1,73 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Notice Board and Events",
+        "description": "Lets Raghuvir and Society Managers publish, schedule, pin, update and cancel posts and events that target users see and are notified about."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Post types",
+        "description": "Each new post must be one of Announcement, Celebration, Event or Urgent, on both web and mobile.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Raghuvir post to selected projects",
+        "description": "On web, Raghuvir can publish a post to selected projects so that only users of those projects see it.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Society Manager post to own project or buildings",
+        "description": "On mobile, a Society Manager with the Post notices permission can post so that only their own project, or selected buildings, sees it.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Show-from and show-until dates",
+        "description": "Posts have show-from and show-until dates, and once the show-until date has passed the post moves to Past.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Schedule publish",
+        "description": "A post can be given a future publish time, at which it appears and notifies. This is a Should priority on both platforms.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Pin to top",
+        "description": "A pinned post stays first on the board. This is a Should priority on both platforms.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Notification on publish",
+        "description": "When a post is published, target users receive a notification that opens the post.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Event details",
+        "description": "A post of type Event requires date, time and venue.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Notify by age group",
+        "description": "When an invited group such as Kids is chosen, the notification goes only to families with kids, while the post remains visible to all in the project. This is a Should priority.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Edit or cancel after publish",
+        "description": "When a post is edited or cancelled after publishing, it is marked Updated or Cancelled and target users are notified.",
+        "moduleName": "Notice Board and Events"
+      },
+      {
+        "title": "Read-only mobile board",
+        "description": "On mobile, any app user sees only their own project's current posts, pinned first and then newest first, with no reply or comment option.",
+        "moduleName": "Notice Board and Events"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 2065,
+    "outputTokens": 803,
+    "cachedTokens": 1221
+  }
+}

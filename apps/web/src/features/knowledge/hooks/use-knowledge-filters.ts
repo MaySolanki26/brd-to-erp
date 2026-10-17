@@ -12,12 +12,14 @@ export interface KnowledgeFilters {
   moduleId: string | null;
   sourceId: string | null;
   search: string;
+  /** Only items whose source text could not be read cleanly. */
+  needsReview: boolean;
   page: number;
 }
 
 type FilterPatch = Partial<KnowledgeFilters>;
 
-const FIELDS = ['status', 'module', 'source', 'q', 'page'] as const;
+const FIELDS = ['status', 'module', 'source', 'q', 'review', 'page'] as const;
 
 /**
  * Filters live in the URL, namespaced per tab (e.g. `requirements.status`), so a filtered view can be
@@ -36,6 +38,7 @@ export function useKnowledgeFilters(kind: KnowledgeKind) {
       moduleId: moduleId.success ? moduleId.data : null,
       sourceId: sourceId.success ? sourceId.data : null,
       search: params.get(`${kind}.q`)?.trim() ?? '',
+      needsReview: params.get(`${kind}.review`) === '1',
       page: Number.isInteger(page) && page >= 1 ? page : 1,
     };
   }, [params, kind]);
@@ -54,6 +57,7 @@ export function useKnowledgeFilters(kind: KnowledgeKind) {
           if ('moduleId' in patch) set('module', patch.moduleId ?? null);
           if ('sourceId' in patch) set('source', patch.sourceId ?? null);
           if ('search' in patch) set('q', patch.search?.trim() ?? null);
+          if ('needsReview' in patch) set('review', patch.needsReview ? '1' : null);
           // Any filter change starts again from the first page.
           set('page', 'page' in patch ? (patch.page ?? 1) : 1);
           return next;
@@ -75,9 +79,13 @@ export function useKnowledgeFilters(kind: KnowledgeKind) {
     );
   }, [kind, setParams]);
 
-  const activeCount = [filters.status, filters.moduleId, filters.sourceId, filters.search].filter(
-    Boolean,
-  ).length;
+  const activeCount = [
+    filters.status,
+    filters.moduleId,
+    filters.sourceId,
+    filters.search,
+    filters.needsReview,
+  ].filter(Boolean).length;
 
   return { filters, update, clear, activeCount };
 }

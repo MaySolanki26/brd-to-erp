@@ -1,0 +1,73 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Web Panel",
+        "description": "Web interface used by Raghuvir Admin and Assigned Person roles."
+      },
+      {
+        "name": "Mobile App",
+        "description": "Mobile interface used by Society Manager, Resident and Watchman roles."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Raghuvir Admin work on Web Panel",
+        "description": "Raghuvir Admin (head office staff) uses the Web Panel for project setup, Society Managers, complaint control and announcements.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Assigned Person fixes complaints",
+        "description": "Assigned Person (Raghuvir staff or service team) uses the Web Panel to fix a complaint and mark it Fixed.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Society Manager work on Mobile App",
+        "description": "Society Manager (Secretary or President) uses the Mobile App to approve residents and check complaints, documents and hall approvals.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Resident complaints, bookings and visitors",
+        "description": "Resident (flat customer) uses the Mobile App for complaints, bookings and visitors.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Watchman visitor handling",
+        "description": "Watchman (gate security) uses the Mobile App for the visitor list, walk-in entry, and entry and exit time.",
+        "moduleName": "Mobile App"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Raghuvir Admin visibility",
+        "description": "Raghuvir Admin can see all projects, or only the projects given to them.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Assigned Person visibility",
+        "description": "Assigned Person can see only the complaints given to them.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Society Manager sees own project only",
+        "description": "Society Manager can see only their own project.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Resident visibility",
+        "description": "Resident can see their own flat and the project's shared info.",
+        "moduleName": "Mobile App"
+      },
+      {
+        "title": "Watchman sees today's visitors only",
+        "description": "Watchman can see only their own project's visitors, for today only.",
+        "moduleName": "Mobile App"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1739,
+    "outputTokens": 730,
+    "cachedTokens": 1221
+  }
+}

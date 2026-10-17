@@ -1,0 +1,54 @@
+{
+  "output": {
+    "modules": [],
+    "requirements": [
+      {
+        "title": "Consent screen for personal data",
+        "description": "Because personal data must follow the DPDP Act, 2023, the system must provide a consent screen.",
+        "moduleName": null
+      },
+      {
+        "title": "Personal data deletion",
+        "description": "To follow the DPDP Act, 2023, the system must support deletion of personal data.",
+        "moduleName": null
+      },
+      {
+        "title": "Breach handling for personal data",
+        "description": "To follow the DPDP Act, 2023, the system must support handling of personal data breaches.",
+        "moduleName": null
+      },
+      {
+        "title": "Project check on every request",
+        "description": "Because one common backend serves all projects, the system must check the project on every request.",
+        "moduleName": null
+      }
+    ],
+    "rules": [
+      {
+        "title": "OTP SMS templates registered under TRAI DLT",
+        "description": "OTP SMS templates must be registered under TRAI DLT rules. This needs 1–2 weeks lead time before launch.",
+        "moduleName": null
+      },
+      {
+        "title": "One common backend for all projects",
+        "description": "All projects must use one common backend.",
+        "moduleName": null
+      },
+      {
+        "title": "DPDP Act, 2023 compliance",
+        "description": "Personal data must follow the DPDP Act, 2023.",
+        "moduleName": null
+      },
+      {
+        "title": "Raghuvir creates only Society Managers",
+        "description": "Raghuvir only creates Society Managers and does not approve residents. All approvals depend on an active Society Manager.",
+        "moduleName": null
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1557,
+    "outputTokens": 460,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Society Manager Setup and Change",
+        "description": "Lets the Raghuvir Admin create or replace the Society Manager for a project and handles the handover of access and pending work."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Admin creates or replaces Society Manager",
+        "description": "Raghuvir Admin can create or replace the Society Manager by entering name, mobile and project.",
+        "moduleName": "Society Manager Setup and Change"
+      },
+      {
+        "title": "Transfer pending items to new Society Manager",
+        "description": "When a Society Manager is replaced, pending approvals and complaint checks move to the new Society Manager.",
+        "moduleName": "Society Manager Setup and Change"
+      },
+      {
+        "title": "Keep history with the project",
+        "description": "All history stays with the project and not with the person who held the Society Manager role.",
+        "moduleName": "Society Manager Setup and Change"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Old Society Manager loses access at once",
+        "description": "When a Society Manager is replaced, the old Society Manager loses access immediately.",
+        "moduleName": "Society Manager Setup and Change"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1402,
+    "outputTokens": 358,
+    "cachedTokens": 1221
+  }
+}

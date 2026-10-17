@@ -1,0 +1,74 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Amenities (Halls and Shared Facilities)",
+        "description": "Covers setting up bookable amenities and shared facilities per project, booking them, tracking live occupancy, and closing them for maintenance."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Add any amenity per project",
+        "description": "On the web, an amenity can be added per project with name, type (Bookable or Shared), capacity, open hours, slot length and rules. Once saved, it shows in that project's app.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Book a bookable amenity",
+        "description": "Residents can book a slot of a bookable amenity on mobile. A booked slot shows as unavailable when selected.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Approve booking",
+        "description": "Bookings can be approved on mobile. When two requests exist for one slot and one is approved, the other is auto-rejected.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Cancel booking",
+        "description": "A booking can be cancelled on mobile before the cut-off time, and the slot becomes free again. Priority is Should.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Book a shared facility slot",
+        "description": "On mobile, a resident can book a date and slot that has space. The slot count goes up by the number of members booked.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Check in and check out",
+        "description": "Residents can check in and check out on mobile. A resident tapping Check In with 2 members raises the live count by 3.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Live count for everyone",
+        "description": "Any resident of the project sees, for each shared facility, the number of people inside against capacity.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Automatic check-out",
+        "description": "On web and mobile, a user who has not checked out by slot end or closing time is checked out automatically.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "No-show release",
+        "description": "On web and mobile, if there is no check-in within the set minutes, the slot is freed. Priority is Should.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      },
+      {
+        "title": "Close for maintenance",
+        "description": "On mobile, a facility can be marked closed. Booking then stops and booked users are notified.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Capacity limit blocks check-in",
+        "description": "When a shared facility has reached capacity, a check-in attempt is blocked and a message is shown.",
+        "moduleName": "Amenities (Halls and Shared Facilities)"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 2138,
+    "outputTokens": 954,
+    "cachedTokens": 1221
+  }
+}

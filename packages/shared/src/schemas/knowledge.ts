@@ -14,6 +14,11 @@ const pagingShape = {
   /** A document or a context note; items extracted from any version of it match. */
   sourceId: uuidSchema.optional(),
   search: z.string().trim().max(100).optional(),
+  /** Only items whose source chunk could not be read cleanly (their own, or one they were merged from). */
+  needsReview: z
+    .enum(['true', 'false'])
+    .transform((value) => (value === 'true' ? true : undefined))
+    .optional(),
 };
 
 export const listModulesQuerySchema = z.object(pagingShape);

@@ -62,6 +62,31 @@ describe('DataTable', () => {
     expect(onClear).toHaveBeenCalled();
   });
 
+  it('uses the wording given for the no-filter choice, and clears a search on its own', async () => {
+    const onClear = vi.fn();
+    render(
+      <DataTable
+        columns={COLUMNS}
+        data={ROWS}
+        search={{ value: 'alp', onChange: vi.fn(), placeholder: 'Search names' }}
+        filters={[
+          {
+            id: 'status',
+            label: 'Filter by status',
+            allLabel: 'All statuses',
+            options: [{ value: 'OPEN', label: 'Open' }],
+          },
+        ]}
+        filterValues={{}}
+        onFilterChange={vi.fn()}
+        onClearFilters={onClear}
+      />,
+    );
+    expect(screen.getByRole('combobox', { name: 'Filter by status' })).toHaveTextContent('All statuses');
+    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(onClear).toHaveBeenCalled();
+  });
+
   it('shows the retry action on error and a skeleton while loading', async () => {
     const onRetry = vi.fn();
     const { rerender } = render(

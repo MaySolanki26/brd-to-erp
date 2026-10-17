@@ -1,6 +1,6 @@
 import { Clock } from 'lucide-react';
 import { EmptyState, PageError, Progress, Skeleton } from '@brd/ui';
-import type { ProcessingStatusDto, SourceStatus } from '@brd/shared';
+import type { ChunkProgressDto, ProcessingStatusDto, SourceStatus } from '@brd/shared';
 import { errorMessage } from '@/lib/error-message';
 import { useProcessingStatus } from '@/features/projects/hooks/use-sources';
 import { SourceStatusBadge } from '@/features/projects/components/SourceStatusBadge';
@@ -47,6 +47,7 @@ export function ProcessingPanel({ projectId }: { projectId: string }) {
       {query.isSuccess && totalSources(query.data) > 0 && (
         <div className="max-w-xl space-y-3">
           <ProgressBar status={query.data} />
+          <PartsRead chunks={query.data.chunks} />
           <ul className="flex flex-wrap gap-3">
             {ORDER.map((key) => (
               <li key={key} className="flex items-center gap-1.5 text-sm">
@@ -76,6 +77,22 @@ function ProgressBar({ status }: { status: ProcessingStatusDto }) {
       <Progress value={percent} aria-label="Sources processed" />
       <p className="text-sm">
         {done} of {total} sources processed{status.active && ' · working…'}
+      </p>
+    </div>
+  );
+}
+
+/** Sources are cut into parts that are read one by one, which is where most of the waiting is. */
+function PartsRead({ chunks }: { chunks: ChunkProgressDto }) {
+  if (chunks.total === 0) return null;
+  const percent = Math.round((chunks.extracted / chunks.total) * 100);
+  return (
+    <div className="space-y-1">
+      <Progress value={percent} aria-label="Parts read" />
+      <p className="text-sm">
+        {chunks.extracted} of {chunks.total} parts read
+        {chunks.needingReview > 0 &&
+          ` · ${String(chunks.needingReview)} need${chunks.needingReview === 1 ? 's' : ''} a person to check`}
       </p>
     </div>
   );

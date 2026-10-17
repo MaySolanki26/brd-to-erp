@@ -352,6 +352,50 @@ describe('knowledge routes', () => {
     });
   });
 
+  describe('needsReview filter', () => {
+    it('lists only items whose source chunk was flagged, including merged sources', async () => {
+      const flagged = seedChunk({
+        projectId: world.p1.id,
+        document: undefined,
+        noteId,
+        needsReview: true,
+        index: 5,
+      });
+      addKnowledge('requirements', {
+        organizationId: world.orgA, projectId: world.p1.id, sourceChunkId: flagged.id, title: 'Own flagged',
+      });
+      addKnowledge('requirements', {
+        organizationId: world.orgA, projectId: world.p1.id, sourceChunkId: docChunk.id,
+        extraChunkIds: [flagged.id], title: 'Merged flagged',
+      });
+      addKnowledge('requirements', {
+        organizationId: world.orgA, projectId: world.p1.id, sourceChunkId: docChunk.id, title: 'Clean',
+      });
+      const viewer = await sessionFor('viewerA');
+
+      const res = await as(app, viewer, 'get', `${url(world.p1.id, 'requirements')}?needsReview=true`);
+      expect(res.body.items.map((i: { title: string }) => i.title).sort()).toEqual([
+        'Merged flagged',
+        'Own flagged',
+      ]);
+      expect(res.body.total).toBe(2);
+
+      const all = await as(app, viewer, 'get', `${url(world.p1.id, 'requirements')}?needsReview=false`);
+      expect(all.body.items).toHaveLength(3);
+    });
+
+    it('combines with the other filters and rejects a bad value', async () => {
+      const viewer = await sessionFor('viewerA');
+      const bad = await as(app, viewer, 'get', `${url(world.p1.id, 'rules')}?needsReview=maybe`);
+      expect(bad.status).toBe(400);
+      const combined = await as(
+        app, viewer, 'get',
+        `${url(world.p1.id, 'modules')}?needsReview=true&status=OPEN&sourceId=${docId}`,
+      );
+      expect(combined.status).toBe(200);
+    });
+  });
+
   describe('items merged from several sources', () => {
     it('shows the first source and the other chunks, and is found through either source', async () => {
       addKnowledge('requirements', {

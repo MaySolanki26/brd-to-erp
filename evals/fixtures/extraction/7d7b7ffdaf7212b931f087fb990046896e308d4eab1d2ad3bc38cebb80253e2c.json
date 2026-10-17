@@ -1,0 +1,54 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Bookable Amenity",
+        "description": "Lets residents book amenities such as a hall for a date and time slot, subject to Society Manager approval."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Resident selects hall, date and time slot",
+        "description": "A resident can pick a hall, a date and a time slot to request a booking.",
+        "moduleName": "Bookable Amenity"
+      },
+      {
+        "title": "Check slot availability",
+        "description": "The system checks the chosen slot and shows it as unavailable when it is already booked.",
+        "moduleName": "Bookable Amenity"
+      },
+      {
+        "title": "Send booking request to Society Manager",
+        "description": "Each booking request goes to the Society Manager for a decision.",
+        "moduleName": "Bookable Amenity"
+      },
+      {
+        "title": "Confirm booking and block slot on approval",
+        "description": "When the request is approved, the booking is confirmed and the slot is blocked.",
+        "moduleName": "Bookable Amenity"
+      },
+      {
+        "title": "Resident can cancel a booking",
+        "description": "A resident can cancel a booking before the cut-off time.",
+        "moduleName": "Bookable Amenity"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Cancellation only before cut-off time",
+        "description": "A resident may cancel a booking only before the cut-off time.",
+        "moduleName": "Bookable Amenity"
+      },
+      {
+        "title": "First approved request wins for a contested slot",
+        "description": "When two requests are made for one slot, the first one approved wins and the other is automatically rejected.",
+        "moduleName": "Bookable Amenity"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1443,
+    "outputTokens": 491,
+    "cachedTokens": 1221
+  }
+}

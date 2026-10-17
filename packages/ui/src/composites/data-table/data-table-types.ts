@@ -46,7 +46,10 @@ export interface DataTableFilterOption {
 
 export interface DataTableFilterDef {
   id: string;
+  /** Also the accessible name of the select. */
   label: string;
+  /** Text for the "no filter" choice. Defaults to "All <label>". */
+  allLabel?: string;
   options: DataTableFilterOption[];
 }
 

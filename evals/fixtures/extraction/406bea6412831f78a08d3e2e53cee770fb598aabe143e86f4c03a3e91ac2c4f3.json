@@ -1,0 +1,57 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Mobile App – Common",
+        "description": "Features shared by all users of the mobile app, such as login, notifications, notice board, contact directory, profile and language."
+      },
+      {
+        "name": "Notice Board",
+        "description": "A separate project within the app for announcements, celebrations and events."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "OTP login",
+        "description": "The mobile app must let users log in with an OTP.",
+        "moduleName": "Mobile App – Common"
+      },
+      {
+        "title": "Switch between flats or roles",
+        "description": "Users must be able to switch between flats or roles within the mobile app.",
+        "moduleName": "Mobile App – Common"
+      },
+      {
+        "title": "Notifications",
+        "description": "The mobile app must provide notifications to users.",
+        "moduleName": "Mobile App – Common"
+      },
+      {
+        "title": "Notice Board for announcements, celebrations, events",
+        "description": "The app must include a Notice Board, described as its own project, covering announcements, celebrations and events.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Contact directory with tap to call",
+        "description": "The mobile app must provide a contact directory where a user can tap a contact to call.",
+        "moduleName": "Mobile App – Common"
+      },
+      {
+        "title": "User profile",
+        "description": "The mobile app must provide a Profile feature for users.",
+        "moduleName": "Mobile App – Common"
+      },
+      {
+        "title": "Language support: English, Gujarati, Hindi",
+        "description": "The mobile app must support the English, Gujarati and Hindi languages.",
+        "moduleName": "Mobile App – Common"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1488,
+    "outputTokens": 498,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Web Panel",
+        "description": "The admin web panel with features W13 to W20 for visitor records, documents, reports, activity log, notifications, family dashboard, age groups and watchman management."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Visitor record view",
+        "description": "Admin can view visitor entries per project. This is view only.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Society documents view",
+        "description": "Admin can view documents per project. This is view only.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Reports",
+        "description": "Admin can see reports on closure time, delays, reopen count and top problem categories.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Activity log",
+        "description": "Admin can see who did what and when.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Notifications for assignments, delays and escalations",
+        "description": "Admin and the Assigned Person receive notifications about new assignments, delays and escalations.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Family and Member Dashboard",
+        "description": "Admin can see families, members by age group, and owners vs tenants, per project, building and flat.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Age group setup",
+        "description": "Admin can name the age groups and set their age limits.",
+        "moduleName": "Web Panel"
+      },
+      {
+        "title": "Watchman management",
+        "description": "Admin can create or remove Watchman logins for any project.",
+        "moduleName": "Web Panel"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1685,
+    "outputTokens": 487,
+    "cachedTokens": 1221
+  }
+}

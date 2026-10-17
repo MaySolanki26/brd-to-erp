@@ -1,0 +1,94 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaint Life Cycle",
+        "description": "Handles a complaint from the resident raising it through checking, assignment, fixing and resident approval or reopening."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Raise complaint with category, issue and photos",
+        "description": "A resident picks a category, writes the issue and can optionally add photos to raise a complaint.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Create complaint number and set Waiting for Check",
+        "description": "The system creates a complaint number when a complaint is raised and sets its status to Waiting for Check.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Society Manager checks complaint genuineness",
+        "description": "The Society Manager checks each complaint. A non-genuine complaint is set to Rejected with a reason, the resident is notified and the flow ends. A genuine complaint moves on to routing.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Route genuine complaints by category",
+        "description": "For Builder responsibility, Raghuvir Admin assigns an Assigned Person. For Society responsibility, the Society Manager assigns a society vendor.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Track status from Assigned to Work Started",
+        "description": "After assignment, the complaint status moves to Assigned and then Work Started.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Mark complaint Fixed with remark and photo",
+        "description": "The Assigned Person marks the complaint Fixed and adds a remark and a photo.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Wait for resident approval and notify resident",
+        "description": "After Fixed, the status becomes Waiting for Resident Approval and the resident is notified.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Resident approves or reopens complaint",
+        "description": "If the resident approves, the complaint is Closed and removed from the resident's list. If the resident reopens with a reason, it goes back to Work Started.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Escalate unchecked complaints after 24 hours",
+        "description": "A complaint not checked within 24 hours is escalated to Raghuvir Admin.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Alert on complaints not fixed within time limit",
+        "description": "If a complaint is not fixed within the category time limit, a senior or Raghuvir Admin is alerted.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Send reminders when resident does not respond",
+        "description": "If the resident does not respond after Fixed, reminders are sent on set days (for example day 2 and day 5), which Raghuvir Admin sets. After the last reminder the Society Manager is alerted.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Send repeatedly reopened complaints to Raghuvir Admin",
+        "description": "A complaint reopened more than 2 times goes to Raghuvir Admin.",
+        "moduleName": "Complaint Life Cycle"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Only the raising resident can close a complaint",
+        "description": "Only the resident who raised a complaint can close it. There is no auto-close, and the complaint closes only when the resident approves.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Society Manager filters non-genuine complaints first",
+        "description": "The Society Manager filters out non-genuine complaints before any routing or assignment.",
+        "moduleName": "Complaint Life Cycle"
+      },
+      {
+        "title": "Society Manager's own complaint checked by someone else",
+        "description": "A complaint raised by the Society Manager is checked by another member with the Check complaints permission, or by Raghuvir Admin.",
+        "moduleName": "Complaint Life Cycle"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1937,
+    "outputTokens": 1279,
+    "cachedTokens": 1221
+  }
+}

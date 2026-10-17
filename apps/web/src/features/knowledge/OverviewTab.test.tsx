@@ -34,6 +34,7 @@ const project: ProjectDto = {
 function status(overrides: Partial<ProcessingStatusDto> = {}): ProcessingStatusDto {
   return {
     counts: { UPLOADED: 0, PROCESSING: 0, PROCESSED: 3, FAILED: 1 },
+    chunks: { total: 0, extracted: 0, needingReview: 0 },
     active: false,
     lastProcessedAt: '2026-03-04T10:30:00.000Z',
     sources: [],
@@ -89,6 +90,36 @@ describe('OverviewTab', () => {
     expect(await screen.findByText('3 of 4 sources processed')).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'Sources processed' })).toBeInTheDocument();
     expect(screen.getByText(/Last processed .*2026/)).toBeInTheDocument();
+  });
+
+  it('shows how many parts of the sources have been read, and how many need a person', async () => {
+    mockApi(
+      () => ({ status: status({ chunks: { total: 134, extracted: 120, needingReview: 3 } }) }),
+      () => ({ summary: summary() }),
+    );
+    view();
+    expect(await screen.findByText(/120 of 134 parts read · 3 need a person to check/)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Parts read' })).toBeInTheDocument();
+  });
+
+  it('says it in the singular for one flagged part and hides the line when there are no parts', async () => {
+    mockApi(
+      () => ({ status: status({ chunks: { total: 10, extracted: 10, needingReview: 1 } }) }),
+      () => ({ summary: summary() }),
+    );
+    view();
+    expect(await screen.findByText(/10 of 10 parts read · 1 needs a person to check/)).toBeInTheDocument();
+  });
+
+  it('shows no parts line before anything has been cut into parts', async () => {
+    mockApi(
+      () => ({ status: status() }),
+      () => ({ summary: summary() }),
+    );
+    view();
+    await screen.findByText('3 of 4 sources processed');
+    expect(screen.queryByText(/parts read/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar', { name: 'Parts read' })).not.toBeInTheDocument();
   });
 
   it('says when work is still running', async () => {

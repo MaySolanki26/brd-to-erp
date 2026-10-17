@@ -1,0 +1,112 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "User Registration and Customer Management",
+        "description": "Covers resident registration with flat, approval of residents by the Society Manager, and replacement of Society Managers by Raghuvir Admin."
+      },
+      {
+        "name": "Complaints",
+        "description": "Covers raising complaints with photos, screening by the Society Manager, task assignment, and resident approval or reopening of fixed complaints."
+      },
+      {
+        "name": "Hall Booking",
+        "description": "Lets residents book the society hall."
+      },
+      {
+        "name": "Visitor Management",
+        "description": "Covers expected visitors added by residents, today's visitor list and walk-in entries for the watchman."
+      },
+      {
+        "name": "Documents",
+        "description": "Lets the Society Manager upload society documents."
+      },
+      {
+        "name": "Reporting",
+        "description": "Gives Raghuvir Admin a consolidated view of complaints across all projects."
+      },
+      {
+        "name": "Announcements",
+        "description": "Lets Raghuvir Admin send one message to all owners."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Resident self-registration with flat",
+        "description": "A resident can register themselves with their flat so they can use the app without visiting the office.",
+        "moduleName": "User Registration and Customer Management"
+      },
+      {
+        "title": "Raise complaint with photos",
+        "description": "A resident can raise a complaint with photos so the issue is recorded once and not lost.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Resident approves or reopens fixed complaint",
+        "description": "A resident can approve or reopen a fixed complaint so that it closes only when the work is really done.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Book the hall",
+        "description": "A resident can book the hall to avoid clashes and paperwork.",
+        "moduleName": "Hall Booking"
+      },
+      {
+        "title": "Add expected visitor",
+        "description": "A resident can add an expected visitor so guests enter without trouble.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Society Manager approves project residents",
+        "description": "A Society Manager can approve residents of their project so only real residents get access.",
+        "moduleName": "User Registration and Customer Management"
+      },
+      {
+        "title": "Society Manager checks complaints before they proceed",
+        "description": "A Society Manager can check complaints before they move forward so Raghuvir does not waste effort on non-genuine issues.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Upload society documents",
+        "description": "A Society Manager can upload society documents so they are not lost when the committee changes.",
+        "moduleName": "Documents"
+      },
+      {
+        "title": "Admin sees all projects' complaints in one place",
+        "description": "A Raghuvir Admin can see complaints of all projects in one place to act on delays without phone calls.",
+        "moduleName": "Reporting"
+      },
+      {
+        "title": "Admin replaces a Society Manager",
+        "description": "A Raghuvir Admin can replace a Society Manager so work continues without a break.",
+        "moduleName": "User Registration and Customer Management"
+      },
+      {
+        "title": "Send one message to all owners",
+        "description": "A Raghuvir Admin can send one message to all owners so everyone gets the same information on time.",
+        "moduleName": "Announcements"
+      },
+      {
+        "title": "Assigned Person sees only own tasks",
+        "description": "An Assigned Person can see only their own tasks so they know exactly what to fix and where.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Watchman sees today's visitors",
+        "description": "A Watchman can see today's visitors to let guests in fast without calling flats.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Watchman adds walk-in visitor",
+        "description": "A Watchman can add a walk-in visitor so every entry is recorded even without advance entry.",
+        "moduleName": "Visitor Management"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 2056,
+    "outputTokens": 1188,
+    "cachedTokens": 1221
+  }
+}

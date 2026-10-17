@@ -3,6 +3,9 @@ import { MAX_EXTRACTED_CHARS, type ParsedSection } from './parsers/types.js';
 import { PermanentJobError, TOO_LARGE } from './errors.js';
 
 export const MAX_CHUNK_CHARS = 3_000;
+
+/** Chunks whose text disappeared but still hold confirmed items are moved to indexes from here up. */
+export const STALE_CHUNK_INDEX_BASE = 1_000_000;
 const CHARS_PER_TOKEN = 4;
 
 export interface ChunkInput {

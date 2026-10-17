@@ -1,0 +1,84 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Complaints",
+        "description": "Handles raising, checking, routing, assigning, tracking, escalating, reopening and closing of resident complaints."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Raise complaint with photos",
+        "description": "On mobile, a resident can submit a complaint for their own flat with a category, description and up to 5 photos. A unique complaint number is created on submission.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Genuineness check",
+        "description": "On mobile, a new complaint can be marked Not Genuine. A reason is required and the resident is notified.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Category setup",
+        "description": "On web, a saved complaint category holds a responsibility tag, time limits and a default Assigned Person.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Route by responsibility",
+        "description": "A genuine builder complaint goes to Raghuvir Admin. A society complaint stays with the Society Manager.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Automatic and manual assignment",
+        "description": "When a category has a default Assigned Person, assignment is automatic. It can be changed by hand.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "My Tasks view",
+        "description": "On web, an Assigned Person who logs in sees only their own complaints.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Status timeline with notifications",
+        "description": "Every status change saves who made it, when and a remark, and sends a notification.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Reopen Fixed complaint with reason",
+        "description": "On mobile, a Fixed complaint can be reopened and a reason is required.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Time limit escalation",
+        "description": "When a check or fix time limit is crossed, the next level is alerted.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Reminders after Fixed",
+        "description": "If the resident does not respond after a complaint is Fixed, reminders go out on the set days. After the last reminder the Society Manager is alerted.",
+        "moduleName": "Complaints"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Closure by complainer only",
+        "description": "A Fixed complaint is Closed only when the complainer approves it, and it is then hidden from their list. Others cannot approve.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Escalate after 2 reopens",
+        "description": "After a complaint has been reopened 2 times it goes to Raghuvir Admin.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "No auto-close",
+        "description": "A complaint never closes without the complainer's approval.",
+        "moduleName": "Complaints"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 2243,
+    "outputTokens": 870,
+    "cachedTokens": 1221
+  }
+}

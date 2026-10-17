@@ -1,0 +1,172 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Mobile App – Society Manager",
+        "description": "The mobile app features for a Society Manager, who is also a resident and gets all Resident features."
+      },
+      {
+        "name": "Resident Management",
+        "description": "Approving, adding, editing and deactivating owners and tenants."
+      },
+      {
+        "name": "Complaint Management",
+        "description": "Checking, assigning, updating and tracking complaints in the project."
+      },
+      {
+        "name": "Society Documents",
+        "description": "Management of society documents."
+      },
+      {
+        "name": "Bookings and Facilities",
+        "description": "Approving hall bookings and closing facilities for maintenance."
+      },
+      {
+        "name": "Notice Board",
+        "description": "Notice Board posts and the project contact directory."
+      },
+      {
+        "name": "Watchman Management",
+        "description": "Creating and removing Watchman accounts."
+      },
+      {
+        "name": "Visitor and Family Summaries",
+        "description": "Visitor records, project summary and family and member summaries."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Society Manager gets all Resident features",
+        "description": "A Society Manager is also a resident and gets all Resident features in addition to the manager features.",
+        "moduleName": "Mobile App – Society Manager"
+      },
+      {
+        "title": "Approve or reject owners and tenants",
+        "description": "A Society Manager can approve or reject owners and tenants.",
+        "moduleName": "Resident Management"
+      },
+      {
+        "title": "Add a resident manually",
+        "description": "A Society Manager can add a resident manually.",
+        "moduleName": "Resident Management"
+      },
+      {
+        "title": "Edit or deactivate resident; confirm tenancy end",
+        "description": "A Society Manager can edit or deactivate a resident and confirm the end of a tenancy.",
+        "moduleName": "Resident Management"
+      },
+      {
+        "title": "Check if a complaint is genuine",
+        "description": "A Society Manager can check whether a complaint is genuine.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Assign society-responsibility complaints",
+        "description": "A Society Manager can assign complaints that are the society's responsibility.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Update complaint status for society vendors",
+        "description": "A Society Manager can update complaint status for society vendors.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Track all complaints in the project",
+        "description": "A Society Manager can track all complaints in the project.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Manage society documents",
+        "description": "A Society Manager can manage society documents.",
+        "moduleName": "Society Documents"
+      },
+      {
+        "title": "Approve hall bookings",
+        "description": "A Society Manager can approve hall bookings.",
+        "moduleName": "Bookings and Facilities"
+      },
+      {
+        "title": "Close a facility for maintenance",
+        "description": "A Society Manager can close a facility for maintenance.",
+        "moduleName": "Bookings and Facilities"
+      },
+      {
+        "title": "Notice Board posts for own project",
+        "description": "A Society Manager can post notices on the Notice Board for their own project.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Project contact directory",
+        "description": "A Society Manager can use the project contact directory.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Create or remove a Watchman",
+        "description": "A Society Manager can create or remove a Watchman.",
+        "moduleName": "Watchman Management"
+      },
+      {
+        "title": "Visitor record and project summary",
+        "description": "A Society Manager can view the visitor record and project summary.",
+        "moduleName": "Visitor and Family Summaries"
+      },
+      {
+        "title": "Family and member summary by building",
+        "description": "A Society Manager can view a family and member summary, owners vs tenants, by building.",
+        "moduleName": "Visitor and Family Summaries"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Resident approval features need Approve residents",
+        "description": "Approving or rejecting residents, adding a resident manually, and editing or deactivating a resident or confirming tenancy end need the Approve residents permission.",
+        "moduleName": "Resident Management"
+      },
+      {
+        "title": "Complaint checking needs Check complaints",
+        "description": "Checking if a complaint is genuine and tracking all complaints in the project need the Check complaints permission.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Complaint assignment needs Assign society complaints",
+        "description": "Assigning society-responsibility complaints and updating complaint status for society vendors need the Assign society complaints permission.",
+        "moduleName": "Complaint Management"
+      },
+      {
+        "title": "Documents need Manage documents permission",
+        "description": "Managing society documents needs the Manage documents permission.",
+        "moduleName": "Society Documents"
+      },
+      {
+        "title": "Bookings need Approve bookings permission",
+        "description": "Approving hall bookings and closing a facility for maintenance need the Approve bookings permission.",
+        "moduleName": "Bookings and Facilities"
+      },
+      {
+        "title": "Notices and directory need Post notices",
+        "description": "Notice Board posts for own project and the project contact directory need the Post notices permission.",
+        "moduleName": "Notice Board"
+      },
+      {
+        "title": "Watchman management needs Manage watchmen",
+        "description": "Creating or removing a Watchman needs the Manage watchmen permission.",
+        "moduleName": "Watchman Management"
+      },
+      {
+        "title": "Visitor record and project summary need no specific permission",
+        "description": "The visitor record and project summary are available under any permission.",
+        "moduleName": "Visitor and Family Summaries"
+      },
+      {
+        "title": "Family summary needs View family data",
+        "description": "The family and member summary by building needs the View family data permission.",
+        "moduleName": "Visitor and Family Summaries"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1780,
+    "outputTokens": 1762,
+    "cachedTokens": 1221
+  }
+}

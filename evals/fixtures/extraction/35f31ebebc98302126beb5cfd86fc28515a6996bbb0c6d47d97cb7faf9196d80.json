@@ -1,0 +1,48 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Contact Directory",
+        "description": "Lets residents see society contacts and tap to call them."
+      },
+      {
+        "name": "Society Documents",
+        "description": "Lets the Society Manager upload documents that residents can view."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Contact directory with tap to call",
+        "description": "When a contact is added, residents see it in the directory and can tap to call. Applies to both platforms; priority Must.",
+        "moduleName": "Contact Directory"
+      },
+      {
+        "title": "Society Manager uploads society documents",
+        "description": "The Society Manager can upload a PDF or image up to 10 MB, and residents can then view it. Mobile platform; priority Must.",
+        "moduleName": "Society Documents"
+      },
+      {
+        "title": "Log document deletions in activity log",
+        "description": "When a document is deleted, it is removed from residents' view and the deletion is saved in the activity log. Applies to both platforms; priority Must.",
+        "moduleName": "Society Documents"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Document upload file type and size limit",
+        "description": "Uploaded documents must be a PDF or image of up to 10 MB.",
+        "moduleName": "Society Documents"
+      },
+      {
+        "title": "Residents have view-only access to documents",
+        "description": "Residents can only view society documents; uploading is done by the Society Manager.",
+        "moduleName": "Society Documents"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1592,
+    "outputTokens": 429,
+    "cachedTokens": 1221
+  }
+}

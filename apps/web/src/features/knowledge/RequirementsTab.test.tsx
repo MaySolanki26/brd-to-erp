@@ -174,6 +174,28 @@ describe('RequirementsTab', () => {
       await waitFor(() => expect(lastRequirementsUrl()).toContain(`sourceId=${NOTE_ID}`));
     });
 
+    it('lists only items whose source needs review', async () => {
+      view();
+      await screen.findByText('Monthly invoice run');
+
+      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by review' }));
+      await userEvent.click(await screen.findByRole('option', { name: 'Needs review' }));
+
+      await waitFor(() => expect(lastRequirementsUrl()).toContain('needsReview=true'));
+      expect(lastRequirementsUrl()).toContain('page=1');
+    });
+
+    it('clears the review filter together with the others', async () => {
+      view(`/projects/p1?requirements.review=1&requirements.status=OPEN`);
+      await screen.findByText('Monthly invoice run');
+      expect(lastRequirementsUrl()).toContain('needsReview=true');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+
+      await waitFor(() => expect(lastRequirementsUrl()).not.toContain('needsReview'));
+      expect(lastRequirementsUrl()).not.toContain('status=');
+    });
+
     it('searches after a short pause', async () => {
       view();
       await screen.findByText('Monthly invoice run');
@@ -188,6 +210,18 @@ describe('RequirementsTab', () => {
       expect(url).toContain('status=ASSUMED');
       expect(url).toContain('search=vat');
       expect(url).toContain('page=2');
+    });
+
+    it('restores the review filter from the address, and ignores anything but 1', async () => {
+      view(`/projects/p1?requirements.review=1`);
+      await screen.findByText('Monthly invoice run');
+      expect(lastRequirementsUrl()).toContain('needsReview=true');
+    });
+
+    it('does not ask for the review filter when the address holds another value', async () => {
+      view(`/projects/p1?requirements.review=yes`);
+      await screen.findByText('Monthly invoice run');
+      expect(lastRequirementsUrl()).not.toContain('needsReview');
     });
 
     it('ignores invalid values in the address', async () => {

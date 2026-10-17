@@ -1,0 +1,12 @@
+{
+  "output": {
+    "modules": [],
+    "requirements": [],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1332,
+    "outputTokens": 23,
+    "cachedTokens": 1221
+  }
+}

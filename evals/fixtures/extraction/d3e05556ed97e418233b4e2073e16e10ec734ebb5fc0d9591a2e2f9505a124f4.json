@@ -1,0 +1,79 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Notice Board and Event Invite",
+        "description": "Lets Raghuvir Admins and Society Managers publish announcements, celebrations, events and urgent notices to selected projects or buildings and notify the target users."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Choose notice type",
+        "description": "The poster picks the type of post: Announcement, Celebration, Event or Urgent.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Capture notice content and display dates",
+        "description": "The poster adds a title, a message, an optional image, and show-from and show-until dates.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Select audience for a post",
+        "description": "The poster picks who sees the post: all projects, selected projects or selected buildings for Raghuvir Admin; own project or selected buildings in it for a Society Manager.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Capture event details and invited age group",
+        "description": "For an Event, the poster enters date, time, venue and an optional invited age group such as Kids or Seniors.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Show post on selected notice boards and notify users",
+        "description": "On publish, the post shows only on the notice boards of the selected projects and a notification goes to those users.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Age-group targeted notification",
+        "description": "When an invited age group is set, the notification goes only to families with members in that group, while the post stays visible to the whole project.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Move expired posts to Past",
+        "description": "After the show-until date, the post moves to Past.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Mark edited posts as Updated and renotify",
+        "description": "When a post is edited after publish, it is marked Updated and the target users are notified again.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Mark cancelled events and notify",
+        "description": "When an event is cancelled, it is marked Cancelled and the target users are notified.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Scheduled publishing",
+        "description": "When publish is set for a later time, the post appears and notifies at that time.",
+        "moduleName": "Notice Board and Event Invite"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Society Manager posting permission and scope",
+        "description": "A Society Manager can post only with the Post notices permission, and only to their own project or selected buildings in it.",
+        "moduleName": "Notice Board and Event Invite"
+      },
+      {
+        "title": "Notice board is read-only",
+        "description": "The board is for reading only: no replies and no comments.",
+        "moduleName": "Notice Board and Event Invite"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1723,
+    "outputTokens": 912,
+    "cachedTokens": 1221
+  }
+}

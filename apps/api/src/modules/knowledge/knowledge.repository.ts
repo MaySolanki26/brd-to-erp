@@ -28,6 +28,7 @@ export interface ListParams {
   moduleId?: string | undefined;
   sourceId?: string | undefined;
   search?: string | undefined;
+  needsReview?: boolean | undefined;
 }
 
 const requirementSelect = {
@@ -88,6 +89,22 @@ function bySource(sourceId: string) {
   ];
 }
 
+/** The filters that each narrow the result; they combine with AND. */
+function narrowedBy(p: Pick<ListParams, 'sourceId' | 'needsReview'>) {
+  const clauses: { OR: ReturnType<typeof bySource> }[] = [];
+  if (p.sourceId) clauses.push({ OR: bySource(p.sourceId) });
+  if (p.needsReview) clauses.push({ OR: withFlaggedChunk() });
+  return clauses.length > 0 ? { AND: clauses } : {};
+}
+
+/** Items whose first source, or any source they were merged from, is a chunk flagged for review. */
+function withFlaggedChunk() {
+  return [
+    { sourceChunk: { needsReview: true } },
+    { extraSources: { some: { chunk: { needsReview: true } } } },
+  ];
+}
+
 function contains(search: string) {
   return { contains: search, mode: 'insensitive' as const };
 }
@@ -103,7 +120,7 @@ export async function listRequirements(
     deletedAt: null,
     ...(p.status && { status: p.status }),
     ...(p.moduleId && { moduleId: p.moduleId }),
-    ...(p.sourceId && { AND: [{ OR: bySource(p.sourceId) }] }),
+    ...narrowedBy(p),
     ...(p.search && { OR: [{ title: contains(p.search) }, { description: contains(p.search) }] }),
   };
   const [total, items] = await prisma.$transaction([
@@ -127,7 +144,7 @@ export async function listRules(
     projectId: p.projectId,
     ...(p.status && { status: p.status }),
     ...(p.moduleId && { moduleId: p.moduleId }),
-    ...(p.sourceId && { AND: [{ OR: bySource(p.sourceId) }] }),
+    ...narrowedBy(p),
     ...(p.search && { OR: [{ title: contains(p.search) }, { description: contains(p.search) }] }),
   };
   const [total, items] = await prisma.$transaction([
@@ -150,7 +167,7 @@ export async function listModules(
     organizationId: p.organizationId,
     projectId: p.projectId,
     ...(p.status && { status: p.status }),
-    ...(p.sourceId && { AND: [{ OR: bySource(p.sourceId) }] }),
+    ...narrowedBy(p),
     ...(p.search && {
       OR: [
         { name: contains(p.search) },

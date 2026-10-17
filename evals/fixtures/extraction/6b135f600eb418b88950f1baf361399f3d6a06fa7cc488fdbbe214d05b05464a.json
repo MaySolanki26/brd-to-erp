@@ -1,0 +1,54 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Login and Registration",
+        "description": "Covers how users log in, register, and have their access managed in the Customer Support App."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "OTP login on mobile",
+        "description": "A user with a registered number who enters the correct OTP logs in with their role.",
+        "moduleName": "Login and Registration"
+      },
+      {
+        "title": "Admin login on web",
+        "description": "Admin staff logging in on the web must provide both password and OTP.",
+        "moduleName": "Login and Registration"
+      },
+      {
+        "title": "Self-registration on mobile",
+        "description": "A new user can submit their details on mobile, and the request goes only to that project's Society Manager.",
+        "moduleName": "Login and Registration"
+      },
+      {
+        "title": "Pending request status screen",
+        "description": "While a registration request is pending, the app shows only the status screen when opened.",
+        "moduleName": "Login and Registration"
+      },
+      {
+        "title": "Switch between flats or roles with one login",
+        "description": "A user with several flats or roles uses a single login and can switch between flats, e.g. a user with 2 flats.",
+        "moduleName": "Login and Registration"
+      },
+      {
+        "title": "Instant access removal on deactivation",
+        "description": "A deactivated user is logged out the next time they use the app, on both mobile and web.",
+        "moduleName": "Login and Registration"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Block number after 5 wrong OTP attempts",
+        "description": "After 5 wrong OTP attempts, a further attempt causes the number to be blocked for 30 minutes.",
+        "moduleName": "Login and Registration"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1842,
+    "outputTokens": 493,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Mobile App – Resident",
+        "description": "The resident-facing mobile app covering registration, complaints, bookings, visitors, documents, family and neighbours."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Self-registration as Owner or Tenant",
+        "description": "Residents can self-register as Owner or Tenant and see their approval status.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Raise complaint with photos",
+        "description": "Residents can raise a complaint with photos.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Track complaint status and timeline",
+        "description": "Residents can track a complaint through its status and timeline.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Approve or reopen fixed complaint",
+        "description": "Residents can approve or reopen a complaint that has been fixed.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Book and cancel bookable amenity",
+        "description": "Residents can book a bookable amenity such as a hall and cancel the booking.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Book shared facility slot with check in/out",
+        "description": "Residents can book a slot for a shared facility such as a gym or pool and check in and check out.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Add expected visitor",
+        "description": "Residents can add an expected visitor.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "View own visitor history",
+        "description": "Residents can view their own visitor history.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "My Family management",
+        "description": "Residents can add, edit and remove family members under My Family.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Live count of people in shared facilities",
+        "description": "Residents can see a live count of people inside each shared facility.",
+        "moduleName": "Mobile App – Resident"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Complaints for own flat only",
+        "description": "A resident can raise a complaint only for their own flat.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Society documents view only",
+        "description": "Residents can only view society documents, not change them.",
+        "moduleName": "Mobile App – Resident"
+      },
+      {
+        "title": "Neighbours: name and occupation only",
+        "description": "Residents can see only the name and occupation of neighbours on their floor.",
+        "moduleName": "Mobile App – Resident"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1637,
+    "outputTokens": 798,
+    "cachedTokens": 1221
+  }
+}

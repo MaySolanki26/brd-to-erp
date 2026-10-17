@@ -1,0 +1,118 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Visitor Management",
+        "description": "Records visitors, including walk-ins, and informs residents."
+      },
+      {
+        "name": "Facility Booking",
+        "description": "Lets residents book facilities such as gym and pool by date and slot and shows live occupancy."
+      },
+      {
+        "name": "Complaints",
+        "description": "Handles complaints raised by residents for their own flat."
+      },
+      {
+        "name": "Notice Board",
+        "description": "Shows notices and events to residents for reading only."
+      },
+      {
+        "name": "User and Role Management",
+        "description": "Covers creation of users such as Watchman, permissions, tenants and family lists."
+      },
+      {
+        "name": "Society Setup",
+        "description": "Lets Raghuvir Admin configure flats, amenities and age groups."
+      },
+      {
+        "name": "Dashboard",
+        "description": "Shows counts such as owner vs tenant families."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Record walk-in visitors",
+        "description": "A walk-in visitor is recorded only and the resident is informed.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Book facilities by date and slot",
+        "description": "Residents book facilities by date and slot in the app.",
+        "moduleName": "Facility Booking"
+      },
+      {
+        "title": "Live count inside gym and pool",
+        "description": "Everyone can see the live count of people inside the gym and pool.",
+        "moduleName": "Facility Booking"
+      },
+      {
+        "title": "Support tenants",
+        "description": "Tenants are allowed to use the system.",
+        "moduleName": "User and Role Management"
+      },
+      {
+        "title": "Send reminders instead of auto-closing",
+        "description": "Complaints are not auto-closed; reminders are sent instead.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Hindi language support",
+        "description": "The app must support Hindi.",
+        "moduleName": null
+      },
+      {
+        "title": "Configurable flats and amenities",
+        "description": "The number of flats and amenities is not fixed and is set up by Raghuvir Admin.",
+        "moduleName": "Society Setup"
+      },
+      {
+        "title": "Configurable age groups",
+        "description": "Age groups are set by Raghuvir Admin.",
+        "moduleName": "Society Setup"
+      },
+      {
+        "title": "Count tenant families",
+        "description": "Tenant families are counted and the dashboard shows owner vs tenant.",
+        "moduleName": "Dashboard"
+      },
+      {
+        "title": "Read-only notice board",
+        "description": "The notice board is for reading only, with no event replies and no comments on notices.",
+        "moduleName": "Notice Board"
+      }
+    ],
+    "rules": [
+      {
+        "title": "No approval for walk-in visitors",
+        "description": "Walk-in visitors need no approval from the resident.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Who creates the Watchman",
+        "description": "Both Raghuvir Admin and Society Manager (with permission) can create the Watchman.",
+        "moduleName": "User and Role Management"
+      },
+      {
+        "title": "Complaints limited to own flat",
+        "description": "Residents can raise complaints for their own flat only.",
+        "moduleName": "Complaints"
+      },
+      {
+        "title": "Approval by permitted users",
+        "description": "Anyone given the permission by Raghuvir Admin can approve.",
+        "moduleName": "User and Role Management"
+      },
+      {
+        "title": "Only resident edits family list",
+        "description": "Only the resident can edit the family list.",
+        "moduleName": "User and Role Management"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1899,
+    "outputTokens": 1042,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Customer Management",
+        "description": "Manages Society Managers, their permissions, resident registration and approval, flat occupancy and tenancy."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Create or replace Society Manager",
+        "description": "Web users can create or replace a Society Manager. On a replacement, the old member loses access and pending items move to members with the same permission.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Permissions per member",
+        "description": "Raghuvir Admin can give permissions to each member. A member given Approve residents sees the approval list.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Approve or reject resident",
+        "description": "On mobile, a resident can be approved or rejected. A rejection requires a reason and the resident is notified.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Add resident manually",
+        "description": "On mobile, a resident can be added manually with valid details. The resident gets access without approval.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Owner or Tenant registration",
+        "description": "At registration on mobile, the user picks Owner or Tenant. A tenant also gives owner name and agreement end date.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Flag Flat Already Taken",
+        "description": "On web and mobile, a new request for a flat with an active main user is flagged Flat Already Taken.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Flat occupancy status",
+        "description": "On web and mobile, every flat shows Owner living, Tenant living or Vacant.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Tenancy end reminder",
+        "description": "On web and mobile, the tenant and Society Manager get a reminder 15 days before the agreement ends.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Keep complaint history on owner or tenant change",
+        "description": "On mobile, when the old main user is deactivated and a new one is approved, complaint history stays with the flat.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Resident list view for Raghuvir Admin",
+        "description": "On web, opening residents shows a view-only list filterable by owner or tenant. This is a Should priority.",
+        "moduleName": "Customer Management"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Last-holder protection",
+        "description": "If only one member has Approve residents or Check complaints, the system blocks removing that permission from them.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "One main user per flat",
+        "description": "A flat can have only one active main user.",
+        "moduleName": "Customer Management"
+      },
+      {
+        "title": "Tenancy access ends only on confirmation",
+        "description": "Tenant access ends only after a Society Manager confirms it, not automatically at agreement end.",
+        "moduleName": "Customer Management"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 2173,
+    "outputTokens": 901,
+    "cachedTokens": 1221
+  }
+}

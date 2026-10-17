@@ -1,0 +1,18 @@
+{
+  "output": {
+    "modules": [],
+    "requirements": [],
+    "rules": [
+      {
+        "title": "Complaint closes only on raiser's approval",
+        "description": "A complaint closes only when the person who raised it approves the closure.",
+        "moduleName": null
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1327,
+    "outputTokens": 74,
+    "cachedTokens": 1221
+  }
+}

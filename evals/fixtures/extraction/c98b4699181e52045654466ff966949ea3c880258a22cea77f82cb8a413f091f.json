@@ -1,0 +1,43 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "My Tasks",
+        "description": "A view where an assigned person sees and works on the complaints assigned to them."
+      },
+      {
+        "name": "Complaint Resolution",
+        "description": "Handling of work status updates on a complaint, from Work Started to Fixed, with resident approval."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Show assigned person only own complaints",
+        "description": "When the assigned person opens My Tasks, the system shows only the complaints assigned to that person.",
+        "moduleName": "My Tasks"
+      },
+      {
+        "title": "Mark Work Started and Fixed with photo",
+        "description": "The assigned person can mark a complaint as Work Started and then as Fixed, attaching a photo when marking it Fixed.",
+        "moduleName": "Complaint Resolution"
+      },
+      {
+        "title": "Notify resident for approval when fixed",
+        "description": "When a complaint is marked Fixed, the system notifies the resident so they can approve the fix.",
+        "moduleName": "Complaint Resolution"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Alert senior when time limit crossed",
+        "description": "If the time limit for fixing a complaint is crossed, the system alerts a senior.",
+        "moduleName": "Complaint Resolution"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1428,
+    "outputTokens": 388,
+    "cachedTokens": 1221
+  }
+}

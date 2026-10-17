@@ -62,6 +62,7 @@ export function processingStatus(active = false): { status: ProcessingStatusDto 
   return {
     status: {
       counts: { UPLOADED: active ? 1 : 0, PROCESSING: 0, PROCESSED: 1, FAILED: 0 },
+      chunks: { total: 0, extracted: 0, needingReview: 0 },
       active,
       lastProcessedAt: null,
       sources: [],

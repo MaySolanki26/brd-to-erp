@@ -1,0 +1,119 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Non-Functional Requirements",
+        "description": "Testable quality targets for speed, uptime, growth, data separation, security, backup, devices, language, weak network, files and records."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Screen load under 3 seconds on 4G",
+        "description": "Screens must load in under 3 seconds on 4G (NFR-01).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "OTP delivery within 30 seconds",
+        "description": "OTP must be delivered within 30 seconds (NFR-02).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Visitor search result under 2 seconds",
+        "description": "Visitor search must return a result in under 2 seconds (NFR-03).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "99.5% monthly availability",
+        "description": "The system must be available 99.5% per month (NFR-04).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Support growth in projects and users",
+        "description": "The system must handle 50+ projects, 25,000 users and 1,000 users at the same time (NFR-05).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Admin login with password and OTP",
+        "description": "Admin login on the Web Panel must use password plus OTP (NFR-07).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Encrypt data in transfer and storage",
+        "description": "Data must be encrypted in transfer and in storage (NFR-08).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Daily backup and recovery targets",
+        "description": "Daily backup; restore within 4 hours; at most 1 hour of data lost (NFR-10).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Supported devices and browsers",
+        "description": "Support Android 9+, iOS 14+, Chrome, Edge and Safari (NFR-11).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "App languages: English, Gujarati, Hindi",
+        "description": "The app must be available in English, Gujarati and Hindi (NFR-12).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Offline visitor entry",
+        "description": "Up to 50 visitor entries are saved on the phone and sent when the network returns (NFR-13).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Auto-compress photos",
+        "description": "Photos are auto-compressed (NFR-14).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Live facility count refresh within 30 seconds",
+        "description": "The live facility count must refresh within 30 seconds (NFR-17).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Configurable projects, buildings, floors, flats, amenities",
+        "description": "Their numbers are not fixed; Raghuvir Admin adds them as needed with no code change (NFR-18).",
+        "moduleName": "Non-Functional Requirements"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Project data separation",
+        "description": "No user sees another project's data; checked on the server for every request and tested every release (NFR-06).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Session timeouts",
+        "description": "Mobile logs out after 30 days unused; Web after 30 minutes unused (NFR-09).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "File size limits",
+        "description": "Maximum 5 MB per photo and 10 MB per document (NFR-14).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Activity log retention",
+        "description": "Activity log is kept at least 3 years (NFR-15).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Complaint history retention",
+        "description": "Complaint history is kept at least for the 5-year defect responsibility period (NFR-16).",
+        "moduleName": "Non-Functional Requirements"
+      },
+      {
+        "title": "Link to compliance rules",
+        "description": "NFR-06, 08, 15 and 16 link to the compliance rules in Section 19.",
+        "moduleName": "Non-Functional Requirements"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 2156,
+    "outputTokens": 1393,
+    "cachedTokens": 1221
+  }
+}

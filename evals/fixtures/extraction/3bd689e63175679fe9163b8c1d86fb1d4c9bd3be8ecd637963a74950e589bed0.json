@@ -1,0 +1,33 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Visitor Management",
+        "description": "Handles walk-in visitors, their entry and exit records, and who may view visitor records."
+      }
+    ],
+    "requirements": [],
+    "rules": [
+      {
+        "title": "Walk-in visitor entry and exit by one role",
+        "description": "Only the last role column in the table (the one with Yes) may add a walk-in visitor and record entry and exit; all other roles have No.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Visitor record view access varies by role",
+        "description": "Viewing a visitor record is limited per role: one role has View, one has Yes, one sees Own visitors only, one has No, and the last role sees Today only.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Only one role can override stuck approval or check",
+        "description": "Overriding a stuck approval or check is allowed for only the first role column (Yes); all other roles have No.",
+        "moduleName": "Visitor Management"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1438,
+    "outputTokens": 305,
+    "cachedTokens": 1221
+  }
+}

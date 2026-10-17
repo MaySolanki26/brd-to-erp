@@ -1,0 +1,34 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Project Setup (Web)",
+        "description": "Web area for creating projects, buildings and flats, defining amenities per project and controlling admin staff access by project."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Create project, building, flat",
+        "description": "The system must allow creating a project, building and flat. A saved new project becomes available for Society Manager assignment.",
+        "moduleName": "Project Setup (Web)"
+      },
+      {
+        "title": "Amenities per project",
+        "description": "The system must support amenities per project. When a hall is added and saved, residents of that project can book it.",
+        "moduleName": "Project Setup (Web)"
+      }
+    ],
+    "rules": [
+      {
+        "title": "Admin staff access limited by project",
+        "description": "Admin staff can only see the projects they have been given access to. Staff given Project A only see Project A only after logging in.",
+        "moduleName": "Project Setup (Web)"
+      }
+    ]
+  },
+  "usage": {
+    "inputTokens": 1549,
+    "outputTokens": 281,
+    "cachedTokens": 1221
+  }
+}

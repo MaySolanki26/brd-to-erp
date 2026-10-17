@@ -1,0 +1,58 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Visitors (Mobile)",
+        "description": "Mobile functions for recording expected visitors and walk-ins, and for the Watchman to view and manage visitor entry and exit."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Add expected visitor",
+        "description": "A visitor added for today appears in the Watchman's list with a pass code.",
+        "moduleName": "Visitors (Mobile)"
+      },
+      {
+        "title": "Today's visitor list for Watchman",
+        "description": "On Watchman login, only today's visitors of the Watchman's own project are shown, searchable by name, mobile and pass code.",
+        "moduleName": "Visitors (Mobile)"
+      },
+      {
+        "title": "Walk-in entry, record only",
+        "description": "When there is no advance entry and the Watchman adds details, the visit is saved at once with no approval, and the resident gets an information notification.",
+        "moduleName": "Visitors (Mobile)"
+      },
+      {
+        "title": "Call resident",
+        "description": "For a walk-in, when the Watchman taps Call, the flat's main user is called. Priority is Should.",
+        "moduleName": "Visitors (Mobile)"
+      },
+      {
+        "title": "Record entry and exit time",
+        "description": "The system records visitor entry and exit time. A visit with no exit by midnight is marked Exit Not Recorded.",
+        "moduleName": "Visitors (Mobile)"
+      },
+      {
+        "title": "Weak network support",
+        "description": "With no network, up to 50 entries are saved on the phone and sent later. Priority is Should.",
+        "moduleName": "Visitors (Mobile)"
+      },
+      {
+        "title": "Simple Watchman screen",
+        "description": "Any entry must take 3 taps or fewer.",
+        "moduleName": "Visitors (Mobile)"
+      },
+      {
+        "title": "Watchman login management",
+        "description": "The system supports management of Watchman logins.",
+        "moduleName": "Visitors (Mobile)"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1882,
+    "outputTokens": 605,
+    "cachedTokens": 1221
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "output": {
+    "modules": [
+      {
+        "name": "Visitor Management",
+        "description": "Lets the watchman see expected visitors, record entry and exit, and handle walk-ins with resident approval."
+      }
+    ],
+    "requirements": [
+      {
+        "title": "Show Today's Visitors for own project",
+        "description": "The watchman opens Today's Visitors and the system shows today's expected visitors of the watchman's own project.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Search visitor and Allow Entry",
+        "description": "The watchman can search for a visitor and tap Allow Entry, and the system saves the entry time.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Add walk-in visitor details",
+        "description": "The watchman can add details of a walk-in visitor, which are saved and the resident is informed or asked to Allow / Deny.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Record visitor exit time",
+        "description": "The watchman taps Exit and the system saves the exit time.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Offline saving of visitor actions",
+        "description": "When there is no network, the entry is saved on the phone and sent later.",
+        "moduleName": "Visitor Management"
+      },
+      {
+        "title": "Call or deny when resident does not answer",
+        "description": "If the resident does not answer, the watchman can call the resident or deny the visitor.",
+        "moduleName": "Visitor Management"
+      }
+    ],
+    "rules": []
+  },
+  "usage": {
+    "inputTokens": 1517,
+    "outputTokens": 454,
+    "cachedTokens": 1221
+  }
+}

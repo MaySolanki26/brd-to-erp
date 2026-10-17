@@ -1,14 +1,26 @@
 import { useMemo, useState } from 'react';
 import { SearchX } from 'lucide-react';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { Button, DataTable, NoAccess, StatusBadge, type DataTableColumnDef } from '@brd/ui';
-import type { KnowledgeKind, KnowledgeSourceDto, KnowledgeStatus, PagedResult } from '@brd/shared';
+import {
+  DataTable,
+  NoAccess,
+  StatusBadge,
+  type DataTableColumnDef,
+  type DataTableFilterDef,
+} from '@brd/ui';
+import {
+  KNOWLEDGE_STATUSES,
+  knowledgeStatusSchema,
+  type KnowledgeKind,
+  type KnowledgeSourceDto,
+  type KnowledgeStatus,
+  type PagedResult,
+} from '@brd/shared';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { useDocuments, useNotes } from '@/features/projects/hooks/use-sources';
 import { KNOWLEDGE_PAGE_SIZE, useModuleOptions } from '../hooks/use-knowledge';
 import type { useKnowledgeFilters } from '../hooks/use-knowledge-filters';
 import { STATUS_LABELS, STATUS_TONES, needsAttention } from '../knowledge-labels';
-import { KnowledgeToolbar, type FilterOption } from './KnowledgeToolbar';
 import { SourceChunkDrawer } from './SourceChunkDrawer';
 
 export interface KnowledgeRow {
@@ -37,14 +49,35 @@ export function StatusCell({ row }: { row: KnowledgeRow }) {
   );
 }
 
-function useSourceOptions(projectId: string): FilterOption[] {
+const NEEDS_REVIEW = 'needs-review';
+
+const STATUS_FILTER: DataTableFilterDef = {
+  id: 'status',
+  label: 'Filter by status',
+  allLabel: 'All statuses',
+  options: KNOWLEDGE_STATUSES.map((status) => ({ value: status, label: STATUS_LABELS[status] })),
+};
+
+const REVIEW_FILTER: DataTableFilterDef = {
+  id: 'review',
+  label: 'Filter by review',
+  allLabel: 'All items',
+  options: [{ value: NEEDS_REVIEW, label: 'Needs review' }],
+};
+
+function useSourceFilter(projectId: string): DataTableFilterDef {
   const documents = useDocuments(projectId);
   const notes = useNotes(projectId);
   return useMemo(
-    () => [
-      ...(documents.data?.items ?? []).map((d) => ({ id: d.id, label: d.title })),
-      ...(notes.data?.items ?? []).map((n) => ({ id: n.id, label: `${n.title} (note)` })),
-    ],
+    () => ({
+      id: 'source',
+      label: 'Filter by source',
+      allLabel: 'All sources',
+      options: [
+        ...(documents.data?.items ?? []).map((d) => ({ value: d.id, label: d.title })),
+        ...(notes.data?.items ?? []).map((n) => ({ value: n.id, label: `${n.title} (note)` })),
+      ],
+    }),
     [documents.data, notes.data],
   );
 }
@@ -61,28 +94,43 @@ export function KnowledgeList<T extends KnowledgeRow>({
   const { filters, update, clear, activeCount } = filterState;
   const [openChunkId, setOpenChunkId] = useState<string | null>(null);
   const moduleOptions = useModuleOptions(projectId);
-  const sources = useSourceOptions(projectId);
-  const modules =
-    kind === 'modules'
-      ? undefined
-      : (moduleOptions.data ?? []).map((m) => ({ id: m.id, label: m.name }));
+  const sourceFilter = useSourceFilter(projectId);
+
+  const moduleFilter = useMemo<DataTableFilterDef[]>(
+    () =>
+      kind === 'modules'
+        ? []
+        : [
+            {
+              id: 'module',
+              label: 'Filter by module',
+              allLabel: 'All modules',
+              options: (moduleOptions.data ?? []).map((m) => ({ value: m.id, label: m.name })),
+            },
+          ],
+    [kind, moduleOptions.data],
+  );
 
   if (query.isError && isForbidden(query.error)) {
     return <NoAccess description={`You do not have access to this project's ${noun}.`} />;
   }
 
+  const changeFilter = (id: string, value: string) => {
+    if (id === 'status') {
+      const status = knowledgeStatusSchema.safeParse(value);
+      update({ status: status.success ? status.data : null });
+    } else if (id === 'module') {
+      update({ moduleId: value || null });
+    } else if (id === 'source') {
+      update({ sourceId: value || null });
+    } else if (id === 'review') {
+      update({ needsReview: value === NEEDS_REVIEW });
+    }
+  };
+
   const result = query.data;
   return (
     <div>
-      <KnowledgeToolbar
-        filters={filters}
-        onChange={update}
-        onClear={clear}
-        activeCount={activeCount}
-        searchLabel={searchLabel}
-        modules={modules}
-        sources={sources}
-      />
       <DataTable<T>
         columns={columns(setOpenChunkId)}
         data={result?.items ?? []}
@@ -93,6 +141,21 @@ export function KnowledgeList<T extends KnowledgeRow>({
             ? { message: errorMessage(query.error), onRetry: () => void query.refetch() }
             : null
         }
+        search={{
+          value: filters.search,
+          onChange: (search) => update({ search }),
+          placeholder: searchLabel,
+          ariaLabel: searchLabel,
+        }}
+        filters={[STATUS_FILTER, ...moduleFilter, sourceFilter, REVIEW_FILTER]}
+        filterValues={{
+          status: filters.status ?? '',
+          module: filters.moduleId ?? '',
+          source: filters.sourceId ?? '',
+          review: filters.needsReview ? NEEDS_REVIEW : '',
+        }}
+        onFilterChange={changeFilter}
+        onClearFilters={clear}
         rowClassName={(row) => (needsAttention(row) ? 'row-attention' : undefined)}
         emptyIcon={SearchX}
         emptyTitle={activeCount > 0 ? `No matching ${noun}` : `No ${noun} yet`}
@@ -100,13 +163,6 @@ export function KnowledgeList<T extends KnowledgeRow>({
           activeCount > 0
             ? 'Nothing matches these filters. Change or clear them to see more.'
             : `${noun.charAt(0).toUpperCase()}${noun.slice(1)} appear here once your sources have been processed.`
-        }
-        emptyAction={
-          activeCount > 0 ? (
-            <Button variant="outline" size="sm" onClick={clear}>
-              Clear filters
-            </Button>
-          ) : undefined
         }
         pagination={
           result
