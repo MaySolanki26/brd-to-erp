@@ -16,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  FormError,
 } from '@brd/ui';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { errorMessage } from '@/lib/error-message';
@@ -106,11 +107,7 @@ export function ChangePasswordPage() {
                 )}
               />
 
-              {changePassword.error && (
-                <p role="alert" className="text-sm text-destructive">
-                  {errorMessage(changePassword.error)}
-                </p>
-              )}
+              <FormError message={changePassword.error ? errorMessage(changePassword.error) : null} />
 
               <Button type="submit" className="w-full" disabled={changePassword.isPending}>
                 {changePassword.isPending ? 'Saving...' : 'Update password'}

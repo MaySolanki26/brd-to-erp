@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MAX_ANSWER_CHARS, answerQuestionSchema } from '@brd/shared';
-import { Button, Label, Textarea } from '@brd/ui';
+import { Button, Label, Textarea, FormError } from '@brd/ui';
 
 interface AnswerFormProps {
   questionId: string;
@@ -55,16 +55,8 @@ export function AnswerForm({
       >
         {draft.length.toLocaleString()} / {MAX_ANSWER_CHARS.toLocaleString()} characters
       </p>
-      {problem && (
-        <p role="alert" className="text-sm text-destructive">
-          {problem}
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <FormError message={problem} />
+      <FormError message={error} />
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>
           {pending ? 'Saving…' : 'Submit answer'}

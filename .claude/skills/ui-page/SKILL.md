@@ -1,41 +1,69 @@
 ---
 name: ui-page
-description: Scaffold a new web screen or project tab in apps/web (route, page component, query hooks, apiClient integration, loading/empty/error/no-access states, test) using packages/ui components only. Use when adding a page or a tab.
+description: Scaffold a screen or project tab in apps/web with packages/ui only - pick ListPage, DetailPage or FormPage (or inline states for a tab), React Query hooks, URL state, forms, the five required states, permission checks with <Can>, route and tests. Use when adding a page, a tab or a drawer form.
 ---
 
 # UI page
 
-Reference feature: `apps/web/src/features/decisions/` (hook + tab + test). Page-level example: `features/projects/ProjectDetailPage.tsx`. Rules: `.claude/rules/web.md`. Available components: `packages/ui/registry.json`.
+Rules: `.claude/rules/web.md`. Components: `packages/ui/registry.json` (props and a usage example for each). State placement: `frontend-state`. Colors and spacing: `theme-management` (tokens only). The worked example is a **Milestones** tab with a create drawer plus a **Project settings** page; both were compiled, linted and tested in a scratch copy of this repository. Files: `templates/`.
+
+## When to use
+
+A new screen, a new tab on the project page, or a create / edit form. Not for API work (`api-module`).
+
+## Pick the pattern first
+
+| You are building | Use | Look at |
+| --- | --- | --- |
+| A routed list of records with search, table and paging | `ListPage` | `features/projects/ProjectsPage.tsx` |
+| A routed record page with tabs | `DetailPage` (its `tabs` prop; keep the active tab in `?tab=`) | `features/projects/ProjectDetailPage.tsx` |
+| A routed full-page form inside the app shell | `FormPage` | `templates/components.md` (Project settings) |
+| A section inside a record's tab | No page pattern: render the five states inline | `MilestonesTab`, `features/decisions/components/DecisionsTab.tsx` |
+| Create or edit over a list | `FormDrawer` + `useZodForm` | `CreateMilestoneDrawer`, `CreateProjectDrawer` |
+| A server-driven table with sort and filters | `DataTable` (page owns the state) | `features/knowledge/components/KnowledgeList.tsx` |
+| A standalone page outside the shell (sign-in, forced password change) | Centered `Card` | `LoginPage`, `ChangePasswordPage` |
+
+## The five states (every screen)
+
+| State | Trigger | Render |
+| --- | --- | --- |
+| loading | `query.isPending` | a skeleton (`TableSkeleton`, `CardListSkeleton`) or the pattern's `state="loading"` |
+| empty | success with no items | `EmptyState` with an icon, a title and the next step; a different message when a search is active |
+| error | `query.isError` | `PageError` with `errorMessage(error)` and `onRetry={() => void query.refetch()}` |
+| no-access | `isForbidden(error)`, or the user lacks the permission | `NoAccess` |
+| ready | data | the content |
+
+`ListPage` takes `state` with exactly these five values. For a record that may not exist, treat a 404 as its own `EmptyState` ("not found"), as `ProjectDetailPage` does.
 
 ## Steps
 
-1. **Plan first.** List the files and wait for approval. Confirm the API endpoint and shared types exist (see `api-module`); build shared with `pnpm build:packages`.
-2. **Query keys** in `src/lib/query-keys.ts`: add a factory under the right group (for example `queryKeys.projects.decisions(id)`). Keep a prefix key so mutations can invalidate a whole family.
-3. **Hooks in `features/<name>/hooks/use-<thing>.ts`.**
-   - Reads: `useQuery` / `useInfiniteQuery` with `apiClient.get<T>(...)` and DTO types from `@brd/shared`; set `staleTime`; derive `getNextPageParam` from `page * pageSize < total`.
-   - Writes: `useMutation` with `apiClient.post/put/patch/del`, then `invalidateQueries` on the affected keys. Never call `fetch` or `axios`.
-   - Server data stays in React Query; filters belong in the URL (`useSearchParams`), not Redux (`frontend-state` skill).
-4. **Components in `features/<name>/components/`** (or `<Name>Page.tsx` for a routed page). Functional components; logic in hooks. Use only `@brd/ui` imports (`Button`, `CardListSkeleton`, `EmptyState`, `NoAccess`, `PageError`, …). Every screen renders all four states:
-   - loading: `isPending` → a skeleton (`CardListSkeleton`, `TableSkeleton`)
-   - error: `isError` → `PageError` with `errorMessage(error)` and `onRetry={() => void query.refetch()}`
-   - empty: success with no items → `EmptyState` with an icon, title and a next-step description
-   - no access: `isForbidden(error)` (from `@/lib/error-message`) → `NoAccess`
-5. **Route.** Pages are lazy-loaded in `src/router.tsx`:
-   ```tsx
-   const XPage = lazy(() => import('@/features/x/XPage').then((m) => ({ default: m.XPage })));
-   ```
-   Put it under `ProtectedRoute` / `AppLayout`; wrap with `RoleGuard roles={[...]}` for restricted areas, and add the nav entry in `components/layout/Sidebar.tsx`. For a project tab, add the value to the tab list in `ProjectDetailPage.tsx` (`?tab=` search param) instead of a new route.
-6. **Forms.** Use `hooks/use-zod-form.ts` with the Zod schema from `packages/shared`; field errors immediately, form errors on submit.
-7. **Styling.** The configured Tailwind tokens only (`text-foreground`, `bg-muted`, `border-border`); no inline styles except truly dynamic values; no hard-coded colours (`theme-management` skill).
-8. **Test `*.test.tsx` next to the component** with Testing Library and `renderRoute` from `@/test/render`. Mock `@/lib/api-client` as in `DecisionsTab.test.tsx` and cover: loading, empty, error with retry, forbidden, the happy path, and each user interaction (load more, submit, delete). Query by role and name, not by implementation details.
+Below, `<name>` is the feature folder, for example `milestones`.
+
+1. **Plan first.** List the files and wait for approval. Confirm the endpoint and shared types exist (`api-module`) and that `pnpm build:packages` has been run.
+2. **Query keys** in `src/lib/query-keys.ts`: a factory under the right group, with a prefix key so a mutation can invalidate the whole family (`templates/hooks.md`).
+3. **Hooks** in `features/<name>/hooks/` (`templates/hooks.md`):
+   - reads: `useQuery` / `useInfiniteQuery` with `apiClient.get<T>(...)`, DTO types from `@brd/shared`, `staleTime` from `STALE` (`@/lib/query-client`), `placeholderData: keepPreviousData` for paged lists;
+   - writes: `useApiMutation` (`@/hooks/use-api-mutation`): it refreshes the listed keys and toasts. Set `errorToast: false` only when the screen shows the error itself (a form, a conflict);
+   - filters, search and page live in the URL: `useUrlState(zodObject)` (`@/hooks/use-url-state`), every field with `.catch(default)`. Never Redux, never `fetch` or `axios`.
+4. **Components** in `features/<name>/components/` (or `<Name>Page.tsx`). Functional components; logic in hooks; `@brd/ui` imports only. No inline `style`, no raw colors: use token classes (`text-muted-foreground`, `bg-surface`, `border-border`).
+5. **Permissions.** Wrap buttons and menu items in `<Can permission={ProjectPermission.X} projectRole={project.myRole}>` or `<Can roles={['ORG_ADMIN']}>`; for logic use `useCan()`. `Can` answers "no" until the user is loaded. It only hides things: the API enforces every rule.
+6. **Forms.** `useZodForm(schema)` with a schema from `packages/shared` (add a form-shaped schema there when the form edits text that the API stores as a date or null). Field errors via `FormMessage`; a failed save via `FormError`; drawers get `dirty={form.formState.isDirty}` so closing asks to discard.
+7. **Route and navigation.**
+   - New page: lazy-load it in `src/router.tsx` (`lazy(() => import('@/features/x/XPage').then((m) => ({ default: m.XPage })))`) under `ProtectedRoute` / `AppLayout`; wrap restricted areas in `<RoleGuard roles={[...]} />`. Add the nav item to `NAV_ITEMS` in `components/layout/AppLayout.tsx` (`roles: [...]` hides it from others) and a breadcrumb entry.
+   - New project tab: add an entry to the `tabs` array in `ProjectDetailPage.tsx`. **Update `ProjectDetailPage.test.tsx`**: it asserts the exact tab list and count.
+8. **Tests** (`templates/tests.md`), `*.test.tsx` next to the component, with `renderRoute` and `makeAuth` / `makeUser` from `@/test/render`; mock `@/lib/api-client` and `@/providers/auth-provider` as the templates do. Cover: loading, empty, error with retry, forbidden, the happy path, permission shown / hidden, and each interaction (submit with a validation error, successful submit, server error). Query by role and name.
 9. **Verify.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
-## Checklist
+## Done checklist
 
-- [ ] Only `@brd/ui` components; nothing re-created from the registry
-- [ ] Loading, empty, error and no-access all handled
-- [ ] Data via `apiClient` in `features/<name>/hooks/`; keys in `query-keys.ts`
-- [ ] Page lazy-loaded behind the auth/role guard
-- [ ] Test covers all states and interactions
+- [ ] Pattern chosen from the table; only `@brd/ui` components; nothing re-created from the registry
+- [ ] Loading, empty, error, no-access and ready all rendered and tested
+- [ ] Data through `apiClient` in `features/<name>/hooks/`; keys from `query-keys.ts`; URL holds filters, search and page
+- [ ] Writes use `useApiMutation`; `errorToast: false` only where the error is shown in place
+- [ ] Buttons and menus that need a permission use `<Can>` / `useCan()`
+- [ ] Forms: shared Zod schema, field errors, `FormError`, `dirty` on drawers
+- [ ] Page lazy-loaded behind the auth / role guard; nav and breadcrumb added; tab list test updated for new tabs
+- [ ] Tokens only, no inline styles or raw colors
+- [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass
 
-Related skills: `frontend-state`, `theme-management`, `performance-nfr`, `code-standards`.
+Related skills: `frontend-state`, `theme-management`, `performance-nfr`, `code-standards`, `api-module`.

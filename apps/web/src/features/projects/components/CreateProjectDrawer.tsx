@@ -10,6 +10,7 @@ import {
   FormMessage,
   Input,
   Textarea,
+  FormError,
 } from '@brd/ui';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { errorMessage } from '@/lib/error-message';
@@ -88,11 +89,7 @@ export function CreateProjectDrawer({ open, onOpenChange, onCreated }: CreatePro
               </FormItem>
             )}
           />
-          {createProject.error && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(createProject.error)}
-            </p>
-          )}
+          <FormError message={createProject.error ? errorMessage(createProject.error) : null} />
         </div>
       </FormDrawer>
     </Form>

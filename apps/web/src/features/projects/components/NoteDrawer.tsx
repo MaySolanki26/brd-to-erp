@@ -16,6 +16,7 @@ import {
   Input,
   Textarea,
   toast,
+  FormError,
 } from '@brd/ui';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { errorMessage } from '@/lib/error-message';
@@ -108,11 +109,7 @@ export function NoteDrawer({ projectId, open, onOpenChange, note }: NoteDrawerPr
               </FormItem>
             )}
           />
-          {mutation.error && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
-          )}
+          <FormError message={mutation.error ? errorMessage(mutation.error) : null} />
         </div>
       </FormDrawer>
     </Form>

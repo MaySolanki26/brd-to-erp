@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { resetPasswordSchema, type OrgUserDto, type ResetPasswordInput } from '@brd/shared';
-import { Form, FormDrawer } from '@brd/ui';
+import { Form, FormDrawer, FormError } from '@brd/ui';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { generatePassword } from '@/lib/generate-password';
 import { errorMessage } from '@/lib/error-message';
@@ -58,11 +58,7 @@ export function ResetPasswordDrawer({ user, onClose, onReset }: ResetPasswordDra
       >
         <div className="space-y-4">
           <PasswordField name="tempPassword" label="New temporary password" />
-          {resetPassword.error && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(resetPassword.error)}
-            </p>
-          )}
+          <FormError message={resetPassword.error ? errorMessage(resetPassword.error) : null} />
         </div>
       </FormDrawer>
     </Form>

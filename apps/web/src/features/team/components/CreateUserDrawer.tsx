@@ -15,6 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  FormError,
 } from '@brd/ui';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { generatePassword } from '@/lib/generate-password';
@@ -119,11 +120,7 @@ export function CreateUserDrawer({ open, onOpenChange, onCreated }: CreateUserDr
             )}
           />
           <PasswordField name="tempPassword" label="Temporary password" />
-          {createUser.error && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(createUser.error)}
-            </p>
-          )}
+          <FormError message={createUser.error ? errorMessage(createUser.error) : null} />
         </div>
       </FormDrawer>
     </Form>

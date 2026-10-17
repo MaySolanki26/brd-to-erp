@@ -8,6 +8,7 @@ import { RoleGuard } from '@/components/guards/RoleGuard';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { RouteErrorPage } from '@/pages/RouteErrorPage';
 
 const ChangePasswordPage = lazy(() =>
   import('@/features/auth/ChangePasswordPage').then((m) => ({ default: m.ChangePasswordPage })),
@@ -25,10 +26,12 @@ const TeamPage = lazy(() =>
 export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
+    errorElement: <RouteErrorPage />,
     children: [{ path: '/login', element: <LoginPage /> }],
   },
   {
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/change-password',

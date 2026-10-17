@@ -1,22 +1,22 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CreateProjectInput, ProjectDto } from '@brd/shared';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 import { apiClient } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 
 export function useCreateProject() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useApiMutation({
     mutationFn: async (input: CreateProjectInput) =>
       (await apiClient.post<{ project: ProjectDto }>('/projects', input)).project,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() }),
+    invalidate: [queryKeys.projects.all()],
+    errorToast: false, // the create drawer shows the error inline
   });
 }
 
 export function useArchiveProject(projectId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useApiMutation({
     mutationFn: async () =>
       (await apiClient.post<{ project: ProjectDto }>(`/projects/${projectId}/archive`)).project,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() }),
+    invalidate: [queryKeys.projects.all()],
+    successMessage: 'Project archived',
   });
 }

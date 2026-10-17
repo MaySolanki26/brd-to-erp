@@ -85,6 +85,8 @@ export {
 // NoAccess
 export { NoAccess } from './NoAccess';
 
+export { FormError } from './FormError';
+
 // DataTable
 export {
   DataTable,

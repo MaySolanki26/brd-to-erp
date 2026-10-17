@@ -11,6 +11,7 @@ import {
   DialogTitle,
   Label,
   Textarea,
+  FormError,
 } from '@brd/ui';
 
 interface DismissDialogProps {
@@ -74,16 +75,8 @@ export function DismissDialog({
             {reason.length} / {MAX_DISMISS_REASON_CHARS} characters. Dismissed questions are not
             asked again.
           </p>
-          {problem && (
-            <p role="alert" className="text-sm text-destructive">
-              {problem}
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
+          <FormError message={problem} />
+          <FormError message={error} />
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" disabled={pending} onClick={() => onOpenChange(false)}>

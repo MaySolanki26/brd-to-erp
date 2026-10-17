@@ -38,6 +38,7 @@ export interface FormPageProps {
 
   // Error
   errorMessage?: string;
+  errorDescription?: string;
   onRetry?: () => void;
 
   // NoAccess
@@ -62,6 +63,7 @@ export function FormPage({
   submitDisabled = false,
   size = 'md',
   errorMessage,
+  errorDescription,
   onRetry,
   noAccessTitle,
   noAccessDescription,
@@ -81,7 +83,12 @@ export function FormPage({
 
       {state === 'error' && (
         <PageShellBody scroll>
-          <PageError message={errorMessage} onRetry={onRetry} />
+          <PageError
+            variant="full"
+            message={errorMessage}
+            description={errorDescription}
+            onRetry={onRetry}
+          />
         </PageShellBody>
       )}
 

@@ -238,6 +238,7 @@ export {
   type AppHeaderProps,
   // NoAccess
   NoAccess,
+  FormError,
   // DataTable
   DataTable,
   DataTablePagination,

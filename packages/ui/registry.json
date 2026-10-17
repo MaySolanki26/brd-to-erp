@@ -459,6 +459,13 @@
         "DrawerShell"
       ]
     },
+    "FormError": {
+      "summary": "Form-level error text under the fields (field errors use FormMessage). Renders nothing when empty; announced to screen readers.",
+      "props": {
+        "message": "string | null | undefined"
+      },
+      "example": "<FormError message={mutation.error ? errorMessage(mutation.error) : null} />"
+    },
     "InfiniteScrollSentinel": {
       "summary": "Triggers onLoadMore when scrolled into view.",
       "props": {
@@ -774,7 +781,11 @@
         "submitLabel": "string",
         "submitting": "boolean",
         "submitDisabled": "boolean",
-        "size": "'sm'|'md'|'lg'|'xl'"
+        "size": "'sm'|'md'|'lg'|'xl'",
+        "errorMessage": "string",
+        "errorDescription": "string",
+        "onRetry": "() => void",
+        "noAccessDescription": "string"
       },
       "example": "<FormPage state=\"ready\" title=\"Edit settings\" onSubmit={form.handleSubmit(save)} onCancel={back} submitting={saving}>…fields…</FormPage>"
     }

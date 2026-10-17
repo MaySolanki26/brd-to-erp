@@ -1,147 +1,197 @@
-# API Module Template
+# API module template
 
-Replace `project` / `Project` with the feature name.
+This is the short version of the layering. The full, tested example (shared schemas, all four layers, the audit log, the fake repository and three test files) is in `.claude/skills/api-module/`; follow that skill when you add a module. The files below are the project's real shape, taken from the Milestones example.
 
-## packages/shared/src/project/project.schema.ts
+`milestones` is the resource name; replace it with yours.
 
-```ts
-import { z } from 'zod';
-
-export const createProjectSchema = z
-  .object({
-    name: z.string().trim().min(2).max(120),
-    description: z.string().trim().max(2000).optional(),
-  })
-  .strict();
-
-export type CreateProjectInput = z.infer<typeof createProjectSchema>;
-
-export const listProjectsQuerySchema = z.object({
-  search: z.string().trim().max(100).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-});
-
-export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
-```
-
-## project.routes.ts
+### `apps/api/src/modules/milestones/milestones.route.ts`
 
 ```ts
-import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth';
-import { validate } from '../../middleware/validate';
-import { createProjectSchema, listProjectsQuerySchema } from '@brd/shared';
-import { projectController } from './project.controller';
+import { Router, type Router as RouterType } from 'express';
+import {
+  ProjectPermission,
+  createMilestoneSchema,
+  listMilestonesQuerySchema,
+  projectRolesWith,
+} from '@brd/shared';
+import { requireProjectRole } from '../../middleware/require-project-role.js';
+import { validate } from '../../middleware/validate.js';
+import { createMilestoneController, listMilestonesController } from './milestones.controller.js';
 
-export const projectRoutes = Router();
+export const milestonesRouter: RouterType = Router({ mergeParams: true });
 
-projectRoutes.get(
+const canRead = requireProjectRole(...projectRolesWith(ProjectPermission.READ));
+const canUpdate = requireProjectRole(...projectRolesWith(ProjectPermission.UPDATE_PROJECT));
+
+milestonesRouter.get(
   '/',
-  requireAuth,
-  validate({ query: listProjectsQuerySchema }),
-  projectController.list,
+  validate(listMilestonesQuerySchema, 'query'),
+  canRead,
+  listMilestonesController,
 );
-projectRoutes.post(
-  '/',
-  requireAuth,
-  validate({ body: createProjectSchema }),
-  projectController.create,
-);
+milestonesRouter.post('/', validate(createMilestoneSchema), canUpdate, createMilestoneController);
 ```
 
-## project.controller.ts
+### `apps/api/src/modules/milestones/milestones.controller.ts`
 
 ```ts
 import type { Request, Response } from 'express';
-import { projectService } from './project.service';
+import type { CreateMilestoneInput, ListMilestonesQuery } from '@brd/shared';
+import { getAuthUser } from '../../middleware/require-auth.js';
+import * as service from './milestones.service.js';
 
-export const projectController = {
-  async list(req: Request, res: Response): Promise<void> {
-    const result = await projectService.list(req.ctx, req.validated.query);
-    res.json(result);
-  },
+const projectIdOf = (req: Request): string => req.params['id'] as string;
 
-  async create(req: Request, res: Response): Promise<void> {
-    const project = await projectService.create(req.ctx, req.validated.body);
-    res.status(201).json(project);
-  },
-};
+export async function listMilestonesController(req: Request, res: Response): Promise<void> {
+  res.json(
+    await service.listMilestones(
+      getAuthUser(res),
+      projectIdOf(req),
+      req.query as unknown as ListMilestonesQuery,
+    ),
+  );
+}
+
+export async function createMilestoneController(req: Request, res: Response): Promise<void> {
+  const milestone = await service.createMilestone(
+    getAuthUser(res),
+    projectIdOf(req),
+    req.body as CreateMilestoneInput,
+  );
+  res.status(201).json({ milestone });
+}
 ```
 
-## project.service.ts
+### `apps/api/src/modules/milestones/milestones.service.ts`
 
 ```ts
-import type { CreateProjectInput, ListProjectsQuery } from '@brd/shared';
-import type { RequestContext } from '../../types/context';
-import { ConflictError } from '../../errors/app-error';
-import { prisma } from '../../lib/prisma';
-import { auditLog } from '../audit/audit.service';
-import { projectRepository } from './project.repository';
+import type {
+  CreateMilestoneInput,
+  ListMilestonesQuery,
+  MilestoneDto,
+  PagedResult,
+  UserDto,
+} from '@brd/shared';
+import { withTransaction } from '../../lib/transaction.js';
+import { createAuditLog } from '../audit/audit.repository.js';
+import * as repo from './milestones.repository.js';
 
-export const projectService = {
-  async list(ctx: RequestContext, query: ListProjectsQuery) {
-    return projectRepository.listForUser(ctx.organizationId, ctx.userId, query);
-  },
+export function toMilestoneDto(record: repo.MilestoneRecord): MilestoneDto {
+  return {
+    id: record.id,
+    title: record.title,
+    dueDate: record.dueDate ? record.dueDate.toISOString().slice(0, 10) : null,
+    status: record.status,
+    createdBy: record.createdBy,
+    createdAt: record.createdAt.toISOString(),
+  };
+}
 
-  async create(ctx: RequestContext, input: CreateProjectInput) {
-    const exists = await projectRepository.existsByName(ctx.organizationId, input.name);
-    if (exists)
-      throw new ConflictError('PROJECT_NAME_TAKEN', 'A project with this name already exists');
+export async function listMilestones(
+  user: UserDto,
+  projectId: string,
+  query: ListMilestonesQuery,
+): Promise<PagedResult<MilestoneDto>> {
+  const { items, total } = await repo.listMilestones({
+    organizationId: user.organizationId,
+    projectId,
+    page: query.page,
+    pageSize: query.pageSize,
+  });
+  return { items: items.map(toMilestoneDto), page: query.page, pageSize: query.pageSize, total };
+}
 
-    return prisma.$transaction(async (tx) => {
-      const project = await projectRepository.create(tx, ctx, input);
-      await auditLog(tx, ctx, { action: 'project.create', entityId: project.id });
-      return project;
-    });
-  },
-};
+export async function createMilestone(
+  user: UserDto,
+  projectId: string,
+  input: CreateMilestoneInput,
+): Promise<MilestoneDto> {
+  const created = await withTransaction(async (tx) => {
+    const milestone = await repo.createMilestone(
+      {
+        title: input.title,
+        dueDate: input.dueDate ? new Date(`${input.dueDate}T00:00:00.000Z`) : null,
+        projectId,
+        organizationId: user.organizationId,
+        createdById: user.id,
+      },
+      tx,
+    );
+    await createAuditLog(
+      {
+        action: 'CREATE',
+        entity: 'Milestone',
+        entityId: milestone.id,
+        userId: user.id,
+        organizationId: user.organizationId,
+        metadata: { projectId },
+      },
+      tx,
+    );
+    return milestone;
+  });
+  return toMilestoneDto(created);
+}
 ```
 
-## project.repository.ts
+### `apps/api/src/modules/milestones/milestones.repository.ts`
 
 ```ts
 import type { Prisma } from '@prisma/client';
-import { prisma } from '../../lib/prisma';
+import { prisma } from '../../lib/prisma.js';
+import type { DbClient } from '../../lib/transaction.js';
 
-const projectSelect = {
+const milestoneSelect = {
   id: true,
-  name: true,
-  description: true,
+  title: true,
+  dueDate: true,
   status: true,
   createdAt: true,
-} satisfies Prisma.ProjectSelect;
+  createdBy: { select: { id: true, name: true } },
+} as const;
 
-export const projectRepository = {
-  async listForUser(
-    organizationId: string,
-    userId: string,
-    q: { search?: string; page: number; pageSize: number },
-  ) {
-    const where: Prisma.ProjectWhereInput = {
-      organizationId,
-      deletedAt: null,
-      members: { some: { userId } },
-      ...(q.search ? { name: { contains: q.search, mode: 'insensitive' } } : {}),
-    };
-    const [items, total] = await prisma.$transaction([
-      prisma.project.findMany({
-        where,
-        select: projectSelect,
-        orderBy: { createdAt: 'desc' },
-        skip: (q.page - 1) * q.pageSize,
-        take: q.pageSize,
-      }),
-      prisma.project.count({ where }),
-    ]);
-    return { items, total, page: q.page, pageSize: q.pageSize };
+export type MilestoneRecord = Prisma.MilestoneGetPayload<{ select: typeof milestoneSelect }>;
+
+/** Soonest due date first, undated last; the id breaks ties so pages never overlap. */
+export async function listMilestones(params: {
+  organizationId: string;
+  projectId: string;
+  page: number;
+  pageSize: number;
+}): Promise<{ items: MilestoneRecord[]; total: number }> {
+  const where = { organizationId: params.organizationId, projectId: params.projectId };
+  const [items, total] = await Promise.all([
+    prisma.milestone.findMany({
+      where,
+      select: milestoneSelect,
+      orderBy: [{ dueDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }],
+      skip: (params.page - 1) * params.pageSize,
+      take: params.pageSize,
+    }),
+    prisma.milestone.count({ where }),
+  ]);
+  return { items, total };
+}
+
+export async function createMilestone(
+  data: {
+    title: string;
+    dueDate: Date | null;
+    projectId: string;
+    organizationId: string;
+    createdById: string;
   },
-  // existsByName, create(tx, ctx, input) ...
-};
+  db: DbClient,
+): Promise<MilestoneRecord> {
+  return db.milestone.create({ data, select: milestoneSelect });
+}
 ```
 
-## project.test.ts (minimum cases)
+## What differs from a generic Express template
 
-- 201 create as allowed role; 400 invalid body; 409 duplicate name
-- 401 without auth; 404 for project in another organization
-- list returns only projects where the user is a member
+- `validate(schema, 'body' | 'query' | 'params')` replaces the parsed request; handlers read `req.body` and `req.query` as the typed result.
+- The signed-in user comes from `getAuthUser(res)`; services receive a `UserDto` and use `user.organizationId`.
+- Project access is `requireProjectRole(...projectRolesWith(ProjectPermission.X))`; organization routes use `requireOrgRole('ORG_ADMIN')`.
+- Errors are classes from `errors/app-error.js` (`NotFoundError`, `ForbiddenError`, `ValidationError`, `ConflictError`); the central handler builds the response.
+- Imports of local files end in `.js` (ESM). Repositories are the only files that import `prisma`.
+- Tests: one file per layer next to the source (`*.repository.test.ts`, `*.service.test.ts`, `*.route.test.ts`).

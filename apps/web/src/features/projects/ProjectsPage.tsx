@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { FolderKanban, Plus } from 'lucide-react';
 import {
@@ -15,10 +16,16 @@ import {
   TableRow,
   TableSkeleton,
 } from '@brd/ui';
+import { useUrlState } from '@/hooks/use-url-state';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { CreateProjectDrawer } from './components/CreateProjectDrawer';
 import { PROJECTS_PAGE_SIZE, useProjects } from './hooks/use-projects';
 import { ROLE_LABELS, STATUS_TONES, formatDate } from './project-labels';
+
+const PROJECTS_URL_SCHEMA = z.object({
+  page: z.coerce.number().int().min(1).catch(1),
+  search: z.string().max(200).catch(''),
+});
 
 const SKELETON_COLUMNS = [
   { kind: 'text' },
@@ -37,15 +44,11 @@ function projectsListState(projects: ProjectsQuery) {
 
 export function ProjectsPage() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-  const [pageNumber, setPageNumber] = useState(1);
+  const [{ search, page: pageNumber }, setUrlState] = useUrlState(PROJECTS_URL_SCHEMA);
   const projects = useProjects({ page: pageNumber, search });
   const [createOpen, setCreateOpen] = useState(false);
 
-  const changeSearch = (value: string) => {
-    setSearch(value.trim());
-    setPageNumber(1);
-  };
+  const changeSearch = (value: string) => setUrlState({ search: value.trim(), page: 1 });
   const isSearching = search.length > 0;
 
   const listState = projectsListState(projects);
@@ -100,7 +103,7 @@ export function ProjectsPage() {
               pageSize: projects.data.pageSize,
               total: projects.data.total,
             }}
-            onPageChange={setPageNumber}
+            onPageChange={(page) => setUrlState({ page })}
           />
         ) : null
       }

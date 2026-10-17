@@ -54,10 +54,7 @@ export function SummaryPanel({ projectId, canRefresh }: SummaryPanelProps) {
   }, [waitingFrom]);
 
   const refresh = () =>
-    request.mutate(undefined, {
-      onSuccess: () => setWaitingFrom(latest),
-      onError: (err) => toast.error(errorMessage(err)),
-    });
+    request.mutate(undefined, { onSuccess: () => setWaitingFrom(latest) });
 
   if (query.isError && isForbidden(query.error)) {
     return <NoAccess description="You do not have access to this project's summary." />;

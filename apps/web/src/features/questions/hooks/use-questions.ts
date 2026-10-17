@@ -1,11 +1,12 @@
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { PagedResult, QuestionCountsDto, QuestionDto } from '@brd/shared';
 import { apiClient } from '@/lib/api-client';
+import { STALE } from '@/lib/query-client';
 import { queryKeys } from '@/lib/query-keys';
 import type { QuestionFilters } from './use-question-filters';
 
 export const QUESTIONS_PAGE_SIZE = 50;
-const LIST_STALE_MS = 30_000;
+const LIST_STALE_MS = STALE.standard;
 
 function queryString(filters: QuestionFilters, page: number): string {
   const params = new URLSearchParams({ page: String(page), pageSize: String(QUESTIONS_PAGE_SIZE) });

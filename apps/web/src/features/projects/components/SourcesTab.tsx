@@ -64,7 +64,6 @@ export function SourcesTab({ projectId, canAddSource, canReprocess }: SourcesTab
   const retry = (document: DocumentDto) =>
     reprocess.mutate(document.id, {
       onSuccess: () => toast.success(`Reprocessing ${document.fileName}`),
-      onError: (err) => toast.error(errorMessage(err)),
     });
 
   const openNote = (note: ContextNoteDto | null) => {

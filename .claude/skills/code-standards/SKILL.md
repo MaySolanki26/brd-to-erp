@@ -41,19 +41,19 @@ Names describe intent. No abbreviations except well-known ones (`id`, `url`, `ap
 ## 4. API structure (Express)
 
 ```
-src/modules/<feature>/
-  <feature>.routes.ts       routing + middleware only
-  <feature>.controller.ts   parse request, call service, shape response
-  <feature>.service.ts      business logic, transactions, permissions
+apps/api/src/modules/<feature>/
+  <feature>.route.ts        method, path and middleware only
+  <feature>.controller.ts   read the validated request, call one service function, respond
+  <feature>.service.ts      business rules, mapping to DTOs, transactions, audit
   <feature>.repository.ts   Prisma queries only
-  <feature>.test.ts         integration tests (supertest)
+  <feature>.repository.test.ts, <feature>.service.test.ts, <feature>.route.test.ts
 ```
 
 - No business logic in routes or controllers. No Prisma calls outside repositories.
-- Services receive a typed context: `{ userId, organizationId, requestId, roles }`.
-- Every repository query is scoped by `organizationId` (and project when applicable).
+- Services receive the signed-in `UserDto` (`getAuthUser(res)` in the controller) and use `user.organizationId`; an organization id from the request is never trusted.
+- Every repository query is scoped by `organizationId` (and `projectId` for project data).
 - Request/response schemas live in `packages/shared` (Zod) and are reused by the web app.
-- See `templates/api-module-template.md`.
+- The full, tested walkthrough is the `api-module` skill; `templates/api-module-template.md` is its short form.
 
 ## 5. Web structure (React)
 

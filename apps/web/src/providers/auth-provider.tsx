@@ -4,7 +4,9 @@ import { toast } from '@brd/ui';
 import type { UserDto, RoleName } from '@brd/shared';
 import { apiClient, ApiClientError } from '@/lib/api-client';
 import { errorMessage } from '@/lib/error-message';
+import { STALE } from '@/lib/query-client';
 import { queryKeys } from '@/lib/query-keys';
+import { clearUserStorage } from '@/lib/storage';
 
 interface AuthContextValue {
   user: UserDto | null;
@@ -37,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     retry: false,
-    staleTime: 10 * 60 * 1000,
+    staleTime: STALE.reference,
   });
 
   const user = data ?? null;
@@ -50,10 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         `Signed out here, but the server could not end the session: ${errorMessage(err)}`,
       );
     }
+    if (user) clearUserStorage(user.id);
     // Drop every cached response so the next person on this browser cannot see this one's data.
     queryClient.clear();
     queryClient.setQueryData(queryKeys.auth.me(), null);
-  }, [queryClient]);
+  }, [queryClient, user]);
 
   return (
     <AuthContext.Provider

@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
   toast,
+  FormError,
 } from '@brd/ui';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { errorMessage } from '@/lib/error-message';
@@ -136,11 +137,7 @@ export function AddMemberDrawer({ projectId, open, onOpenChange }: AddMemberDraw
               </FormItem>
             )}
           />
-          {addMember.error && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(addMember.error)}
-            </p>
-          )}
+          <FormError message={addMember.error ? errorMessage(addMember.error) : null} />
         </div>
       </FormDrawer>
     </Form>

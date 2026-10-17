@@ -15,16 +15,22 @@ import {
   type AppShellUser,
 } from '@brd/ui';
 import { FolderKanban, KeyRound, LayoutDashboard, Users } from 'lucide-react';
+import { OrgRole, type RoleName } from '@brd/shared';
+import { useCan } from '@/hooks/use-can';
 import { useAuth } from '@/providers/auth-provider';
 import { useProject } from '@/features/projects/hooks/use-projects';
 import { AppBrand } from './AppBrand';
 
-const NAV_ITEMS: NavItem[] = [
+interface RoleNavItem extends NavItem {
+  /** Organisation roles that see this item. Everyone sees it when left out. */
+  roles?: readonly RoleName[];
+}
+
+const NAV_ITEMS: RoleNavItem[] = [
   { key: '/', label: 'Dashboard', icon: LayoutDashboard },
   { key: '/projects', label: 'Projects', icon: FolderKanban },
+  { key: '/team', label: 'Team', icon: Users, roles: [OrgRole.ORG_ADMIN] },
 ];
-
-const ADMIN_NAV_ITEMS: NavItem[] = [{ key: '/team', label: 'Team', icon: Users }];
 
 const BREADCRUMB_MAP: Record<string, BreadcrumbItem[]> = {
   '/': [{ label: 'Dashboard' }],
@@ -49,17 +55,17 @@ function breadcrumbsFor(
 
 export function AppLayout() {
   const { user, logout } = useAuth();
+  const canAct = useCan();
   const { collapsed, toggle } = useSidebarState();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const visibleItems =
-    user?.orgRole === 'ORG_ADMIN' ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
+  const visibleItems = NAV_ITEMS.filter((item) => !item.roles || canAct({ roles: item.roles }));
   const activeKey =
     visibleItems.find((item) => isActivePath(item.key, location.pathname))?.key ?? '/';
 
-  const navItems: NavItem[] = visibleItems.map((item) => ({
+  const navItems: NavItem[] = visibleItems.map(({ roles: _roles, ...item }) => ({
     ...item,
     onClick: () => {
       navigate(item.key);

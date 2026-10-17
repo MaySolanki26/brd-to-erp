@@ -48,7 +48,6 @@ export function TeamPage() {
       {
         onSuccess: () =>
           toast.success(`${user.name} is now ${orgRole === 'ORG_ADMIN' ? 'an admin' : 'a member'}`),
-        onError: (err) => toast.error(errorMessage(err)),
       },
     );
 
@@ -62,10 +61,7 @@ export function TeamPage() {
           toast.success(`${target.name} ${target.active ? 'deactivated' : 'reactivated'}`);
           setToggleTarget(null);
         },
-        onError: (err) => {
-          toast.error(errorMessage(err));
-          setToggleTarget(null);
-        },
+        onError: () => setToggleTarget(null),
       },
     );
   };

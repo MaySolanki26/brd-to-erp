@@ -1,3 +1,4 @@
+import type { ZodType } from 'zod';
 import type { ApiErrorCode, ApiErrorEnvelope } from '@brd/shared';
 import { loginUrl } from './return-to';
 
@@ -23,6 +24,7 @@ export class ApiClientError extends Error {
 }
 
 let refreshPromise: Promise<void> | null = null;
+let sessionExpiredHandler: (() => void) | null = null;
 
 const LOGIN_PATH = '/login';
 const CSRF_COOKIE = 'csrf_token';
@@ -47,72 +49,43 @@ function withCsrf(init: RequestInit): RequestInit {
   return { ...init, headers, credentials: 'include' };
 }
 
+/**
+ * Registers what to do when the session is lost for good (for example, clear cached data).
+ * It runs just before the redirect to login. Returns a function that removes the handler.
+ */
+export function onSessionExpired(handler: () => void): () => void {
+  sessionExpiredHandler = handler;
+  return () => {
+    if (sessionExpiredHandler === handler) sessionExpiredHandler = null;
+  };
+}
+
 // Reloading while already on the login page would restart the session check and loop forever.
-function redirectToLogin(): void {
-  if (window.location.pathname !== LOGIN_PATH) {
-    window.location.href = loginUrl(`${window.location.pathname}${window.location.search}`);
-  }
+function endSession(): void {
+  if (window.location.pathname === LOGIN_PATH) return;
+  sessionExpiredHandler?.();
+  window.location.href = loginUrl(`${window.location.pathname}${window.location.search}`);
 }
 
 const REFRESH_RETRY_DELAY_MS = 250;
+const NETWORK_ERROR_MESSAGE = 'Cannot reach the server. Check your connection and try again.';
 
-// A second tab refreshing at the same instant is refused once; by the retry its new cookie is set.
-async function silentRefresh(): Promise<void> {
-  for (let attempt = 0; ; attempt += 1) {
-    const res = await fetch(`${BASE_URL}/auth/refresh`, withCsrf({ method: 'POST' }));
-    if (res.ok) return;
-    if (attempt === 1 || res.status !== 401) {
-      throw new ApiClientError(res.status, 'UNAUTHORIZED', 'Session expired');
-    }
-    await new Promise((resolve) => setTimeout(resolve, REFRESH_RETRY_DELAY_MS));
+function isAbort(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError';
+}
+
+async function send(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, withCsrf(init));
+  } catch (err) {
+    if (isAbort(err)) throw err;
+    throw new ApiClientError(0, 'SERVICE_UNAVAILABLE', NETWORK_ERROR_MESSAGE);
   }
 }
 
-async function request<T>(path: string, init: RequestInit): Promise<T> {
-  const url = `${BASE_URL}${path}`;
-  const res = await fetch(url, withCsrf(init));
-
-  if (res.ok) {
-    if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
-  }
-
-  // On 401, try silent refresh once (unless this IS the refresh call)
-  if (res.status === 401 && !path.startsWith('/auth/refresh')) {
-    try {
-      if (!refreshPromise) {
-        refreshPromise = silentRefresh();
-      }
-      await refreshPromise;
-      refreshPromise = null;
-
-      // Retry original request
-      const retry = await fetch(url, withCsrf(init));
-      if (retry.ok) {
-        if (retry.status === 204) return undefined as T;
-        return retry.json() as Promise<T>;
-      }
-      // Retry also failed — fall through to error handling
-      const retryBody = (await retry.json().catch(() => null)) as ApiErrorEnvelope | null;
-      throw new ApiClientError(
-        retry.status,
-        retryBody?.error?.code ?? 'UNAUTHORIZED',
-        retryBody?.error?.message ?? 'Unauthorized',
-        retryBody?.error?.requestId,
-      );
-    } catch (err) {
-      refreshPromise = null;
-      redirectToLogin();
-      if (err instanceof ApiClientError) {
-        throw err;
-      }
-      throw new ApiClientError(401, 'UNAUTHORIZED', 'Session expired');
-    }
-  }
-
-  // Parse error body
+async function toApiError(res: Response): Promise<ApiClientError> {
   const body = (await res.json().catch(() => null)) as ApiErrorEnvelope | null;
-  throw new ApiClientError(
+  return new ApiClientError(
     res.status,
     body?.error?.code ?? 'INTERNAL_SERVER_ERROR',
     body?.error?.message ?? 'An unexpected error occurred',
@@ -120,8 +93,97 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   );
 }
 
+async function readBody<T>(res: Response): Promise<T> {
+  if (res.status === 204) return undefined as T;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new ApiClientError(
+      res.status,
+      'INTERNAL_SERVER_ERROR',
+      'The server sent a response that could not be read.',
+    );
+  }
+}
+
+const SESSION_REFUSED = new Set([401, 403]);
+
+// A second tab refreshing at the same instant is refused once; by the retry its new cookie is set.
+async function silentRefresh(): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    const res = await send(`${BASE_URL}/auth/refresh`, { method: 'POST' });
+    if (res.ok) return;
+    if (!SESSION_REFUSED.has(res.status)) throw await toApiError(res);
+    if (attempt === 1 || res.status !== 401) {
+      throw new ApiClientError(res.status, 'UNAUTHORIZED', 'Session expired');
+    }
+    await new Promise((resolve) => setTimeout(resolve, REFRESH_RETRY_DELAY_MS));
+  }
+}
+
+/**
+ * Resolves true when the session was renewed and false when the server refused it. A network or
+ * server failure while refreshing is not a sign-out, so it is thrown for the caller to show.
+ */
+async function refreshSession(): Promise<boolean> {
+  refreshPromise ??= silentRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  try {
+    await refreshPromise;
+    return true;
+  } catch (err) {
+    if (err instanceof ApiClientError && SESSION_REFUSED.has(err.status)) return false;
+    throw err;
+  }
+}
+
+export interface RequestOptions<T = unknown> extends RequestInit {
+  /** Shared Zod schema the response must match. Mismatches throw in development. */
+  schema?: ZodType<T>;
+}
+
+function checkShape<T>(data: T, schema: ZodType<T> | undefined, path: string): T {
+  if (!schema) return data;
+  const result = schema.safeParse(data);
+  if (result.success) return result.data;
+  // Issue paths only: values may contain user data.
+  const fields = result.error.issues.map((issue) => issue.path.join('.')).join(', ');
+  if (import.meta.env.DEV) {
+    throw new ApiClientError(
+      500,
+      'INTERNAL_SERVER_ERROR',
+      `Response from ${path} did not match its schema (${fields}).`,
+    );
+  }
+  console.error(`Response from ${path} did not match its schema (${fields}).`);
+  return data;
+}
+
+async function request<T>(path: string, options: RequestOptions<T>): Promise<T> {
+  const { schema, ...init } = options;
+  const url = `${BASE_URL}${path}`;
+  const res = await send(url, init);
+
+  if (res.ok) return checkShape(await readBody<T>(res), schema, path);
+
+  if (res.status === 401 && !path.startsWith('/auth/refresh')) {
+    if (!(await refreshSession())) {
+      endSession();
+      throw new ApiClientError(401, 'UNAUTHORIZED', 'Session expired');
+    }
+    const retry = await send(url, init);
+    if (retry.ok) return checkShape(await readBody<T>(retry), schema, path);
+    // Only a second 401 means the session is gone; a 403 or 500 here is an ordinary failure.
+    if (retry.status === 401) endSession();
+    throw await toApiError(retry);
+  }
+
+  throw await toApiError(res);
+}
+
 function withBody(method: string) {
-  return <T>(path: string, body?: unknown, opts?: RequestInit): Promise<T> =>
+  return <T>(path: string, body?: unknown, opts?: RequestOptions<T>): Promise<T> =>
     request<T>(path, {
       ...opts,
       method,
@@ -222,9 +284,10 @@ async function upload(
 
 export const apiClient = {
   upload,
-  get: <T>(path: string, opts?: RequestInit) => request<T>(path, { ...opts, method: 'GET' }),
+  get: <T>(path: string, opts?: RequestOptions<T>) => request<T>(path, { ...opts, method: 'GET' }),
   post: withBody('POST'),
   put: withBody('PUT'),
   patch: withBody('PATCH'),
-  del: <T>(path: string, opts?: RequestInit) => request<T>(path, { ...opts, method: 'DELETE' }),
+  del: <T>(path: string, opts?: RequestOptions<T>) =>
+    request<T>(path, { ...opts, method: 'DELETE' }),
 };
