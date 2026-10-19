@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { z } from 'zod';
 import { projectRoleSchema, uuidSchema } from '@brd/shared';
 import {
+  SelectMenu,
   Form,
   FormControl,
   FormDrawer,
@@ -9,11 +10,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   toast,
   FormError,
 } from '@brd/ui';
@@ -70,7 +66,6 @@ export function AddMemberDrawer({ projectId, open, onOpenChange }: AddMemberDraw
         onOpenChange={onOpenChange}
         title="Add project member"
         description="Search your organization by name or email."
-        size="lg"
         onSubmit={submit}
         submitLabel="Add member"
         isPending={addMember.isPending}
@@ -110,20 +105,18 @@ export function AddMemberDrawer({ projectId, open, onOpenChange }: AddMemberDraw
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Project role</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {ROLE_OPTIONS.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {ROLE_LABELS[role]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SelectMenu
+                    block
+                    label="Project role"
+                    value={field.value}
+                    options={ROLE_OPTIONS.map((role) => ({
+                      value: role,
+                      label: ROLE_LABELS[role],
+                    }))}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

@@ -4,6 +4,7 @@ import type { ChunkProgressDto, ProcessingStatusDto, SourceStatus } from '@brd/s
 import { errorMessage } from '@/lib/error-message';
 import { useProcessingStatus } from '@/features/projects/hooks/use-sources';
 import { SourceStatusBadge } from '@/features/projects/components/SourceStatusBadge';
+import { formatDateTime } from '@/features/decisions/format';
 
 const ORDER: SourceStatus[] = ['UPLOADED', 'PROCESSING', 'PROCESSED', 'FAILED'];
 
@@ -11,22 +12,12 @@ function totalSources(status: ProcessingStatusDto): number {
   return ORDER.reduce((sum, key) => sum + status.counts[key], 0);
 }
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 export function ProcessingPanel({ projectId }: { projectId: string }) {
   const query = useProcessingStatus(projectId);
 
   return (
-    <section aria-labelledby="processing-heading" className="space-y-3">
-      <h2 id="processing-heading" className="text-base font-semibold">
+    <section aria-labelledby="processing-heading" className="uab-panel flex flex-col gap-3">
+      <h2 id="processing-heading" className="uab-panel-title">
         Processing
       </h2>
       {query.isPending && <Skeleton className="h-16 w-full max-w-xl" />}
@@ -56,7 +47,7 @@ export function ProcessingPanel({ projectId }: { projectId: string }) {
               </li>
             ))}
           </ul>
-          <p className="text-sm text-muted-foreground">
+          <p className="uab-muted">
             {query.data.lastProcessedAt
               ? `Last processed ${formatDateTime(query.data.lastProcessedAt)}`
               : 'Nothing has finished processing yet.'}
@@ -74,7 +65,7 @@ function ProgressBar({ status }: { status: ProcessingStatusDto }) {
   const percent = Math.round((done / total) * 100);
   return (
     <div className="space-y-1">
-      <Progress value={percent} aria-label="Sources processed" />
+      <Progress value={percent} aria-label="Sources processed" className="w-full max-w-md" />
       <p className="text-sm">
         {done} of {total} sources processed{status.active && ' · working…'}
       </p>
@@ -88,7 +79,7 @@ function PartsRead({ chunks }: { chunks: ChunkProgressDto }) {
   const percent = Math.round((chunks.extracted / chunks.total) * 100);
   return (
     <div className="space-y-1">
-      <Progress value={percent} aria-label="Parts read" />
+      <Progress value={percent} aria-label="Parts read" className="w-full max-w-md" />
       <p className="text-sm">
         {chunks.extracted} of {chunks.total} parts read
         {chunks.needingReview > 0 &&

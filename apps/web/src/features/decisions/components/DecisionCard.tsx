@@ -28,9 +28,7 @@ export function DecisionCard({ decision }: { decision: DecisionDto }) {
 
         <div>
           <p className="text-xs font-medium text-muted-foreground">Answer</p>
-          <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-3 text-sm">
-            {decision.answer}
-          </p>
+          <p className="uab-inline-alert uab-tone-neutral whitespace-pre-wrap">{decision.answer}</p>
         </div>
 
         {decision.summary && <p className="text-sm font-medium">{decision.summary}</p>}
@@ -52,7 +50,7 @@ export function DecisionCard({ decision }: { decision: DecisionDto }) {
           <div
             role="group"
             aria-label="Conflicts"
-            className="space-y-1 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
+            className="uab-inline-alert uab-tone-warning flex flex-col gap-1"
           >
             <p className="flex items-center gap-1 font-medium">
               <TriangleAlert className="h-4 w-4" aria-hidden />

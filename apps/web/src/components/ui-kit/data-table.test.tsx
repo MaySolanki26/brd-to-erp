@@ -8,9 +8,7 @@ interface Row {
   name: string;
 }
 
-const COLUMNS: DataTableColumnDef<Row>[] = [
-  { id: 'name', header: 'Name', sortable: true },
-];
+const COLUMNS: DataTableColumnDef<Row>[] = [{ id: 'name', header: 'Name', sortable: true }];
 const ROWS: Row[] = [
   { id: '1', name: 'Alpha' },
   { id: '2', name: 'Beta' },
@@ -40,7 +38,7 @@ describe('DataTable', () => {
     expect(onPageChange).toHaveBeenCalledWith(2);
   });
 
-  it('keeps search and the clear-filters button when no rows match', async () => {
+  it('keeps search and the Filters panel when no rows match, and clears from the panel', async () => {
     const onClear = vi.fn();
     const onSearch = vi.fn();
     render(
@@ -56,34 +54,10 @@ describe('DataTable', () => {
       />,
     );
     expect(screen.getByText('No matches')).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Search names' })).toHaveValue('zzz');
+    expect(screen.getByRole('searchbox', { name: 'Search names' })).toHaveValue('zzz');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(onClear).toHaveBeenCalled();
-  });
-
-  it('uses the wording given for the no-filter choice, and clears a search on its own', async () => {
-    const onClear = vi.fn();
-    render(
-      <DataTable
-        columns={COLUMNS}
-        data={ROWS}
-        search={{ value: 'alp', onChange: vi.fn(), placeholder: 'Search names' }}
-        filters={[
-          {
-            id: 'status',
-            label: 'Filter by status',
-            allLabel: 'All statuses',
-            options: [{ value: 'OPEN', label: 'Open' }],
-          },
-        ]}
-        filterValues={{}}
-        onFilterChange={vi.fn()}
-        onClearFilters={onClear}
-      />,
-    );
-    expect(screen.getByRole('combobox', { name: 'Filter by status' })).toHaveTextContent('All statuses');
-    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(onClear).toHaveBeenCalled();
   });
 

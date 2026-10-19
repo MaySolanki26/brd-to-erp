@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import { PageShell, PageShellBody } from '../PageShell';
+import { Button } from '../../uab/primitives/Button';
+import { useSetPageHeader } from '../app-shell/PageHeader';
 import { InformativeBar } from '../InformativeBar';
 import { PageLoader } from '../PageLoader';
 import { PageError } from '../PageError';
 import { NoAccess } from '../NoAccess';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../tabs';
+import { ViewBar } from '../ViewBar';
 
 type DetailPageState = 'loading' | 'error' | 'no-access' | 'ready';
 
@@ -45,6 +46,10 @@ export interface DetailPageProps {
   className?: string;
 }
 
+/**
+ * The template record page: the title is in the top bar; line 1 is the section tabs (underline tabs with
+ * a sliding line) with the badge, Back and actions at the right; the active section fills the page.
+ */
 export function DetailPage({
   state,
   children,
@@ -61,60 +66,49 @@ export function DetailPage({
   noAccessTitle,
   noAccessDescription,
   footer,
-  className,
 }: DetailPageProps) {
+  const inTopBar = useSetPageHeader(typeof title === 'string' ? title : undefined);
+  const active = tabs?.find((tab) => tab.key === activeTab) ?? tabs?.[0];
+  const actions = (
+    <>
+      {badge}
+      {onBack && (
+        <Button icon="chevron-left" onClick={onBack}>
+          Back
+        </Button>
+      )}
+      {state === 'ready' ? headerRight : null}
+    </>
+  );
+
   return (
-    <PageShell className={className}>
-      <InformativeBar title={title} onBack={onBack} badge={badge}>
-        {state === 'ready' ? headerRight : null}
-      </InformativeBar>
-
-      {state === 'loading' && (
-        <PageShellBody scroll>
-          <PageLoader />
-        </PageShellBody>
-      )}
-
-      {state === 'error' && (
-        <PageShellBody scroll>
-          <PageError
-            variant="full"
-            message={errorMessage}
-            description={errorDescription}
-            onRetry={onRetry}
+    <div className="uab-page uab-page-resource">
+      <div className="uab-page-main">
+        {!inTopBar && title && <InformativeBar title={title} />}
+        {state === 'ready' && tabs && tabs.length > 0 ? (
+          <ViewBar
+            views={tabs.map((tab) => ({ id: tab.key, name: tab.label, icon: 'list' }))}
+            activeId={active?.key ?? ''}
+            onSelect={(key) => onTabChange?.(key)}
+            label="Sections"
+            actions={actions}
           />
-        </PageShellBody>
-      )}
-
-      {state === 'no-access' && (
-        <PageShellBody scroll>
-          <NoAccess variant="full" title={noAccessTitle} description={noAccessDescription} />
-        </PageShellBody>
-      )}
-
-      {state === 'ready' && (
-        <PageShellBody padded scroll>
-          {tabs && tabs.length > 0 ? (
-            <Tabs value={activeTab ?? tabs[0]?.key} onValueChange={onTabChange}>
-              <TabsList>
-                {tabs.map((tab) => (
-                  <TabsTrigger key={tab.key} value={tab.key}>
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {tabs.map((tab) => (
-                <TabsContent key={tab.key} value={tab.key} className="mt-4">
-                  {tab.content}
-                </TabsContent>
-              ))}
-            </Tabs>
-          ) : (
-            children
-          )}
-        </PageShellBody>
-      )}
+        ) : (
+          <div className="uab-view-toolbar uab-view-tabs-row">
+            <span className="uab-viewbar-spacer" />
+            <div className="uab-view-tools uab-view-tools-primary">{actions}</div>
+          </div>
+        )}
+        {state === 'loading' && <PageLoader />}
+        {state === 'error' && (
+          <PageError message={errorMessage} description={errorDescription} onRetry={onRetry} />
+        )}
+        {state === 'no-access' && (
+          <NoAccess title={noAccessTitle} description={noAccessDescription} />
+        )}
+        {state === 'ready' && (tabs && tabs.length > 0 ? active?.content : children)}
+      </div>
       {footer}
-    </PageShell>
+    </div>
   );
 }

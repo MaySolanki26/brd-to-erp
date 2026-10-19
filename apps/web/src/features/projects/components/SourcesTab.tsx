@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { FileText, StickyNote } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { SOURCE_FILE_ACCEPT, type ContextNoteDto, type DocumentDto } from '@brd/shared';
 import { Button, EmptyState, NoAccess, PageError, TableSkeleton, toast } from '@brd/ui';
 import { errorMessage, isForbidden } from '@/lib/error-message';
@@ -83,60 +83,66 @@ export function SourcesTab({ projectId, canAddSource, canReprocess }: SourcesTab
   const isEmpty =
     documents.isSuccess && notes.isSuccess && documentItems.length + noteItems.length === 0;
 
+  const addNoteButton = canAddSource ? (
+    <Button icon="plus" onClick={() => openNote(null)}>
+      Add context note
+    </Button>
+  ) : undefined;
+
   return (
-    <div className="space-y-6">
+    <>
       <input
         ref={versionInput}
         type="file"
         accept={SOURCE_FILE_ACCEPT}
-        className="sr-only"
+        className="uab-sr-only"
         tabIndex={-1}
         aria-label="Choose a file for the new version"
         onChange={onVersionFile}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold">Sources</h2>
-        {canAddSource && (
-          <Button size="sm" variant="outline" onClick={() => openNote(null)}>
-            <StickyNote className="mr-1 h-4 w-4" />
-            Add context note
-          </Button>
-        )}
+      <div className="uab-page-resource-intro">
+        <DropZone canAddSource={canAddSource} onFiles={(files) => queue.add(files)} />
+        <UploadQueue
+          items={queue.items}
+          onCancel={queue.cancel}
+          onRetry={queue.retry}
+          onDismiss={queue.dismiss}
+          onClearFinished={queue.clearFinished}
+          onOpenDocument={(documentId) => setChunkTarget({ documentId, versionId: null })}
+        />
       </div>
 
-      <DropZone canAddSource={canAddSource} onFiles={(files) => queue.add(files)} />
-
-      <UploadQueue
-        items={queue.items}
-        onCancel={queue.cancel}
-        onRetry={queue.retry}
-        onDismiss={queue.dismiss}
-        onClearFinished={queue.clearFinished}
-        onOpenDocument={(documentId) => setChunkTarget({ documentId, versionId: null })}
-      />
-
-      {loading && <TableSkeleton columns={[...LIST_COLUMNS]} rows={3} />}
+      {loading && (
+        <div className="uab-content-surface">
+          <TableSkeleton columns={[...LIST_COLUMNS]} rows={3} />
+        </div>
+      )}
       {failed && (
-        <PageError
-          message="Could not load sources"
-          description={errorMessage(failed.error)}
-          onRetry={() => {
-            void documents.refetch();
-            void notes.refetch();
-          }}
-        />
+        <div className="uab-content-surface">
+          <PageError
+            message="Could not load sources"
+            description={errorMessage(failed.error)}
+            onRetry={() => {
+              void documents.refetch();
+              void notes.refetch();
+            }}
+          />
+        </div>
       )}
       {isEmpty && (
-        <EmptyState
-          icon={FileText}
-          title="No sources yet"
-          description={
-            canAddSource
-              ? 'Drop a PDF, DOCX or XLSX above, or add a context note, to start building project knowledge.'
-              : 'Documents and notes added by analysts and owners appear here.'
-          }
-        />
+        <div className="uab-content-surface">
+          <EmptyState
+            icon={FileText}
+            title="No sources yet"
+            description={
+              canAddSource
+                ? 'Drop a PDF, DOCX or XLSX above, or add a context note, to start building project knowledge.'
+                : 'Documents and notes added by analysts and owners appear here.'
+            }
+            action={addNoteButton}
+          />
+        </div>
       )}
       {documents.isSuccess && notes.isSuccess && !isEmpty && (
         <SourcesList
@@ -146,6 +152,7 @@ export function SourcesTab({ projectId, canAddSource, canReprocess }: SourcesTab
           canAddSource={canAddSource}
           canReprocess={canReprocess}
           reprocessing={reprocess.isPending}
+          toolbarActions={addNoteButton}
           onViewChunks={(documentId) => setChunkTarget({ documentId, versionId: null })}
           onViewVersions={setVersionsDocumentId}
           onNewVersion={pickNewVersion}
@@ -178,6 +185,6 @@ export function SourcesTab({ projectId, canAddSource, canReprocess }: SourcesTab
         onOpenChange={setNoteOpen}
         note={editingNote}
       />
-    </div>
+    </>
   );
 }

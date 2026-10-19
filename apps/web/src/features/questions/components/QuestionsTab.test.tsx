@@ -68,7 +68,7 @@ describe('QuestionsTab', () => {
     it('shows loading placeholders first', () => {
       api.get.mockReturnValue(new Promise(() => {}));
       view();
-      expect(screen.getByRole('heading', { name: 'Questions' })).toBeInTheDocument();
+      expect(document.querySelector('.uab-skeleton')).not.toBeNull();
       expect(screen.queryByRole('article')).not.toBeInTheDocument();
     });
 
@@ -165,7 +165,12 @@ describe('QuestionsTab', () => {
       serveItems([
         question({
           linkedItems: [
-            linkedItem({ kind: 'requirement', id: 'r1', title: 'Approve invoices', status: 'OPEN' }),
+            linkedItem({
+              kind: 'requirement',
+              id: 'r1',
+              title: 'Approve invoices',
+              status: 'OPEN',
+            }),
             linkedItem({ kind: 'rule', id: 'u1', title: 'Limit is 10k', status: 'CONFIRMED' }),
             linkedItem({ kind: 'module', id: 'm1', title: 'Finance', status: 'ASSUMED' }),
           ],
@@ -199,7 +204,12 @@ describe('QuestionsTab', () => {
               headingPath: ['1. Scope', '1.1 Invoicing'],
               content: 'Invoices above 10k need a second approval.',
               needsReview: false,
-              source: { type: 'document', sourceId: 'd1', sourceTitle: 'Billing BRD', versionNumber: 1 },
+              source: {
+                type: 'document',
+                sourceId: 'd1',
+                sourceTitle: 'Billing BRD',
+                versionNumber: 1,
+              },
             },
           };
         }
@@ -212,7 +222,9 @@ describe('QuestionsTab', () => {
       );
 
       const dialog = await screen.findByRole('dialog');
-      expect(await within(dialog).findByText('Invoices above 10k need a second approval.')).toBeInTheDocument();
+      expect(
+        await within(dialog).findByText('Invoices above 10k need a second approval.'),
+      ).toBeInTheDocument();
       expect(within(dialog).getByText('1. Scope › 1.1 Invoicing')).toBeInTheDocument();
       expect(api.get).toHaveBeenCalledWith('/projects/p1/chunks/c1');
     });
@@ -356,23 +368,33 @@ describe('QuestionsTab', () => {
       view();
       await screen.findByText('What happens to unpaid invoices?');
 
-      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by priority' }));
-      await userEvent.click(await screen.findByRole('option', { name: 'Critical' }));
+      await userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+      const priority = screen.getByRole('radiogroup', { name: 'Priority' });
+      await userEvent.click(within(priority).getByRole('radio', { name: 'Critical' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
       await waitFor(() =>
         expect(api.get).toHaveBeenCalledWith(listUrl('&status=OPEN&priority=CRITICAL')),
       );
 
-      await userEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Filters, applied' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      await userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
       await waitFor(() =>
-        expect(screen.queryByRole('button', { name: 'Reset filters' })).not.toBeInTheDocument(),
+        expect(
+          within(screen.getByRole('radiogroup', { name: 'Priority' })).getByRole('radio', {
+            name: 'All',
+          }),
+        ).toBeChecked(),
       );
     });
 
     it('can show every status', async () => {
       view();
       await screen.findByText('What happens to unpaid invoices?');
-      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by status' }));
-      await userEvent.click(await screen.findByRole('option', { name: 'All statuses' }));
+      await userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+      const status = screen.getByRole('radiogroup', { name: 'Status' });
+      await userEvent.click(within(status).getByRole('radio', { name: 'All' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
       await waitFor(() => expect(api.get).toHaveBeenCalledWith(listUrl('')));
     });
   });
@@ -554,7 +576,16 @@ describe('QuestionsTab', () => {
     it('lets the person discard the unsent text', async () => {
       await conflictOnAnswer();
       await userEvent.click(await screen.findByRole('button', { name: /^Discard your text/ }));
-      expect(screen.queryByRole('region', { name: 'Your unsent answers' })).not.toBeInTheDocument();
+      // Nothing is lost until the person confirms.
+      expect(
+        screen.getByRole('region', { name: 'Your unsent answers', hidden: true }),
+      ).toBeInTheDocument();
+      await userEvent.click(await screen.findByRole('button', { name: 'Discard draft' }));
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('region', { name: 'Your unsent answers' }),
+        ).not.toBeInTheDocument(),
+      );
     });
 
     it('handles a conflict while dismissing: closes the dialog and shows the message', async () => {

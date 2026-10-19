@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MAX_DISMISS_REASON_CHARS, dismissQuestionSchema } from '@brd/shared';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Label,
-  Textarea,
-  FormError,
-} from '@brd/ui';
+import { Button, Dialog, Label, Textarea, FormError } from '@brd/ui';
 
 interface DismissDialogProps {
   open: boolean;
@@ -55,38 +43,39 @@ export function DismissDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Dismiss this question?</DialogTitle>
-          <DialogDescription>{questionText}</DialogDescription>
-        </DialogHeader>
-        <DialogBody className="space-y-2">
-          <Label htmlFor="dismiss-reason">Reason</Label>
-          <Textarea
-            id="dismiss-reason"
-            rows={3}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            aria-invalid={problem !== null}
-            aria-describedby="dismiss-reason-help"
-          />
-          <p id="dismiss-reason-help" className="text-xs text-muted-foreground">
-            {reason.length} / {MAX_DISMISS_REASON_CHARS} characters. Dismissed questions are not
-            asked again.
-          </p>
-          <FormError message={problem} />
-          <FormError message={error} />
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="outline" disabled={pending} onClick={() => onOpenChange(false)}>
+    <Dialog
+      open={open}
+      onClose={() => !pending && onOpenChange(false)}
+      title="Dismiss this question?"
+      description={questionText}
+      footer={
+        <>
+          <Button disabled={pending} onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="destructive" disabled={pending} onClick={submit}>
+          <Button variant="danger" loading={pending} onClick={submit}>
             {pending ? 'Dismissing…' : 'Dismiss question'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      <div className="uab-form-field">
+        <Label htmlFor="dismiss-reason">Reason</Label>
+        <Textarea
+          id="dismiss-reason"
+          rows={3}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          aria-invalid={problem !== null}
+          aria-describedby="dismiss-reason-help"
+        />
+        <p id="dismiss-reason-help" className="uab-muted">
+          {reason.length} / {MAX_DISMISS_REASON_CHARS} characters. Dismissed questions are not asked
+          again.
+        </p>
+        <FormError message={problem} />
+        <FormError message={error} />
+      </div>
     </Dialog>
   );
 }

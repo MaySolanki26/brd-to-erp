@@ -51,7 +51,6 @@ export function ResetPasswordDrawer({ user, onClose, onReset }: ResetPasswordDra
         onOpenChange={(open) => !open && onClose()}
         title="Reset password"
         description={user ? `${user.name} will be signed out and must choose a new password.` : ''}
-        size="lg"
         onSubmit={submit}
         submitLabel="Reset password"
         isPending={resetPassword.isPending}

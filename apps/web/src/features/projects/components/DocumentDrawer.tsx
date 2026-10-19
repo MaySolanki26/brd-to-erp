@@ -1,17 +1,6 @@
 import { useState } from 'react';
 import { FileX } from 'lucide-react';
-import {
-  Button,
-  EmptyState,
-  FormDrawer,
-  PageError,
-  PageLoader,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@brd/ui';
+import { SelectMenu, Button, EmptyState, FormDrawer, PageError, PageLoader } from '@brd/ui';
 import { errorMessage } from '@/lib/error-message';
 import { CHUNK_PAGE_SIZE, useDocumentDetail } from '../hooks/use-sources';
 import { formatDate } from '../project-labels';
@@ -53,7 +42,6 @@ export function DocumentDrawer({
           ? `${formatBytes(document.latestVersion.sizeBytes)} · uploaded ${formatDate(document.createdAt)}`
           : undefined
       }
-      size="2xl"
     >
       {detail.isPending && <PageLoader />}
       {detail.isError && (
@@ -68,18 +56,15 @@ export function DocumentDrawer({
           <div className="flex flex-wrap items-center gap-3">
             <SourceStatusBadge status={document.status} />
             {document.versions.length > 1 && (
-              <Select value={document.chunksVersionId} onValueChange={selectVersion}>
-                <SelectTrigger className="w-44" aria-label="Version">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {document.versions.map((version) => (
-                    <SelectItem key={version.id} value={version.id}>
-                      Version {version.versionNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SelectMenu
+                label="Version"
+                value={document.chunksVersionId}
+                options={document.versions.map((version) => ({
+                  value: version.id,
+                  label: `Version ${version.versionNumber}`,
+                }))}
+                onChange={selectVersion}
+              />
             )}
             <span className="text-sm text-muted-foreground">
               {document.chunks.total} chunk{document.chunks.total === 1 ? '' : 's'}

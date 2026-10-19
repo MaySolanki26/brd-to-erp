@@ -1,4 +1,5 @@
-import { cn } from '../lib/cn';
+import { cx } from '../uab/lib/format';
+import { StatusChip } from '../uab/primitives/feedback';
 
 export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'brand' | 'neutral';
 
@@ -7,18 +8,10 @@ export interface StatusBadgeProps {
   label: string;
   /** Visual tone. When omitted, auto-detected from common status keywords. */
   tone?: StatusTone;
-  size?: 'xs' | 'sm' | 'md';
+  /** Kept for compatibility: tables show a dot and text, panels show the tinted chip (both are the template chip). */
+  variant?: 'dot' | 'pill';
   className?: string;
 }
-
-const TONE_MAP: Record<StatusTone, string> = {
-  success: 'badge-tone-success border',
-  warning: 'badge-tone-warning border',
-  danger: 'badge-tone-danger border',
-  info: 'badge-tone-info border',
-  brand: 'badge-tone-brand border',
-  neutral: 'badge-tone-neutral border',
-};
 
 /** Auto-detect tone from common status keywords. */
 function detectTone(label: string): StatusTone {
@@ -30,21 +23,22 @@ function detectTone(label: string): StatusTone {
   return 'neutral';
 }
 
-export function StatusBadge({ label, tone, size = 'sm', className }: StatusBadgeProps) {
-  const resolvedTone = tone ?? detectTone(label);
+const TEMPLATE_TONE = {
+  success: 'success',
+  warning: 'warning',
+  danger: 'danger',
+  info: 'info',
+  brand: 'accent',
+  neutral: 'neutral',
+} as const;
 
+/** The template status chip: a dot and text. In tables the tint is removed by the grid, so only the dot and coloured text remain. */
+export function StatusBadge({ label, tone, className }: StatusBadgeProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center whitespace-nowrap rounded-full font-medium',
-        TONE_MAP[resolvedTone],
-        size === 'xs' && 'px-1.5 py-0.5 text-xs',
-        size === 'sm' && 'px-2.5 py-0.5 text-lg',
-        size === 'md' && 'px-3 py-1 text-xl',
-        className,
-      )}
-    >
-      {label}
-    </span>
+    <StatusChip
+      label={label}
+      tone={TEMPLATE_TONE[tone ?? detectTone(label)]}
+      className={cx(className)}
+    />
   );
 }

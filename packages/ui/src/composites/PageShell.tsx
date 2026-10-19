@@ -6,44 +6,21 @@ interface PageShellProps {
   className?: string;
 }
 
-/**
- * Page-height container. Use with InformativeBar / SwitcherBar / ActionBar
- * (fixed-height, shrink-0 rows) followed by a PageShell.Body that flexes to
- * fill and scrolls.
- */
+/** A template page: padded, scrolling content under the top bar. */
 export function PageShell({ children, className }: PageShellProps) {
-  return (
-    <div className={cn('flex h-full min-h-0 w-full flex-col', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('uab-page', className)}>{children}</div>;
 }
 
 interface PageShellBodyProps {
   children: ReactNode;
   className?: string;
+  /** Kept for compatibility; the template page body is always padded. */
   padded?: boolean;
   scroll?: boolean;
 }
 
-export function PageShellBody({
-  children,
-  className,
-  padded = false,
-  scroll = true,
-}: PageShellBodyProps) {
-  return (
-    <div
-      className={cn(
-        'flex min-h-0 flex-1 flex-col',
-        scroll && 'overflow-y-auto',
-        padded && 'p-5',
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
+export function PageShellBody({ children, className }: PageShellBodyProps) {
+  return <div className={cn('uab-page-main', className)}>{children}</div>;
 }
 
 PageShell.Body = PageShellBody;

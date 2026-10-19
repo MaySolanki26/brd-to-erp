@@ -5,6 +5,7 @@ export { InformativeBar } from './InformativeBar';
 export { SwitcherBar, type SwitcherItem } from './SwitcherBar';
 
 // Feedback & States
+export { InlineAlert } from '../uab/primitives/feedback';
 export { EmptyState } from './EmptyState';
 export { ErrorBoundary } from './ErrorBoundary';
 export { PageError } from './PageError';
@@ -14,12 +15,12 @@ export { DelayedFallback } from './DelayedFallback';
 // Dialogs & Drawers
 export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
 export {
-  FormDrawer,
-  DrawerShell,
-  type FormDrawerProps,
-  type DrawerShellProps,
-  type DrawerSize,
-} from './FormDrawer';
+  ConfirmHost,
+  confirmDelete,
+  dismissConfirmDelete,
+  type ConfirmOptions as ConfirmDeleteOptions,
+} from '../uab/primitives/overlay';
+export { FormDrawer, type FormDrawerProps, type DrawerSize } from './FormDrawer';
 export {
   DiscardBar,
   DiscardGuardProvider,
@@ -33,24 +34,36 @@ export {
 
 // Data Display
 export { StatusBadge, type StatusBadgeProps, type StatusTone } from './StatusBadge';
-export { StatCard } from './StatCard';
+export { StatCard, StatGrid } from './StatCard';
 export { TruncatedText } from './TruncatedText';
+export { EmptyValue, type EmptyValueProps } from './EmptyValue';
+export { DateText, type DateTextProps } from './DateText';
+export { InfoTip, type InfoTipProps } from './InfoTip';
+export { OverflowChips, type OverflowChipsProps } from './OverflowChips';
 export { CopyButton, copyToClipboard, type CopyButtonProps } from './CopyButton';
 export { ProgressRing } from './ProgressRing';
 export { MarkdownContent } from './MarkdownContent';
 
 // Avatars
 export { UserAvatar, type UserAvatarProps } from './UserAvatar';
-export { AvatarGroup, type AvatarGroupItem } from './AvatarGroup';
 
 // Date
-export { DatePicker, DatePickerPanel, DatePickerInput, type DayIndicator } from './DatePicker';
-export { DateRangeControl } from './DateRangeControl';
+
+// Views and records
+export { ViewBar, type ViewBarProps, type ViewTab } from './ViewBar';
+export {
+  RecordInspector,
+  type RecordInspectorProps,
+  type InspectorTab,
+  type InspectorComment,
+} from './RecordInspector';
 
 // Controls
+export { SelectMenu, type SelectMenuProps } from './SelectMenu';
 export { SearchInput } from './SearchInput';
-export { ViewToggle, type ViewMode } from './ViewToggle';
-export { FilterButton, type FilterButtonProps } from './FilterButton';
+
+// Forms
+export { FormGrid, FormGridItem, type FormGridItemProps } from './FormGrid';
 
 // Settings
 export { SettingsSection, SettingsField, SettingsSaveBar } from './SettingsSection';
@@ -66,20 +79,44 @@ export { InfiniteScrollSentinel } from './InfiniteScrollSentinel';
 // App Shell
 export {
   AppShell,
-  AppSidebar,
-  AppSidebarMobile,
-  AppHeader,
-  Breadcrumbs,
+  IconRail,
+  Canvas,
+  ContextSidebar,
+  SidebarContent,
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  MobileNav,
+  TopBar,
+  PageHeaderProvider,
+  usePageHeader,
+  useSetPageHeader,
+  CommandPalette,
+  useCommandShortcut,
+  NotificationBell,
+  AppearanceMenu,
+  ThemePicker,
   UserMenu,
-  useSidebarState,
-  type NavItem,
-  type NavChildItem,
-  type BreadcrumbItem,
+  type IconRailProps,
+  type ContextSidebarProps,
+  type SidebarContentProps,
+  type MobileNavProps,
+  type TopBarProps,
+  type PageHeaderState,
+  type CommandPaletteProps,
+  type NotificationBellProps,
+  type AppearanceMenuProps,
+  type ThemePickerProps,
+  type RailUtility,
+  type RailModule,
+  type SidebarChild,
+  type SidebarItem,
+  type SidebarSection,
   type AppShellUser,
-  type SidebarState,
   type UserMenuAction,
-  type AppSidebarProps,
-  type AppHeaderProps,
+  type CommandEntry,
+  type CommandGroupDef,
+  type NotificationEntry,
 } from './app-shell';
 
 // NoAccess

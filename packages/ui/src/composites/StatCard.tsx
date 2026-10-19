@@ -1,45 +1,28 @@
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '../lib/cn';
+import { cx } from '../uab/lib/format';
 
 interface StatCardProps {
-  icon: LucideIcon;
+  icon?: LucideIcon;
   label: string;
   value: string | number;
   subValue?: string;
+  /** Kept for compatibility; the template tile has no coloured icon box. */
   iconClassName?: string;
   highlight?: boolean;
 }
 
-export function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subValue,
-  iconClassName,
-  highlight,
-}: StatCardProps) {
+/** One tile of the template stats strip. Place several inside `StatGrid`. */
+export function StatCard({ label, value, subValue, highlight }: StatCardProps) {
   return (
-    <div
-      className={cn(
-        'bg-surface flex items-center gap-3 rounded-2xl border border-border p-3.5',
-        highlight && 'border-warning/30 bg-warning-light/30',
-      )}
-    >
-      <div
-        className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-xl',
-          iconClassName || 'bg-primary/10 text-primary',
-        )}
-      >
-        <Icon className="h-5 w-5" strokeWidth={1.5} />
-      </div>
-      <div>
-        <p className="text-foreground text-4xl font-semibold">{value}</p>
-        <p className="text-muted-foreground text-lg">
-          {label}
-          {subValue && <span className="ml-1">{subValue}</span>}
-        </p>
-      </div>
+    <div className={cx('uab-stat', highlight && 'uab-tone-warning')}>
+      <span className="uab-stat-label">{label}</span>
+      <span className="uab-stat-value">{value}</span>
+      {subValue && <span className="uab-stat-sub">{subValue}</span>}
     </div>
   );
+}
+
+/** The strip that holds the stat tiles: one bordered surface with hairlines between the tiles. */
+export function StatGrid({ children }: { children: React.ReactNode }) {
+  return <div className="uab-stats">{children}</div>;
 }

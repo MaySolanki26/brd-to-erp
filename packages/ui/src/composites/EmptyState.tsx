@@ -1,8 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { CheckCircle2, Plus } from 'lucide-react';
-import { cn } from '../lib/cn';
-import { Button } from '../button';
+import { Inbox } from 'lucide-react';
+import { Button } from '../uab/primitives/Button';
 
 interface EmptyStateProps {
   title: string;
@@ -12,57 +11,34 @@ interface EmptyStateProps {
   onAction?: () => void;
   action?: ReactNode;
   secondaryAction?: ReactNode;
+  /** Kept for compatibility; the template state fills its container. */
   fill?: boolean;
   className?: string;
 }
 
+/** The template empty state: icon tile, title, one line of explanation and the next step. */
 export function EmptyState({
   title,
   description,
-  icon: Icon,
+  icon: Icon = Inbox,
   actionLabel,
   onAction,
   action,
   secondaryAction,
-  fill = false,
-  className,
 }: EmptyStateProps) {
-  const hasCustomActions = Boolean(action || secondaryAction);
-
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center px-4 py-12 text-center',
-        fill && 'my-auto min-h-full flex-1',
-        className,
-      )}
-    >
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-        {Icon ? (
-          <Icon className="h-8 w-8 text-primary" strokeWidth={1.5} />
-        ) : (
-          <CheckCircle2 className="h-8 w-8 text-primary" strokeWidth={1.5} />
-        )}
-      </div>
-
-      <h3 className="text-foreground mb-1 text-3xl font-medium">{title}</h3>
-      {description && (
-        <p className="text-muted-foreground mb-4 max-w-sm text-xl">{description}</p>
-      )}
-
-      {hasCustomActions ? (
-        <div className="flex items-center gap-2">
-          {action}
-          {secondaryAction}
-        </div>
-      ) : (
-        actionLabel &&
-        onAction && (
-          <Button onClick={onAction} size="xs" className="gap-2">
-            <Plus className="h-4 w-4" strokeWidth={1.5} />
-            {actionLabel}
-          </Button>
-        )
+    <div className="uab-state">
+      <span className="uab-state-icon">
+        <Icon size={20} strokeWidth={1.75} aria-hidden="true" focusable={false} />
+      </span>
+      <p className="uab-state-title">{title}</p>
+      {description && <p className="uab-state-text">{description}</p>}
+      {action}
+      {secondaryAction}
+      {!action && actionLabel && onAction && (
+        <Button icon="plus" onClick={onAction}>
+          {actionLabel}
+        </Button>
       )}
     </div>
   );

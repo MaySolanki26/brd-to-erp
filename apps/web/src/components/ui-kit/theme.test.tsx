@@ -1,7 +1,6 @@
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { THEME_STORAGE_KEY, ThemeProvider, ThemeToggle, useTheme } from '@brd/ui';
+import { THEME_STORAGE_KEY, ThemeProvider, useTheme } from '@brd/ui';
 
 function mockSystemDark(matches: boolean) {
   vi.stubGlobal(
@@ -15,11 +14,16 @@ function mockSystemDark(matches: boolean) {
 }
 
 function Probe() {
-  const { preference, resolvedMode } = useTheme();
+  const { preference, resolvedMode, setPreference } = useTheme();
   return (
-    <p>
-      {preference}:{resolvedMode}
-    </p>
+    <>
+      <p>
+        {preference}:{resolvedMode}
+      </p>
+      <button type="button" onClick={() => setPreference('dark')}>
+        Go dark
+      </button>
+    </>
   );
 }
 
@@ -67,16 +71,14 @@ describe('ThemeProvider', () => {
     expect(screen.getByText('system:light')).toBeInTheDocument();
   });
 
-  it('switches mode and remembers the choice from the toggle', async () => {
+  it('switches mode and remembers the choice', () => {
     mockSystemDark(false);
     render(
       <ThemeProvider>
-        <ThemeToggle />
         <Probe />
       </ThemeProvider>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Change theme' }));
-    await userEvent.click(await screen.findByRole('menuitemradio', { name: 'Dark' }));
+    act(() => screen.getByRole('button', { name: 'Go dark' }).click());
 
     expect(screen.getByText('dark:dark')).toBeInTheDocument();
     expect(document.documentElement.dataset.theme).toBe('dark');

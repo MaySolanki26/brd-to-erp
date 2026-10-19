@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderResult } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { ConfirmHost } from '@brd/ui';
 import type { UserDto } from '@brd/shared';
 import { LocationProbe } from './LocationProbe';
 
@@ -51,6 +52,7 @@ export function renderRoute(element: ReactElement, options: RenderRouteOptions =
           <Route path="*" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
+      <ConfirmHost />
     </QueryClientProvider>,
   );
 }

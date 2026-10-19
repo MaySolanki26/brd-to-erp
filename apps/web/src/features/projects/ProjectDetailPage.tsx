@@ -32,7 +32,7 @@ import { PlaceholderTab } from './components/PlaceholderTab';
 import { SourcesTab } from './components/SourcesTab';
 import { useArchiveProject } from './hooks/use-project-mutations';
 import { useProject } from './hooks/use-projects';
-import { STATUS_TONES } from './project-labels';
+import { STATUS_TONES, PROJECT_STATUS_LABELS } from './project-labels';
 
 export function ProjectDetailPage() {
   const { projectId = '' } = useParams<{ projectId: string }>();
@@ -173,7 +173,9 @@ export function ProjectDetailPage() {
     <DetailPage
       state="ready"
       title={data.name}
-      badge={<StatusBadge label={data.status} tone={STATUS_TONES[data.status]} />}
+      badge={
+        <StatusBadge label={PROJECT_STATUS_LABELS[data.status]} tone={STATUS_TONES[data.status]} />
+      }
       onBack={() => navigate('/projects')}
       headerRight={
         isActive ? (

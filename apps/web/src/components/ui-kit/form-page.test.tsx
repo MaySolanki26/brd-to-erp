@@ -39,7 +39,12 @@ describe('FormPage', () => {
 
   it('shows no-access instead of the form', () => {
     render(
-      <FormPage state="no-access" title="Settings" onSubmit={() => {}} noAccessDescription="Owners only.">
+      <FormPage
+        state="no-access"
+        title="Settings"
+        onSubmit={() => {}}
+        noAccessDescription="Owners only."
+      >
         <input aria-label="Name" />
       </FormPage>,
     );

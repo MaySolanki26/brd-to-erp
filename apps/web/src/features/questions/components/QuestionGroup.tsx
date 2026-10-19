@@ -32,9 +32,7 @@ export function QuestionGroup({
           {group.total}
         </Badge>
         {group.questions.length < group.total && (
-          <span className="text-sm text-muted-foreground">
-            showing {group.questions.length}
-          </span>
+          <span className="text-sm text-muted-foreground">showing {group.questions.length}</span>
         )}
       </div>
       <div className="space-y-3">

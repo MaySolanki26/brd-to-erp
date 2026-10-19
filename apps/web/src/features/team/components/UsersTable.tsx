@@ -1,19 +1,6 @@
+import { useMemo, useState } from 'react';
+import { DataTable, SelectMenu, StatusBadge, type DataTableColumnDef } from '@brd/ui';
 import type { OrgUserDto } from '@brd/shared';
-import {
-  Button,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  StatusBadge,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@brd/ui';
 
 type OrgRoleValue = OrgUserDto['orgRole'];
 
@@ -25,6 +12,13 @@ interface UsersTableProps {
   onResetPassword: (user: OrgUserDto) => void;
   onToggleActive: (user: OrgUserDto) => void;
 }
+
+const ROLE_OPTIONS = [
+  { value: 'MEMBER', label: 'Member' },
+  { value: 'ORG_ADMIN', label: 'Admin' },
+];
+
+const NOUN = { one: 'user', other: 'users' };
 
 function statusOf(user: OrgUserDto): { label: string; tone: 'success' | 'warning' | 'neutral' } {
   if (!user.active) return { label: 'Deactivated', tone: 'neutral' };
@@ -40,75 +34,91 @@ export function UsersTable({
   onResetPassword,
   onToggleActive,
 }: UsersTableProps) {
+  const [search, setSearch] = useState('');
+  const isSelf = (user: OrgUserDto) => user.id === currentUserId;
+
+  const shown = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return needle
+      ? users.filter(
+          (user) =>
+            user.name.toLowerCase().includes(needle) || user.email.toLowerCase().includes(needle),
+        )
+      : users;
+  }, [users, search]);
+
+  const columns: DataTableColumnDef<OrgUserDto>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      width: 220,
+      canHide: false,
+      cell: (user) => (
+        <>
+          {user.name}
+          {isSelf(user) && <span className="uab-muted"> (you)</span>}
+        </>
+      ),
+    },
+    { id: 'email', header: 'Email', width: 260 },
+    {
+      id: 'orgRole',
+      header: 'Role',
+      width: 160,
+      cell: (user) => (
+        <SelectMenu
+          label={`Role for ${user.name}`}
+          value={user.orgRole}
+          options={ROLE_OPTIONS}
+          disabled={isSelf(user) || busyUserId === user.id}
+          onChange={(value) => onChangeRole(user, value as OrgRoleValue)}
+        />
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      width: 200,
+      cell: (user) => {
+        const status = statusOf(user);
+        return <StatusBadge label={status.label} tone={status.tone} />;
+      },
+    },
+  ];
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Role</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => {
-          const isSelf = user.id === currentUserId;
-          const busy = busyUserId === user.id;
-          const status = statusOf(user);
-          return (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">
-                {user.name}
-                {isSelf && <span className="ml-2 text-muted-foreground">(you)</span>}
-              </TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>
-                <Select
-                  value={user.orgRole}
-                  onValueChange={(value) => onChangeRole(user, value as OrgRoleValue)}
-                  disabled={isSelf || busy}
-                >
-                  <SelectTrigger className="w-32" aria-label={`Role for ${user.name}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MEMBER">Member</SelectItem>
-                    <SelectItem value="ORG_ADMIN">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <StatusBadge label={status.label} tone={status.tone} />
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  {!isSelf && user.active && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => onResetPassword(user)}
-                    >
-                      Reset password
-                    </Button>
-                  )}
-                  {!isSelf && (
-                    <Button
-                      variant={user.active ? 'outline' : 'secondary'}
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => onToggleActive(user)}
-                    >
-                      {user.active ? 'Deactivate' : 'Reactivate'}
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+    <DataTable<OrgUserDto>
+      ariaLabel="Users table"
+      noun={NOUN}
+      columns={columns}
+      data={shown}
+      getRowId={(user) => user.id}
+      search={{
+        value: search,
+        onChange: setSearch,
+        placeholder: 'Search',
+        ariaLabel: 'Search users',
+      }}
+      onClearFilters={() => setSearch('')}
+      emptyTitle="No matching users"
+      emptyDescription="Try a different name or email."
+      pagination={{ page: 1, pageSize: Math.max(shown.length, 1), total: shown.length }}
+      rowActions={[
+        {
+          key: 'reset',
+          label: 'Reset password',
+          hidden: (user) => isSelf(user) || !user.active,
+          disabledReason: (user) => (busyUserId === user.id ? 'Working…' : undefined),
+          onClick: onResetPassword,
+        },
+        {
+          key: 'toggle',
+          label: (user) => (user.active ? 'Deactivate' : 'Reactivate'),
+          hidden: isSelf,
+          disabledReason: (user) => (busyUserId === user.id ? 'Working…' : undefined),
+          onClick: onToggleActive,
+        },
+      ]}
+    />
   );
 }

@@ -1,8 +1,23 @@
 @import './theme/tokens.css';
+@import './theme/template-tokens.css';
+@import './theme/template.css';
+@import './theme/template-extras.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Phones: typed fields use 16px so iOS does not zoom on focus (UAB rule 8). */
+  @media (max-width: 760px) {
+    input,
+    textarea,
+    select,
+    [role='combobox'] {
+      font-size: var(--fs-secondary);
+    }
+  }
+}
 
 @layer utilities {
   .scrollbar-hide {
@@ -103,9 +118,28 @@
     padding-inline: 0.125rem;
   }
 
+  /* Rows that need a look are tinted; a coloured bar in front of the row is never used (UAB rule 32). */
   .row-attention {
     background-color: rgb(var(--tone-warning-bg) / 0.5);
-    box-shadow: inset 3px 0 0 rgb(var(--tone-warning-border));
+  }
+
+  .text-tone-success {
+    color: rgb(var(--tone-success-fg));
+  }
+  .text-tone-warning {
+    color: rgb(var(--tone-warning-fg));
+  }
+  .text-tone-danger {
+    color: rgb(var(--tone-danger-fg));
+  }
+  .text-tone-info {
+    color: rgb(var(--tone-info-fg));
+  }
+  .text-tone-brand {
+    color: rgb(var(--tone-brand-fg));
+  }
+  .text-tone-neutral {
+    color: rgb(var(--tone-neutral-fg));
   }
 
   .badge-tone-success {

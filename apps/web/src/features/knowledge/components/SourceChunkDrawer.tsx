@@ -28,7 +28,6 @@ export function SourceChunkDrawer({ projectId, chunkId, onClose }: SourceChunkDr
       onOpenChange={(open) => !open && onClose()}
       title={data?.source.sourceTitle ?? 'Source'}
       description={description}
-      size="xl"
     >
       {chunk.isPending && chunkId !== null && <PageLoader />}
       {chunk.isError &&

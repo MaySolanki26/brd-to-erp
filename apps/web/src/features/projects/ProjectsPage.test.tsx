@@ -67,7 +67,7 @@ describe('ProjectsPage', () => {
     renderRoute(<ProjectsPage />, { path: '/projects' });
     await screen.findByText('Alpha');
 
-    await userEvent.type(screen.getByRole('textbox', { name: 'Search projects' }), 'alp');
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search projects' }), 'alp');
 
     await waitFor(() =>
       expect(api.get).toHaveBeenLastCalledWith(expect.stringContaining('search=alp')),
@@ -82,7 +82,7 @@ describe('ProjectsPage', () => {
     renderRoute(<ProjectsPage />, { path: '/projects' });
     await screen.findByText('Alpha');
 
-    await userEvent.type(screen.getByRole('textbox', { name: 'Search projects' }), 'zzz');
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search projects' }), 'zzz');
     expect(await screen.findByText('No matching projects')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Show all projects' }));

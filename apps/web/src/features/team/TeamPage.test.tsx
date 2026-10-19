@@ -79,11 +79,13 @@ describe('TeamPage', () => {
     const rows = screen.getAllByRole('row');
     const mine = rows.find((row) => within(row).queryByText('(you)'));
     const hers = rows.find((row) => within(row).queryByText('Alice'));
-    expect(mine && within(mine).queryByRole('button', { name: 'Deactivate' })).toBeNull();
-    expect(hers && within(hers).getByRole('button', { name: 'Deactivate' })).toBeInTheDocument();
-    expect(
-      hers && within(hers).getByRole('button', { name: 'Reset password' }),
-    ).toBeInTheDocument();
+    expect(mine && within(mine).queryByRole('button', { name: 'More actions' })).toBeNull();
+    expect(hers).toBeDefined();
+    await userEvent.click(
+      within(hers as HTMLElement).getByRole('button', { name: 'More actions' }),
+    );
+    expect(await screen.findByRole('menuitem', { name: 'Deactivate' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Reset password' })).toBeInTheDocument();
   });
 
   it('flags users who have not changed their temporary password', async () => {
@@ -100,7 +102,11 @@ describe('TeamPage', () => {
     renderRoute(<TeamPage />);
     await screen.findByText('Alice');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Deactivate' }));
+    const alice = screen
+      .getAllByRole('row')
+      .find((row) => within(row).queryByText('Alice')) as HTMLElement;
+    await userEvent.click(within(alice).getByRole('button', { name: 'More actions' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Deactivate' }));
     expect(api.patch).not.toHaveBeenCalled();
 
     const dialog = await screen.findByRole('alertdialog');

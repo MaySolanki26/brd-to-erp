@@ -117,7 +117,7 @@ describe('SourcesTab', () => {
     it('shows loading placeholders before data arrives', () => {
       api.get.mockReturnValue(new Promise(() => {}));
       view();
-      expect(screen.getByRole('heading', { name: 'Sources' })).toBeInTheDocument();
+      expect(screen.queryByText('brd.pdf')).not.toBeInTheDocument();
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
 
@@ -185,7 +185,7 @@ describe('SourcesTab', () => {
       }
       expect(screen.queryByLabelText('Choose files to upload')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Version history/ })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Download/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Download/ })).toBeInTheDocument();
     });
 
     it('lets analysts add sources but only reprocess when that permission is granted', async () => {

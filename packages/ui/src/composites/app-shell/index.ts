@@ -1,18 +1,41 @@
-export { AppShell } from './AppShell';
-export { AppSidebar } from './AppSidebar';
-export { AppSidebarMobile } from './AppSidebarMobile';
-export { AppHeader } from './AppHeader';
-export { Breadcrumbs } from './Breadcrumbs';
+export { AppShell, Canvas } from './AppShell';
+export { IconRail, type IconRailProps } from './IconRail';
+export {
+  ContextSidebar,
+  SidebarContent,
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  type ContextSidebarProps,
+  type SidebarContentProps,
+} from './ContextSidebar';
+export { MobileNav, type MobileNavProps } from './MobileNav';
+export { TopBar, type TopBarProps } from './TopBar';
+export {
+  PageHeaderProvider,
+  usePageHeader,
+  useSetPageHeader,
+  type PageHeaderState,
+} from './PageHeader';
+export { CommandPalette, useCommandShortcut, type CommandPaletteProps } from './CommandPalette';
+export { NotificationBell, type NotificationBellProps } from './NotificationBell';
+export {
+  AppearanceMenu,
+  ThemePicker,
+  type AppearanceMenuProps,
+  type ThemePickerProps,
+} from './AppearanceMenu';
 export { UserMenu } from './UserMenu';
-export { useSidebarState } from './use-sidebar-state';
 
 export type {
-  NavItem,
-  NavChildItem,
-  BreadcrumbItem,
+  RailModule,
+  RailUtility,
+  SidebarChild,
+  SidebarItem,
+  SidebarSection,
   AppShellUser,
-  SidebarState,
   UserMenuAction,
-  AppSidebarProps,
-  AppHeaderProps,
+  CommandEntry,
+  CommandGroupDef,
+  NotificationEntry,
 } from './types';

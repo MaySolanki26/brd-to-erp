@@ -15,6 +15,8 @@ vi.mock('@/lib/api-client', async (importOriginal) => ({
   apiClient: api,
 }));
 
+vi.mock('@/providers/auth-provider', () => ({ useAuth: () => ({ user: { id: 'me' } }) }));
+
 import { ApiClientError } from '@/lib/api-client';
 import {
   DOC_ID,
@@ -134,6 +136,9 @@ describe('RequirementsTab', () => {
   });
 
   describe('filters', () => {
+    const openFilters = () => userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+    const apply = () => userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
     beforeEach(() => {
       mockApi(() => page([requirement()]));
     });
@@ -142,8 +147,12 @@ describe('RequirementsTab', () => {
       view();
       await screen.findByText('Monthly invoice run');
 
-      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by status' }));
+      await openFilters();
+      await userEvent.click(screen.getByRole('button', { name: /^Filter by status/ }));
       await userEvent.click(await screen.findByRole('option', { name: 'Needs revalidation' }));
+      // Nothing changes until Apply.
+      expect(lastRequirementsUrl()).not.toContain('status=');
+      await apply();
 
       await waitFor(() => expect(lastRequirementsUrl()).toContain('status=NEEDS_REVALIDATION'));
       expect(lastRequirementsUrl()).toContain('page=1');
@@ -156,8 +165,10 @@ describe('RequirementsTab', () => {
         expect(api.get).toHaveBeenCalledWith(expect.stringContaining('/modules')),
       );
 
-      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by module' }));
-      await userEvent.click(await screen.findByRole('option', { name: 'Billing' }));
+      await openFilters();
+      // A short list of modules is a segmented choice, starting on All.
+      await userEvent.click(await screen.findByRole('radio', { name: 'Billing' }));
+      await apply();
 
       await waitFor(() => expect(lastRequirementsUrl()).toContain(`moduleId=${MODULE_ID}`));
     });
@@ -167,9 +178,10 @@ describe('RequirementsTab', () => {
       await screen.findByText('Monthly invoice run');
       await waitFor(() => expect(api.get).toHaveBeenCalledWith(expect.stringContaining('/notes')));
 
-      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by source' }));
-      expect(await screen.findByRole('option', { name: 'Billing BRD' })).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('option', { name: 'Kickoff call (note)' }));
+      await openFilters();
+      expect(await screen.findByRole('radio', { name: 'Billing BRD' })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('radio', { name: 'Kickoff call (note)' }));
+      await apply();
 
       await waitFor(() => expect(lastRequirementsUrl()).toContain(`sourceId=${NOTE_ID}`));
     });
@@ -178,8 +190,9 @@ describe('RequirementsTab', () => {
       view();
       await screen.findByText('Monthly invoice run');
 
-      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by review' }));
-      await userEvent.click(await screen.findByRole('option', { name: 'Needs review' }));
+      await openFilters();
+      await userEvent.click(screen.getByRole('radio', { name: 'Needs review' }));
+      await apply();
 
       await waitFor(() => expect(lastRequirementsUrl()).toContain('needsReview=true'));
       expect(lastRequirementsUrl()).toContain('page=1');
@@ -190,7 +203,8 @@ describe('RequirementsTab', () => {
       await screen.findByText('Monthly invoice run');
       expect(lastRequirementsUrl()).toContain('needsReview=true');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+      await openFilters();
+      await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
 
       await waitFor(() => expect(lastRequirementsUrl()).not.toContain('needsReview'));
       expect(lastRequirementsUrl()).not.toContain('status=');
@@ -199,7 +213,7 @@ describe('RequirementsTab', () => {
     it('searches after a short pause', async () => {
       view();
       await screen.findByText('Monthly invoice run');
-      await userEvent.type(screen.getByRole('textbox', { name: 'Search requirements' }), 'tax');
+      await userEvent.type(screen.getByRole('searchbox', { name: 'Search requirements' }), 'tax');
       await waitFor(() => expect(lastRequirementsUrl()).toContain('search=tax'));
     });
 
@@ -238,12 +252,14 @@ describe('RequirementsTab', () => {
       view();
       await screen.findByText('Monthly invoice run');
 
-      await userEvent.click(screen.getByRole('combobox', { name: 'Filter by status' }));
+      await openFilters();
+      await userEvent.click(screen.getByRole('button', { name: /^Filter by status/ }));
       await userEvent.click(await screen.findByRole('option', { name: 'Rejected' }));
+      await apply();
       expect(await screen.findByText('No matching requirements')).toBeInTheDocument();
 
-      const clear = screen.getAllByRole('button', { name: 'Clear filters' });
-      await userEvent.click(clear[0] as HTMLElement);
+      await openFilters();
+      await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
       expect(await screen.findByText('Monthly invoice run')).toBeInTheDocument();
       expect(screen.queryByText('No matching requirements')).not.toBeInTheDocument();
     });
@@ -287,7 +303,7 @@ describe('RequirementsTab', () => {
       expect(await screen.findByText('Also found in')).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: /View source: Kickoff call/ }));
 
-      await screen.findByRole('dialog');
+      await screen.findByRole('dialog', { name: /Source|Billing BRD/ });
       expect(api.get).toHaveBeenCalledWith('/projects/p1/chunks/c7');
     });
 
@@ -310,11 +326,13 @@ describe('RequirementsTab', () => {
       view();
       await openDrawer();
 
-      const dialog = await screen.findByRole('dialog');
+      const dialog = await screen.findByRole('dialog', { name: 'Billing BRD' });
       expect(await within(dialog).findByText(CHUNK.content)).toBeInTheDocument();
       expect(within(dialog).getByText('1. Scope › 1.1 Invoicing')).toBeInTheDocument();
       expect(within(dialog).getByText('Billing BRD')).toBeInTheDocument();
-      expect(within(dialog).getByText(/Document · version 1 · section 1/)).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole('button', { name: /Document · version 1 · section 1/ }),
+      ).toBeInTheDocument();
       expect(api.get).toHaveBeenCalledWith('/projects/p1/chunks/c1');
     });
 

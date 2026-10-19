@@ -139,8 +139,7 @@ describe('SummaryPanel', () => {
   describe('versions', () => {
     it('lists versions newest first in the selector, with the latest chosen', async () => {
       view();
-      const selector = await screen.findByRole('combobox', { name: 'Summary version' });
-      expect(selector).toHaveTextContent('Version 2');
+      const selector = await screen.findByRole('button', { name: /^Summary version: Version 2/ });
       await userEvent.click(selector);
       const options = await screen.findAllByRole('option');
       expect(options.map((o) => o.textContent?.split(' · ')[0])).toEqual([
@@ -151,7 +150,7 @@ describe('SummaryPanel', () => {
 
     it('shows an older version and a way back to the latest', async () => {
       view();
-      await userEvent.click(await screen.findByRole('combobox', { name: 'Summary version' }));
+      await userEvent.click(await screen.findByRole('button', { name: /^Summary version/ }));
       await userEvent.click(await screen.findByRole('option', { name: /Version 1/ }));
 
       expect(await screen.findByText('The first understanding.')).toBeInTheDocument();
@@ -167,7 +166,7 @@ describe('SummaryPanel', () => {
       api.get.mockResolvedValue(summaryResponse(null));
       view();
       await screen.findByText('No summary yet');
-      expect(screen.queryByRole('combobox', { name: 'Summary version' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Summary version/ })).not.toBeInTheDocument();
     });
   });
 

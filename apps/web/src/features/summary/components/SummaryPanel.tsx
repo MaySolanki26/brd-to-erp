@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FileText, RefreshCw } from 'lucide-react';
-import {
-  Button,
-  EmptyState,
-  NoAccess,
-  PageError,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Skeleton,
-  toast,
-} from '@brd/ui';
+import { FileText } from 'lucide-react';
+import { SelectMenu, Button, EmptyState, NoAccess, PageError, Skeleton, toast } from '@brd/ui';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { formatDateTime } from '@/features/decisions/format';
 import { useRequestSummary, useSummary } from '../hooks/use-summary';
@@ -53,8 +41,7 @@ export function SummaryPanel({ projectId, canRefresh }: SummaryPanelProps) {
     return () => window.clearTimeout(timer);
   }, [waitingFrom]);
 
-  const refresh = () =>
-    request.mutate(undefined, { onSuccess: () => setWaitingFrom(latest) });
+  const refresh = () => request.mutate(undefined, { onSuccess: () => setWaitingFrom(latest) });
 
   if (query.isError && isForbidden(query.error)) {
     return <NoAccess description="You do not have access to this project's summary." />;
@@ -65,35 +52,28 @@ export function SummaryPanel({ projectId, canRefresh }: SummaryPanelProps) {
   const waiting = waitingFrom !== null;
 
   return (
-    <section aria-label="Project summary" className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xl font-semibold">Project summary</h3>
+    <section aria-label="Project summary" className="uab-panel flex flex-col gap-4">
+      <div className="uab-panel-head flex-wrap">
+        <h3 className="uab-panel-title">Project summary</h3>
         <div className="flex flex-wrap items-center gap-2">
           {versions.length > 0 && (
-            <Select
+            <SelectMenu
+              label="Summary version"
               value={String(summary?.version ?? latest)}
-              onValueChange={(next) => setSelected(Number(next) === latest ? null : Number(next))}
-            >
-              <SelectTrigger className="w-64" aria-label="Summary version">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {versions.map((version) => (
-                  <SelectItem key={version.version} value={String(version.version)}>
-                    Version {version.version} · {formatDateTime(version.generatedAt)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={versions.map((version) => ({
+                value: String(version.version),
+                label: `Version ${version.version} · ${formatDateTime(version.generatedAt)}`,
+              }))}
+              onChange={(next) => setSelected(Number(next) === latest ? null : Number(next))}
+            />
           )}
           {canRefresh && summary !== null && (
             <Button
-              variant="outline"
-              size="sm"
-              disabled={request.isPending || waiting}
+              icon={waiting ? undefined : 'reset'}
+              loading={waiting}
+              disabled={request.isPending}
               onClick={refresh}
             >
-              <RefreshCw className={`mr-1 h-3 w-3 ${waiting ? 'animate-spin' : ''}`} aria-hidden />
               {waiting ? 'Updating…' : 'Refresh summary'}
             </Button>
           )}
@@ -101,9 +81,9 @@ export function SummaryPanel({ projectId, canRefresh }: SummaryPanelProps) {
       </div>
 
       {viewingOlder && (
-        <p className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 p-2 text-sm">
+        <p className="flex flex-wrap items-center gap-2 uab-muted">
           Viewing version {summary.version} of {latest}.
-          <Button variant="link" className="h-auto p-0" onClick={() => setSelected(null)}>
+          <Button variant="link" onClick={() => setSelected(null)}>
             Show latest
           </Button>
         </p>

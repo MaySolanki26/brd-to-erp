@@ -72,6 +72,10 @@ const PAIRS = [
   ['--tone-info-fg', '--tone-info-bg', TEXT],
   ['--tone-brand-fg', '--tone-brand-bg', TEXT],
   ['--tone-neutral-fg', '--tone-neutral-bg', TEXT],
+  ['--rail-icon', '--rail-bg', TEXT],
+  ['--rail-selected-icon', '--rail-selected-bg', TEXT],
+  ['--color-text', '--sidebar-bg', TEXT],
+  ['--color-text-muted', '--sidebar-bg', TEXT],
   // Avatar fallbacks draw initials in the page background color on these hues.
   ['--color-bg', '--color-primary', TEXT],
   ['--color-bg', '--color-success', TEXT],

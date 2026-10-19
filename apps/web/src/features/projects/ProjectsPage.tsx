@@ -1,38 +1,43 @@
 import { useState } from 'react';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Plus } from 'lucide-react';
-import {
-  Button,
-  DataTablePagination,
-  ListPage,
-  SearchInput,
-  StatusBadge,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableSkeleton,
-} from '@brd/ui';
+import { FolderKanban } from 'lucide-react';
+import { Button, DataTable, ListPage, StatusBadge, type DataTableColumnDef } from '@brd/ui';
+import type { ProjectDto } from '@brd/shared';
 import { useUrlState } from '@/hooks/use-url-state';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { CreateProjectDrawer } from './components/CreateProjectDrawer';
 import { PROJECTS_PAGE_SIZE, useProjects } from './hooks/use-projects';
-import { ROLE_LABELS, STATUS_TONES, formatDate } from './project-labels';
+import { PROJECT_STATUS_LABELS, ROLE_LABELS, STATUS_TONES } from './project-labels';
 
 const PROJECTS_URL_SCHEMA = z.object({
   page: z.coerce.number().int().min(1).catch(1),
   search: z.string().max(200).catch(''),
 });
 
-const SKELETON_COLUMNS = [
-  { kind: 'text' },
-  { kind: 'badge' },
-  { kind: 'badge' },
-  { kind: 'text' },
-] as const;
+const NOUN = { one: 'project', other: 'projects' };
+
+const COLUMNS: DataTableColumnDef<ProjectDto>[] = [
+  { id: 'name', header: 'Name', width: 280, canHide: false },
+  {
+    id: 'status',
+    header: 'Status',
+    width: 140,
+    cell: (project) => (
+      <StatusBadge
+        label={PROJECT_STATUS_LABELS[project.status]}
+        tone={STATUS_TONES[project.status]}
+      />
+    ),
+  },
+  {
+    id: 'myRole',
+    header: 'Your role',
+    width: 140,
+    cell: (project) => (project.myRole ? ROLE_LABELS[project.myRole] : 'Admin access'),
+  },
+  { id: 'createdAt', header: 'Created', kind: 'date', width: 140 },
+];
 
 type ProjectsQuery = ReturnType<typeof useProjects>;
 
@@ -50,63 +55,30 @@ export function ProjectsPage() {
 
   const changeSearch = (value: string) => setUrlState({ search: value.trim(), page: 1 });
   const isSearching = search.length > 0;
-
   const listState = projectsListState(projects);
+  const result = projects.data;
+
+  const createButton = (
+    <Button variant="primary" icon="plus" onClick={() => setCreateOpen(true)}>
+      New project
+    </Button>
+  );
 
   return (
     <ListPage
-      state={listState}
+      state={listState === 'empty' && isSearching ? 'ready' : listState}
       title="Projects"
       info="Projects you can access"
-      actionBarRight={
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1 h-4 w-4" />
-          New project
-        </Button>
-      }
-      toolbar={
-        <SearchInput
-          value={search}
-          onChange={changeSearch}
-          placeholder="Search projects by name"
-          aria-label="Search projects"
-          className="mb-4 max-w-sm"
-        />
-      }
-      loadingFallback={<TableSkeleton columns={[...SKELETON_COLUMNS]} rows={5} />}
+      viewLabel="All projects"
+      actionBarRight={createButton}
       errorMessage="Could not load projects"
       errorDescription={errorMessage(projects.error)}
       onRetry={() => void projects.refetch()}
       noAccessDescription="You do not have access to projects."
       emptyIcon={FolderKanban}
-      emptyTitle={isSearching ? 'No matching projects' : 'No projects yet'}
-      emptyDescription={
-        isSearching
-          ? `Nothing you can access matches "${search}".`
-          : 'Create a project, or ask an owner to add you to one.'
-      }
-      emptyAction={
-        <Button
-          size="xs"
-          className="gap-2"
-          onClick={isSearching ? () => changeSearch('') : () => setCreateOpen(true)}
-        >
-          {!isSearching && <Plus className="h-4 w-4" strokeWidth={1.5} />}
-          {isSearching ? 'Show all projects' : 'New project'}
-        </Button>
-      }
-      footer={
-        projects.data && projects.data.total > PROJECTS_PAGE_SIZE ? (
-          <DataTablePagination
-            pagination={{
-              page: projects.data.page,
-              pageSize: projects.data.pageSize,
-              total: projects.data.total,
-            }}
-            onPageChange={(page) => setUrlState({ page })}
-          />
-        ) : null
-      }
+      emptyTitle="No projects yet"
+      emptyDescription="Create a project, or ask an owner to add you to one."
+      emptyAction={createButton}
       overlays={
         <CreateProjectDrawer
           open={createOpen}
@@ -115,36 +87,40 @@ export function ProjectsPage() {
         />
       }
     >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Your role</TableHead>
-            <TableHead>Created</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {projects.data?.items.map((project) => (
-            <TableRow
-              key={project.id}
-              className="cursor-pointer"
-              tabIndex={0}
-              onClick={() => navigate(`/projects/${project.id}`)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') navigate(`/projects/${project.id}`);
-              }}
-            >
-              <TableCell className="font-medium">{project.name}</TableCell>
-              <TableCell>
-                <StatusBadge label={project.status} tone={STATUS_TONES[project.status]} />
-              </TableCell>
-              <TableCell>{project.myRole ? ROLE_LABELS[project.myRole] : 'Admin access'}</TableCell>
-              <TableCell>{formatDate(project.createdAt)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <DataTable<ProjectDto>
+        ariaLabel="Projects table"
+        noun={NOUN}
+        columns={COLUMNS}
+        data={result?.items ?? []}
+        getRowId={(project) => project.id}
+        search={{
+          value: search,
+          onChange: changeSearch,
+          placeholder: 'Search',
+          ariaLabel: 'Search projects',
+        }}
+        onClearFilters={() => changeSearch('')}
+        onRowClick={(project) => navigate(`/projects/${project.id}`)}
+        rowActions={[
+          {
+            key: 'open',
+            label: 'Open project',
+            icon: 'eye',
+            quick: true,
+            onClick: (project) => navigate(`/projects/${project.id}`),
+          },
+        ]}
+        emptyIcon={FolderKanban}
+        emptyTitle="No matching projects"
+        emptyDescription={`Nothing you can access matches "${search}".`}
+        emptyAction={<Button onClick={() => changeSearch('')}>Show all projects</Button>}
+        pagination={
+          result
+            ? { page: result.page, pageSize: PROJECTS_PAGE_SIZE, total: result.total }
+            : undefined
+        }
+        onPageChange={(page) => setUrlState({ page })}
+      />
     </ListPage>
   );
 }

@@ -1,7 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import { Lock, UploadCloud } from 'lucide-react';
 import { MAX_UPLOAD_BYTES, SOURCE_FILE_ACCEPT } from '@brd/shared';
-import { cn } from '@brd/ui';
 
 interface DropZoneProps {
   /** People without permission to add sources see a read-only hint instead. */
@@ -18,11 +17,8 @@ export function DropZone({ canAddSource, onFiles }: DropZoneProps) {
 
   if (!canAddSource) {
     return (
-      <div
-        role="note"
-        className="flex items-center gap-2 rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground"
-      >
-        <Lock className="h-4 w-4" aria-hidden />
+      <div role="note" className="uab-dropzone uab-is-readonly">
+        <Lock size={16} aria-hidden />
         You can view sources but not add them.
       </div>
     );
@@ -45,10 +41,7 @@ export function DropZone({ canAddSource, onFiles }: DropZoneProps) {
         aria-label="Upload documents"
         aria-describedby={hintId}
         data-dragging={dragging}
-        className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          dragging ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40',
-        )}
+        className={`uab-dropzone${dragging ? ' uab-is-dragging' : ''}`}
         onClick={open}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -63,11 +56,11 @@ export function DropZone({ canAddSource, onFiles }: DropZoneProps) {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
       >
-        <UploadCloud className="h-6 w-6 text-muted-foreground" aria-hidden />
-        <p className="text-sm font-medium">
-          Drop files here or <span className="text-primary underline">browse</span>
+        <UploadCloud size={24} aria-hidden />
+        <p className="uab-dropzone-title">
+          Drop files here or <span className="uab-dropzone-link">browse</span>
         </p>
-        <p id={hintId} className="text-xs text-muted-foreground">
+        <p id={hintId} className="uab-muted">
           PDF, DOCX or XLSX, up to {LIMIT_MB} MB each
         </p>
       </div>

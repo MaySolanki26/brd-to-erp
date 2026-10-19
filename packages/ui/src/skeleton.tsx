@@ -5,6 +5,7 @@ interface SkeletonProps {
   style?: React.CSSProperties;
 }
 
-export function Skeleton({ className }: SkeletonProps) {
-  return <div className={cn('bg-muted animate-pulse rounded-md', className)} />;
+/** A placeholder bar (the template skeleton row). */
+export function Skeleton({ className, style }: SkeletonProps) {
+  return <span className={cn('uab-skeleton-row', className)} style={style} />;
 }

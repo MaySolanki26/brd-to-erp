@@ -7,7 +7,7 @@ interface FormErrorProps {
 export function FormError({ message }: FormErrorProps) {
   if (!message) return null;
   return (
-    <p role="alert" className="text-sm text-destructive">
+    <p role="alert" className="uab-field-error">
       {message}
     </p>
   );

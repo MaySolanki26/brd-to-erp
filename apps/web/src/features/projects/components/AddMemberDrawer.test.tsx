@@ -31,7 +31,7 @@ function view(onOpenChange = vi.fn()) {
   return { onOpenChange };
 }
 
-const picker = () => screen.findByRole('combobox', { name: 'Person' });
+const picker = () => screen.findByRole('button', { name: /^Person:/ });
 
 describe('AddMemberDrawer', () => {
   beforeEach(() => {
@@ -42,20 +42,20 @@ describe('AddMemberDrawer', () => {
   it('finds a person by typing part of their email address', async () => {
     view();
     await userEvent.click(await picker());
-    await userEvent.type(screen.getByPlaceholderText('Search by name or email'), 'example.org');
-    expect(screen.getByText('Dana Diaz')).toBeInTheDocument();
-    expect(screen.queryByText('Cal Carter')).not.toBeInTheDocument();
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search Person' }), 'example.org');
+    expect(screen.getByText('Dana Diaz (dana.diaz@example.org)')).toBeInTheDocument();
+    expect(screen.queryByText('Cal Carter (cal@brd.test)')).not.toBeInTheDocument();
   });
 
   it('finds a person by name and says so when nobody matches', async () => {
     view();
     await userEvent.click(await picker());
-    const search = screen.getByPlaceholderText('Search by name or email');
+    const search = screen.getByRole('textbox', { name: 'Search Person' });
     await userEvent.type(search, 'cal');
-    expect(screen.getByText('Cal Carter')).toBeInTheDocument();
+    expect(screen.getByText('Cal Carter (cal@brd.test)')).toBeInTheDocument();
     await userEvent.clear(search);
     await userEvent.type(search, 'nobody@nowhere');
-    expect(screen.getByText('No one matches')).toBeInTheDocument();
+    expect(screen.getByText('No matches')).toBeInTheDocument();
   });
 
   it('adds the chosen person with the chosen role', async () => {
@@ -69,10 +69,10 @@ describe('AddMemberDrawer', () => {
     api.post.mockResolvedValue({ member });
     const { onOpenChange } = view();
     await userEvent.click(await picker());
-    await userEvent.click(screen.getByText('Dana Diaz'));
-    expect(screen.getByRole('combobox', { name: 'Person' })).toHaveTextContent(
-      'Dana Diaz (dana.diaz@example.org)',
-    );
+    await userEvent.click(screen.getByText('Dana Diaz (dana.diaz@example.org)'));
+    expect(
+      screen.getByRole('button', { name: 'Person: Dana Diaz (dana.diaz@example.org)' }),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Add member' }));
 
     await waitFor(() =>
@@ -98,7 +98,7 @@ describe('AddMemberDrawer', () => {
     );
     view();
     await userEvent.click(await picker());
-    await userEvent.click(screen.getByText('Cal Carter'));
+    await userEvent.click(screen.getByText('Cal Carter (cal@brd.test)'));
     await userEvent.click(screen.getByRole('button', { name: 'Add member' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'User is already a member of this project',
@@ -109,7 +109,7 @@ describe('AddMemberDrawer', () => {
     api.get.mockResolvedValue({ candidates: [] });
     view();
     expect(await screen.findByText(/already on this project/)).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Person' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Person:/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Add member' })).toBeDisabled();
   });
 

@@ -49,7 +49,14 @@ export function linkedItem(overrides: Partial<LinkedItemDto> = {}): LinkedItemDt
     headingPath: ['1. Scope', '1.1 Invoicing'],
     needsReview: false,
   };
-  return { kind: 'requirement', id: 'r1', title: 'Remind customers', status: 'OPEN', source, ...overrides };
+  return {
+    kind: 'requirement',
+    id: 'r1',
+    title: 'Remind customers',
+    status: 'OPEN',
+    source,
+    ...overrides,
+  };
 }
 
 /** What the server reports for the whole result, derived from the questions given. */

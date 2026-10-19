@@ -1,35 +1,31 @@
-import { Card, CardContent, CardHeader, CardTitle, StatCard, PageShell, InformativeBar, Badge } from '@brd/ui';
-import { FileText, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, StatCard, StatGrid, useSetPageHeader } from '@brd/ui';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 
+/** The home page: a stats strip and a first-steps panel, in the template's panel style. */
 export function DashboardPage() {
   const { user } = useAuth();
+  const title = `Welcome back, ${user?.name ?? 'User'}`;
+  // The title lives in the top bar; outside the app shell it is shown here instead.
+  const inTopBar = useSetPageHeader(title, 'BRD Platform dashboard');
 
   return (
-    <PageShell>
-      <InformativeBar
-        title={`Welcome back, ${user?.name ?? 'User'}`}
-        badge={<Badge variant="outline">MVP</Badge>}
-        info="BRD Platform Dashboard"
-      />
-      <PageShell.Body padded>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon={FileText} label="Total BRDs" value={0} iconClassName="bg-primary/10 text-primary" />
-          <StatCard icon={TrendingUp} label="In Progress" value={0} iconClassName="bg-info/10 text-info" />
-          <StatCard icon={Clock} label="Pending Review" value={0} iconClassName="bg-warning/10 text-warning" />
-          <StatCard icon={CheckCircle2} label="Completed" value={0} iconClassName="bg-success/10 text-success" />
-        </div>
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg text-muted-foreground">
-              Upload your first BRD document to begin extracting requirements and generating ERP module mappings.
-            </p>
-          </CardContent>
-        </Card>
-      </PageShell.Body>
-    </PageShell>
+    <div className="uab-page">
+      {!inTopBar && <h1 className="uab-page-title">{title}</h1>}
+      <StatGrid>
+        <StatCard label="Total BRDs" value={0} />
+        <StatCard label="In progress" value={0} />
+        <StatCard label="Pending review" value={0} />
+        <StatCard label="Completed" value={0} />
+      </StatGrid>
+      <Card>
+        <CardHeader>
+          <CardTitle>Getting started</CardTitle>
+        </CardHeader>
+        <p className="uab-muted">
+          Upload your first BRD document to begin extracting requirements and generating ERP module
+          mappings.
+        </p>
+      </Card>
+    </div>
   );
 }

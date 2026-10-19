@@ -1,5 +1,5 @@
-import { ShieldAlert } from 'lucide-react';
 import {
+  InlineAlert,
   PageError,
   Skeleton,
   StatusBadge,
@@ -25,8 +25,8 @@ export function KnowledgeCountsPanel({ projectId }: { projectId: string }) {
   const query = useKnowledgeSummary(projectId);
 
   return (
-    <section aria-labelledby="knowledge-heading" className="space-y-3">
-      <h2 id="knowledge-heading" className="text-base font-semibold">
+    <section aria-labelledby="knowledge-heading" className="uab-panel flex flex-col gap-3">
+      <h2 id="knowledge-heading" className="uab-panel-title">
         What was found
       </h2>
       {query.isPending && <Skeleton className="h-32 w-full max-w-3xl" />}
@@ -64,12 +64,11 @@ export function KnowledgeCountsPanel({ projectId }: { projectId: string }) {
             </TableBody>
           </Table>
           {query.data.chunksNeedingReview > 0 && (
-            <p role="status" className="flex items-center gap-2 text-sm text-warning-fg">
-              <ShieldAlert className="h-4 w-4" aria-hidden />
+            <InlineAlert tone="warning">
               {query.data.chunksNeedingReview} part
               {query.data.chunksNeedingReview === 1 ? '' : 's'} of your sources could not be read
               cleanly. Items taken from them are marked for review.
-            </p>
+            </InlineAlert>
           )}
         </div>
       )}

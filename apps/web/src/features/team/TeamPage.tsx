@@ -1,17 +1,7 @@
 import { useState } from 'react';
-import { Plus, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import type { OrgUserDto } from '@brd/shared';
-import {
-  Button,
-  ConfirmDialog,
-  EmptyState,
-  InformativeBar,
-  NoAccess,
-  PageError,
-  PageShell,
-  TableSkeleton,
-  toast,
-} from '@brd/ui';
+import { Button, ConfirmDialog, ListPage, TableSkeleton, toast } from '@brd/ui';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { errorMessage, isForbidden } from '@/lib/error-message';
 import { CreateUserDrawer } from './components/CreateUserDrawer';
@@ -68,72 +58,78 @@ export function TeamPage() {
 
   const busyUserId = updateUser.isPending ? (updateUser.variables?.userId ?? null) : null;
 
-  return (
-    <PageShell>
-      <InformativeBar title="Team" info="Manage who can sign in to your organization">
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1 h-4 w-4" />
-          Add member
-        </Button>
-      </InformativeBar>
-      <PageShell.Body padded>
-        {users.isPending && <TableSkeleton columns={[...SKELETON_COLUMNS]} rows={5} />}
-        {users.isError &&
-          (isForbidden(users.error) ? (
-            <NoAccess description="Only organization admins can manage the team." />
-          ) : (
-            <PageError
-              message="Could not load the team"
-              description={errorMessage(users.error)}
-              onRetry={() => void users.refetch()}
-            />
-          ))}
-        {users.isSuccess && users.data.length === 0 && (
-          <EmptyState
-            icon={Users}
-            title="No team members yet"
-            description="Add the first teammate to give them access."
-            actionLabel="Add member"
-            onAction={() => setCreateOpen(true)}
-          />
-        )}
-        {users.isSuccess && users.data.length > 0 && me && (
-          <UsersTable
-            users={users.data}
-            currentUserId={me.id}
-            busyUserId={busyUserId}
-            onChangeRole={changeRole}
-            onResetPassword={setResetTarget}
-            onToggleActive={setToggleTarget}
-          />
-        )}
-      </PageShell.Body>
+  const state = users.isPending
+    ? 'loading'
+    : users.isError
+      ? isForbidden(users.error)
+        ? 'no-access'
+        : 'error'
+      : users.data.length === 0
+        ? 'empty'
+        : 'ready';
 
-      <CreateUserDrawer
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={showCredentials}
-      />
-      <ResetPasswordDrawer
-        user={resetTarget}
-        onClose={() => setResetTarget(null)}
-        onReset={showCredentials}
-      />
-      <CredentialsDialog credentials={credentials} onClose={() => setCredentials(null)} />
-      <ConfirmDialog
-        open={toggleTarget !== null}
-        onOpenChange={(open) => !open && setToggleTarget(null)}
-        title={toggleTarget?.active ? 'Deactivate user?' : 'Reactivate user?'}
-        description={
-          toggleTarget?.active
-            ? `${toggleTarget.name} will be signed out immediately and can no longer sign in. Their project memberships are kept.`
-            : `${toggleTarget?.name ?? 'This user'} will be able to sign in again.`
-        }
-        variant={toggleTarget?.active ? 'destructive' : 'primary'}
-        confirmLabel={toggleTarget?.active ? 'Deactivate' : 'Reactivate'}
-        isPending={updateUser.isPending}
-        onConfirm={confirmToggle}
-      />
-    </PageShell>
+  const addButton = (
+    <Button variant="primary" icon="plus" onClick={() => setCreateOpen(true)}>
+      Add member
+    </Button>
+  );
+
+  return (
+    <ListPage
+      state={state}
+      title="Team"
+      info="Manage who can sign in to your organization"
+      viewLabel="All members"
+      actionBarRight={addButton}
+      loadingFallback={<TableSkeleton columns={[...SKELETON_COLUMNS]} rows={5} />}
+      errorMessage="Could not load the team"
+      errorDescription={users.isError ? errorMessage(users.error) : undefined}
+      onRetry={() => void users.refetch()}
+      noAccessDescription="Only organization admins can manage the team."
+      emptyIcon={Users}
+      emptyTitle="No team members yet"
+      emptyDescription="Add the first teammate to give them access."
+      emptyAction={addButton}
+      overlays={
+        <>
+          <CreateUserDrawer
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            onCreated={showCredentials}
+          />
+          <ResetPasswordDrawer
+            user={resetTarget}
+            onClose={() => setResetTarget(null)}
+            onReset={showCredentials}
+          />
+          <CredentialsDialog credentials={credentials} onClose={() => setCredentials(null)} />
+          <ConfirmDialog
+            open={toggleTarget !== null}
+            onOpenChange={(open) => !open && setToggleTarget(null)}
+            title={toggleTarget?.active ? 'Deactivate user?' : 'Reactivate user?'}
+            description={
+              toggleTarget?.active
+                ? `${toggleTarget.name} will be signed out immediately and can no longer sign in. Their project memberships are kept.`
+                : `${toggleTarget?.name ?? 'This user'} will be able to sign in again.`
+            }
+            variant={toggleTarget?.active ? 'destructive' : 'primary'}
+            confirmLabel={toggleTarget?.active ? 'Deactivate' : 'Reactivate'}
+            isPending={updateUser.isPending}
+            onConfirm={confirmToggle}
+          />
+        </>
+      }
+    >
+      {users.isSuccess && me && (
+        <UsersTable
+          users={users.data}
+          currentUserId={me.id}
+          busyUserId={busyUserId}
+          onChangeRole={changeRole}
+          onResetPassword={setResetTarget}
+          onToggleActive={setToggleTarget}
+        />
+      )}
+    </ListPage>
   );
 }

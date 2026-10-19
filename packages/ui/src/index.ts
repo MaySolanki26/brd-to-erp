@@ -5,6 +5,7 @@ export * from './theme';
 export { cn } from './lib/cn';
 export { safeStorage } from './lib/safe-storage';
 export { getInitials, getAvatarColor } from './lib/avatar';
+export { formatDateLong, formatDateShort, hasTimeOfDay, parseDateValue } from './lib/date-format';
 
 // Primitives
 export { Button, buttonVariants, type ButtonProps } from './button';
@@ -13,101 +14,7 @@ export { Textarea } from './textarea';
 export { Label } from './label';
 export { Checkbox } from './checkbox';
 export { RadioGroup, RadioGroupItem } from './radio-group';
-export {
-  Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-  SelectLabel,
-  SelectItem,
-  SelectSeparator,
-  SelectScrollUpButton,
-  SelectScrollDownButton,
-} from './select';
 export { Switch } from './switch';
-export { Slider } from './slider';
-export {
-  Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogClose,
-  DialogTrigger,
-  DialogContent,
-  DialogContentScrollable,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-} from './dialog';
-export {
-  AlertDialog,
-  AlertDialogPortal,
-  AlertDialogOverlay,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from './alert-dialog';
-export {
-  Sheet,
-  SheetPortal,
-  SheetOverlay,
-  SheetTrigger,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
-  SheetDescription,
-} from './sheet';
-export { Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverAnchor } from './popover';
-export {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuCheckboxItem,
-  DropdownMenuRadioItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuGroup,
-  DropdownMenuPortal,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuRadioGroup,
-} from './dropdown-menu';
-export {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuLabel,
-  ContextMenuGroup,
-  ContextMenuPortal,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuRadioGroup,
-} from './context-menu';
-export {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-  type TooltipContentProps,
-} from './tooltip';
-export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './accordion';
-export { Collapsible, CollapsibleTrigger, CollapsibleContent } from './collapsible';
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './card';
 export { Badge, badgeVariants, type BadgeProps } from './badge';
 export { Avatar, AvatarImage, AvatarFallback } from './avatar';
@@ -134,21 +41,21 @@ export {
   FormMessage,
   FormField,
 } from './form';
-export {
-  Command,
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandShortcut,
-  CommandSeparator,
-} from './command';
-export { Calendar, CalendarDayButton } from './calendar';
 export { toast, ToastProvider, useToast } from './toast';
-export { Stepper, type StepperStep, type StepperProps } from './stepper';
-export { MultiSelect, type MultiSelectOption, type MultiSelectProps } from './multi-select';
+
+// Template overlays and pickers
+export {
+  Dialog,
+  Drawer,
+  Popover,
+  Menu,
+  type DialogProps,
+  type MenuItem,
+} from './uab/primitives/overlay';
+export { DatePicker } from './uab/primitives/DatePicker';
+export { DateRangePicker } from './uab/primitives/DateRangePicker';
+export { MultiSelectMenu, type MultiOption } from './uab/primitives/MultiSelectMenu';
+export { Tabs } from './uab/primitives/feedback';
 
 // Composites
 export {
@@ -169,9 +76,7 @@ export {
   ConfirmDialog,
   type ConfirmDialogProps,
   FormDrawer,
-  DrawerShell,
   type FormDrawerProps,
-  type DrawerShellProps,
   type DrawerSize,
   DiscardBar,
   DiscardGuardProvider,
@@ -186,6 +91,7 @@ export {
   type StatusBadgeProps,
   type StatusTone,
   StatCard,
+  StatGrid,
   TruncatedText,
   CopyButton,
   copyToClipboard,
@@ -195,20 +101,9 @@ export {
   // Avatars
   UserAvatar,
   type UserAvatarProps,
-  AvatarGroup,
-  type AvatarGroupItem,
   // Date
-  DatePicker,
-  DatePickerPanel,
-  DatePickerInput,
-  type DayIndicator,
-  DateRangeControl,
   // Controls
   SearchInput,
-  ViewToggle,
-  type ViewMode,
-  FilterButton,
-  type FilterButtonProps,
   // Settings
   SettingsSection,
   SettingsField,
@@ -222,20 +117,70 @@ export {
   InfiniteScrollSentinel,
   // App Shell
   AppShell,
-  AppSidebar,
-  AppSidebarMobile,
-  AppHeader,
-  Breadcrumbs,
+  IconRail,
+  Canvas,
+  ContextSidebar,
+  SidebarContent,
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  MobileNav,
+  TopBar,
+  PageHeaderProvider,
+  usePageHeader,
+  useSetPageHeader,
+  CommandPalette,
+  useCommandShortcut,
+  NotificationBell,
+  AppearanceMenu,
+  ThemePicker,
   UserMenu,
-  useSidebarState,
-  type NavItem,
-  type NavChildItem,
-  type BreadcrumbItem,
+  type IconRailProps,
+  type ContextSidebarProps,
+  type SidebarContentProps,
+  type MobileNavProps,
+  type TopBarProps,
+  type PageHeaderState,
+  type CommandPaletteProps,
+  type NotificationBellProps,
+  type AppearanceMenuProps,
+  type ThemePickerProps,
+  type RailUtility,
+  type RailModule,
+  type SidebarChild,
+  type SidebarItem,
+  type SidebarSection,
   type AppShellUser,
-  type SidebarState,
   type UserMenuAction,
-  type AppSidebarProps,
-  type AppHeaderProps,
+  type CommandEntry,
+  type CommandGroupDef,
+  type NotificationEntry,
+  InlineAlert,
+  // Phase 2 shared pieces
+  ConfirmHost,
+  confirmDelete,
+  dismissConfirmDelete,
+  type ConfirmDeleteOptions,
+  EmptyValue,
+  type EmptyValueProps,
+  DateText,
+  type DateTextProps,
+  InfoTip,
+  type InfoTipProps,
+  OverflowChips,
+  type OverflowChipsProps,
+  FormGrid,
+  FormGridItem,
+  type FormGridItemProps,
+  ViewBar,
+  type ViewBarProps,
+  type ViewTab,
+  RecordInspector,
+  type RecordInspectorProps,
+  type InspectorTab,
+  type InspectorComment,
+  SelectMenu,
+  type SelectMenuProps,
   // NoAccess
   NoAccess,
   FormError,

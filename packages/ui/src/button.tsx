@@ -1,50 +1,134 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from './lib/cn';
+import { Icon } from './uab/primitives/Icon';
 
-const buttonVariants = cva(
-  'ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-xl font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-[0.8rem] [&_svg]:shrink-0',
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        accent:
-          'border border-primary/30 bg-surface text-primary shadow-sm hover:border-primary/50 hover:bg-primary-light active:scale-[0.97]',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline: 'border-input bg-background hover:bg-accent hover:text-accent-foreground border',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
-      },
-      size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-7 rounded-md px-2',
-        xs: 'h-6 gap-1.5 rounded-md px-2 text-lg [&_svg]:size-3.5',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
-        'icon-sm': 'h-8 w-8 rounded-md [&_svg]:size-[0.8rem]',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  },
-);
+type Variant =
+  | 'default'
+  | 'primary'
+  | 'accent'
+  | 'destructive'
+  | 'danger'
+  | 'outline'
+  | 'secondary'
+  | 'ghost'
+  | 'link';
+type Size = 'default' | 'sm' | 'xs' | 'lg' | 'icon' | 'icon-sm';
+type TemplateVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
+const TEMPLATE_VARIANT: Record<Exclude<Variant, 'link'>, TemplateVariant> = {
+  default: 'primary',
+  primary: 'primary',
+  accent: 'secondary',
+  destructive: 'danger',
+  danger: 'danger',
+  outline: 'secondary',
+  secondary: 'secondary',
+  ghost: 'ghost',
+};
+
+/** Template classes for places that need the look without the component (links styled as buttons). */
+function buttonVariants(
+  options: { variant?: Variant | null; size?: Size | null; className?: string } = {},
+): string {
+  const variant = options.variant ?? 'default';
+  const size = options.size ?? 'default';
+  if (size === 'icon' || size === 'icon-sm') {
+    return cn(
+      'uab-icon-btn',
+      variant === 'outline' || variant === 'secondary' ? 'uab-icon-btn-secondary' : '',
+      options.className,
+    );
+  }
+  if (variant === 'link') return cn('uab-link', options.className);
+  return cn(
+    'uab-btn',
+    `uab-btn-${TEMPLATE_VARIANT[variant]}`,
+    size === 'lg' && 'uab-btn-default',
+    options.className,
+  );
 }
 
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: Variant | null;
+  /** `lg` is the 40px form size; every other size is the 32px template button. */
+  size?: Size | null;
+  asChild?: boolean;
+  /** Template icon name shown before the label. */
+  icon?: string;
+  /** Template icon name shown after the label. */
+  iconRight?: string;
+  loading?: boolean;
+  /** Explains why the button is unavailable (tooltip and screen-reader text). */
+  disabledReason?: string;
+}
+
+/** The template button. `variant="primary"` (or the default) is the one strong action; 32px high. */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      type,
+      icon,
+      iconRight,
+      loading,
+      disabledReason,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const resolved = variant ?? 'default';
+    const resolvedSize = size ?? 'default';
+
+    if (asChild) {
+      return (
+        <Slot className={buttonVariants({ variant, size, className })} ref={ref} {...props}>
+          {children}
+        </Slot>
+      );
+    }
+    if (resolvedSize === 'icon' || resolvedSize === 'icon-sm' || resolved === 'link') {
+      return (
+        <button
+          ref={ref}
+          type={type ?? 'button'}
+          className={buttonVariants({ variant, size, className })}
+          {...props}
+        >
+          {children}
+        </button>
+      );
+    }
+    const isDisabled = props.disabled || loading || !!disabledReason;
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <button
+        ref={ref}
+        type={type ?? 'button'}
+        className={cn(
+          'uab-btn',
+          `uab-btn-${TEMPLATE_VARIANT[resolved]}`,
+          resolvedSize === 'lg' && 'uab-btn-default',
+          className,
+        )}
+        aria-busy={loading || undefined}
+        data-tooltip={disabledReason ?? props.title}
+        {...props}
+        disabled={isDisabled}
+      >
+        {loading ? (
+          <span className="uab-spinner" aria-hidden="true" />
+        ) : icon ? (
+          <Icon name={icon} />
+        ) : null}
+        {children}
+        {iconRight && <Icon name={iconRight} />}
+        {disabledReason && <span className="uab-sr-only">. Unavailable: {disabledReason}</span>}
+      </button>
     );
   },
 );

@@ -56,7 +56,6 @@ export function CreateProjectDrawer({ open, onOpenChange, onCreated }: CreatePro
         onOpenChange={onOpenChange}
         title="New project"
         description="You become the project owner and can add teammates afterwards."
-        size="lg"
         onSubmit={submit}
         submitLabel="Create project"
         isPending={createProject.isPending}

@@ -1,7 +1,6 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '../../lib/cn';
-import { Button } from '../../button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../select';
+import { cx } from '../../uab/lib/format';
+import { IconButton } from '../../uab/primitives/Button';
+import { SelectMenu } from '../../uab/primitives/SelectMenu';
 import type { PaginationState } from './data-table-types';
 
 interface DataTablePaginationProps {
@@ -9,17 +8,30 @@ interface DataTablePaginationProps {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
   pageSizeOptions?: number[];
-  selectedCount?: number;
-  className?: string;
+  noun?: { one: string; other: string };
 }
 
+const GAP = 'gap';
+type PageItem = number | typeof GAP;
+
+/** 1 … p-1 p p+1 … N (1-based): the first and last page and the neighbours of the current one. */
+export function pageItems(page: number, totalPages: number): PageItem[] {
+  const items: PageItem[] = [];
+  for (let current = 1; current <= totalPages; current += 1) {
+    if (current === 1 || current === totalPages || Math.abs(current - page) <= 1)
+      items.push(current);
+    else if (items[items.length - 1] !== GAP) items.push(GAP);
+  }
+  return items;
+}
+
+/** Frozen footer: "1–25 of 55 customers" at the left, numbered pages and "25 / page" at the right. */
 export function DataTablePagination({
   pagination,
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [25, 50, 100],
-  selectedCount = 0,
-  className,
+  noun = { one: 'item', other: 'items' },
 }: DataTablePaginationProps) {
   const { page, pageSize, total } = pagination;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -27,69 +39,56 @@ export function DataTablePagination({
   const to = Math.min(page * pageSize, total);
 
   return (
-    <div
-      className={cn(
-        'border-border flex items-center justify-between border-t px-4 py-2',
-        className,
+    <div className="uab-grid-footer">
+      <span className="uab-grid-footer-range" aria-live="polite">
+        <strong>
+          {from}–{to}
+        </strong>{' '}
+        of {total.toLocaleString()} {total === 1 ? noun.one : noun.other}
+      </span>
+      <nav className="uab-grid-pages" aria-label="Pagination">
+        <IconButton
+          icon="chevron-left"
+          label="Previous page"
+          disabledReason={page <= 1 ? 'First page' : undefined}
+          onClick={() => onPageChange?.(page - 1)}
+        />
+        {pageItems(page, totalPages).map((item, index) =>
+          item === GAP ? (
+            <span key={`gap-${String(index)}`} className="uab-grid-page-gap" aria-hidden="true">
+              …
+            </span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              className={cx('uab-grid-page', item === page && 'uab-is-current')}
+              aria-current={item === page ? 'page' : undefined}
+              aria-label={`Page ${String(item)}`}
+              onClick={() => onPageChange?.(item)}
+            >
+              {item}
+            </button>
+          ),
+        )}
+        <IconButton
+          icon="chevron-right"
+          label="Next page"
+          disabledReason={page >= totalPages ? 'Last page' : undefined}
+          onClick={() => onPageChange?.(page + 1)}
+        />
+      </nav>
+      {onPageSizeChange && (
+        <SelectMenu
+          label="Rows per page"
+          value={String(pageSize)}
+          options={pageSizeOptions.map((size) => ({
+            value: String(size),
+            label: `${String(size)} / page`,
+          }))}
+          onChange={(value) => onPageSizeChange(Number(value))}
+        />
       )}
-    >
-      {/* Left: selected count or showing range */}
-      <div className="text-muted-foreground text-lg">
-        {selectedCount > 0 ? (
-          <span>{selectedCount} selected</span>
-        ) : (
-          <span>
-            Showing {from}–{to} of {total}
-          </span>
-        )}
-      </div>
-
-      {/* Right: page-size + prev/next */}
-      <div className="flex items-center gap-3">
-        {onPageSizeChange && (
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-lg">Rows</span>
-            <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-              <SelectTrigger className="h-7 w-[60px] text-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeOptions.map((size) => (
-                  <SelectItem key={size} value={String(size)} className="text-lg">
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        <div className="flex items-center gap-1">
-          <span className="text-muted-foreground text-lg">
-            {page} / {totalPages}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            aria-label="Previous page"
-            disabled={page <= 1}
-            onClick={() => onPageChange?.(page - 1)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            aria-label="Next page"
-            disabled={page >= totalPages}
-            onClick={() => onPageChange?.(page + 1)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -82,12 +82,47 @@ module.exports = {
           DEFAULT: 'rgb(var(--card) / <alpha-value>)',
           foreground: 'rgb(var(--card-foreground) / <alpha-value>)',
         },
+        sidebar: {
+          DEFAULT: 'rgb(var(--sidebar-bg) / <alpha-value>)',
+          hover: 'rgb(var(--sidebar-hover) / <alpha-value>)',
+        },
+        rail: {
+          DEFAULT: 'rgb(var(--rail-bg) / <alpha-value>)',
+          icon: 'rgb(var(--rail-icon) / <alpha-value>)',
+          selected: 'rgb(var(--rail-selected-bg) / <alpha-value>)',
+          'selected-icon': 'rgb(var(--rail-selected-icon) / <alpha-value>)',
+        },
+        grid: {
+          header: 'rgb(var(--grid-header-bg) / <alpha-value>)',
+          hover: 'rgb(var(--table-row-hover) / <alpha-value>)',
+        },
+        'empty-value': 'rgb(var(--empty-value-fg) / <alpha-value>)',
+      },
+      height: {
+        control: 'var(--control-h)',
+        'control-compact': 'var(--control-h-compact)',
+        topbar: 'var(--topbar-h)',
+        'sidebar-row': 'var(--sidebar-row-h)',
+      },
+      minHeight: {
+        control: 'var(--control-h)',
+        'control-compact': 'var(--control-h-compact)',
+      },
+      width: {
+        rail: 'var(--rail-width)',
+        sidebar: 'var(--sidebar-width)',
+        drawer: 'var(--drawer-width)',
+        'control-compact': 'var(--control-h-compact)',
+      },
+      maxWidth: {
+        drawer: 'var(--drawer-width)',
       },
       fontFamily: {
         sans: 'var(--font-sans)',
         mono: 'var(--font-mono)',
       },
       fontSize: {
+        base: 'var(--fs-supportive)',
         xxs: 'var(--text-xxs)',
         xs: 'var(--text-xs)',
         sm: 'var(--text-sm)',
@@ -102,6 +137,9 @@ module.exports = {
         '7xl': 'var(--text-7xl)',
         '8xl': 'var(--text-8xl)',
         '9xl': 'var(--text-9xl)',
+        'fs-primary': 'var(--fs-primary)',
+        'fs-secondary': 'var(--fs-secondary)',
+        'fs-supportive': 'var(--fs-supportive)',
       },
       borderRadius: {
         lg: 'var(--radius-lg)',

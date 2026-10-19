@@ -1,13 +1,22 @@
+import { useRef, useState } from 'react';
 import type { KnowledgeSourceDto, PersonRef } from '@brd/shared';
-import { Button, Popover, PopoverContent, PopoverTrigger } from '@brd/ui';
-import { formatDate } from '@/features/projects/project-labels';
+import { Button, DateText, EmptyValue, Popover, TruncatedText } from '@brd/ui';
 import { SourceLink } from './SourceLink';
 
-export function TitleCell({ title, description }: { title: string; description: string | null }) {
+/** One line; the full title appears on hover when it is cut off. The description has its own column. */
+export function TitleCell({ title }: { title: string }) {
   return (
-    <div className="max-w-md">
-      <p className="font-medium">{title}</p>
-      {description && <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p>}
+    <div className="max-w-md min-w-0">
+      <TruncatedText text={title} className="font-medium" />
+    </div>
+  );
+}
+
+export function DescriptionCell({ description }: { description: string | null }) {
+  if (!description) return <EmptyValue />;
+  return (
+    <div className="max-w-md min-w-0 text-muted-foreground">
+      <TruncatedText text={description} />
     </div>
   );
 }
@@ -30,37 +39,62 @@ export function SourceCell({
   return (
     <div className="flex flex-col items-start gap-0.5">
       <SourceLink source={source} onOpen={onOpen} />
-      {extra > 0 && (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="link"
-              size="xs"
-              className="h-auto p-0"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {extra === 1 ? '+1 more source' : `+${String(extra)} more sources`}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-72 space-y-1.5 p-3">
-            <p className="text-sm font-medium">Also found in</p>
-            {otherSources.map((other) => (
-              <div key={other.chunkId}>
-                <SourceLink source={other} onOpen={onOpen} />
-              </div>
-            ))}
-          </PopoverContent>
-        </Popover>
-      )}
+      {extra > 0 && <MoreSources others={otherSources} onOpen={onOpen} />}
     </div>
   );
 }
 
+function MoreSources({
+  others,
+  onOpen,
+}: {
+  others: KnowledgeSourceDto[];
+  onOpen: (chunkId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const anchor = useRef<HTMLButtonElement>(null);
+  const count = others.length;
+  return (
+    <>
+      <Button
+        ref={anchor}
+        type="button"
+        variant="link"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
+      >
+        {count === 1 ? '+1 more source' : `+${String(count)} more sources`}
+      </Button>
+      <Popover
+        open={open}
+        onClose={() => setOpen(false)}
+        anchor={anchor}
+        label="Also found in"
+        width={288}
+      >
+        <div className="uab-pop-head">
+          <strong>Also found in</strong>
+        </div>
+        <div className="uab-pop-body">
+          {others.map((other) => (
+            <div key={other.chunkId}>
+              <SourceLink source={other} onOpen={onOpen} />
+            </div>
+          ))}
+        </div>
+      </Popover>
+    </>
+  );
+}
+
 export function DateCell({ iso }: { iso: string }) {
-  return <span className="whitespace-nowrap">{formatDate(iso)}</span>;
+  return <DateText value={iso} />;
 }
 
 export function ModuleCell({ module }: { module: { id: string; name: string } | null }) {
-  return module ? <span>{module.name}</span> : <span className="text-muted-foreground">—</span>;
+  return module ? <span>{module.name}</span> : <EmptyValue />;
 }

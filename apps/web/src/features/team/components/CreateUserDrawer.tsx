@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createUserSchema, type CreateUserInput, type OrgUserDto } from '@brd/shared';
 import {
+  SelectMenu,
   Form,
   FormControl,
   FormDescription,
@@ -10,11 +11,6 @@ import {
   FormMessage,
   FormDrawer,
   Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   FormError,
 } from '@brd/ui';
 import { useZodForm } from '@/hooks/use-zod-form';
@@ -62,7 +58,6 @@ export function CreateUserDrawer({ open, onOpenChange, onCreated }: CreateUserDr
         onOpenChange={onOpenChange}
         title="Add team member"
         description="They sign in with the temporary password and must change it."
-        size="lg"
         onSubmit={submit}
         submitLabel="Create user"
         isPending={createUser.isPending}
@@ -101,17 +96,18 @@ export function CreateUserDrawer({ open, onOpenChange, onCreated }: CreateUserDr
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Organization role</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="MEMBER">Member</SelectItem>
-                    <SelectItem value="ORG_ADMIN">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SelectMenu
+                    block
+                    label="Organization role"
+                    value={field.value}
+                    options={[
+                      { value: 'MEMBER', label: 'Member' },
+                      { value: 'ORG_ADMIN', label: 'Admin' },
+                    ]}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
                 <FormDescription>
                   Admins manage the team. Project access is set per project.
                 </FormDescription>

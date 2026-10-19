@@ -1,7 +1,14 @@
 import type { RequirementDto } from '@brd/shared';
 import { useRequirements } from '../hooks/use-knowledge';
 import { useKnowledgeFilters } from '../hooks/use-knowledge-filters';
-import { AuthorCell, DateCell, ModuleCell, SourceCell, TitleCell } from './KnowledgeCells';
+import {
+  AuthorCell,
+  DateCell,
+  DescriptionCell,
+  ModuleCell,
+  SourceCell,
+  TitleCell,
+} from './KnowledgeCells';
 import { KnowledgeList, StatusCell } from './KnowledgeList';
 
 export function RequirementsTab({ projectId }: { projectId: string }) {
@@ -19,14 +26,21 @@ export function RequirementsTab({ projectId }: { projectId: string }) {
         {
           id: 'title',
           header: 'Requirement',
-          cell: (r) => <TitleCell title={r.title} description={r.description} />,
+          cell: (r) => <TitleCell title={r.title} />,
+        },
+        {
+          id: 'description',
+          header: 'Description',
+          cell: (r) => <DescriptionCell description={r.description} />,
         },
         { id: 'status', header: 'Status', cell: (r) => <StatusCell row={r} /> },
         { id: 'module', header: 'Module', cell: (r) => <ModuleCell module={r.module} /> },
         {
           id: 'source',
           header: 'Source',
-          cell: (r) => <SourceCell source={r.source} otherSources={r.otherSources} onOpen={openSource} />,
+          cell: (r) => (
+            <SourceCell source={r.source} otherSources={r.otherSources} onOpen={openSource} />
+          ),
         },
         {
           id: 'createdBy',

@@ -1,26 +1,34 @@
 import * as React from 'react';
-import * as ProgressPrimitive from '@radix-ui/react-progress';
 
 import { cn } from './lib/cn';
 
-interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
+interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** 0 to 100. */
+  value?: number | null;
+  /** Kept for compatibility; the template meter has one fill colour. */
   indicatorClassName?: string;
 }
 
-const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root>, ProgressProps>(
-  ({ className, value, indicatorClassName, ...props }, ref) => (
-    <ProgressPrimitive.Root
-      ref={ref}
-      className={cn('bg-secondary relative h-4 w-full overflow-hidden rounded-full', className)}
-      {...props}
-    >
-      <ProgressPrimitive.Indicator
-        className={cn('bg-primary h-full w-full flex-1 transition-all', indicatorClassName)}
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-      />
-    </ProgressPrimitive.Root>
-  ),
+/** The template meter: a thin track with a fill. */
+const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
+  ({ className, value, indicatorClassName: _indicator, ...props }, ref) => {
+    const clamped = Math.min(100, Math.max(0, value ?? 0));
+    return (
+      <div
+        ref={ref}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={clamped}
+        className={cn('uab-meter-track', className)}
+        {...props}
+      >
+        {/* The fill width is the progress itself: a dynamic value. */}
+        <span className="uab-meter-fill" style={{ width: `${clamped}%` }} />
+      </div>
+    );
+  },
 );
-Progress.displayName = ProgressPrimitive.Root.displayName;
+Progress.displayName = 'Progress';
 
 export { Progress };

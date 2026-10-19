@@ -13,25 +13,25 @@ A new screen, a new tab on the project page, or a create / edit form. Not for AP
 
 ## Pick the pattern first
 
-| You are building | Use | Look at |
-| --- | --- | --- |
-| A routed list of records with search, table and paging | `ListPage` | `features/projects/ProjectsPage.tsx` |
-| A routed record page with tabs | `DetailPage` (its `tabs` prop; keep the active tab in `?tab=`) | `features/projects/ProjectDetailPage.tsx` |
-| A routed full-page form inside the app shell | `FormPage` | `templates/components.md` (Project settings) |
-| A section inside a record's tab | No page pattern: render the five states inline | `MilestonesTab`, `features/decisions/components/DecisionsTab.tsx` |
-| Create or edit over a list | `FormDrawer` + `useZodForm` | `CreateMilestoneDrawer`, `CreateProjectDrawer` |
-| A server-driven table with sort and filters | `DataTable` (page owns the state) | `features/knowledge/components/KnowledgeList.tsx` |
-| A standalone page outside the shell (sign-in, forced password change) | Centered `Card` | `LoginPage`, `ChangePasswordPage` |
+| You are building                                                      | Use                                                            | Look at                                                           |
+| --------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------- |
+| A routed list of records with search, table and paging                | `ListPage`                                                     | `features/projects/ProjectsPage.tsx`                              |
+| A routed record page with tabs                                        | `DetailPage` (its `tabs` prop; keep the active tab in `?tab=`) | `features/projects/ProjectDetailPage.tsx`                         |
+| A routed full-page form inside the app shell                          | `FormPage`                                                     | `templates/components.md` (Project settings)                      |
+| A section inside a record's tab                                       | No page pattern: render the five states inline                 | `MilestonesTab`, `features/decisions/components/DecisionsTab.tsx` |
+| Create or edit over a list                                            | `FormDrawer` + `useZodForm`                                    | `CreateMilestoneDrawer`, `CreateProjectDrawer`                    |
+| A server-driven table with sort and filters                           | `DataTable` (page owns the state)                              | `features/knowledge/components/KnowledgeList.tsx`                 |
+| A standalone page outside the shell (sign-in, forced password change) | Centered `Card`                                                | `LoginPage`, `ChangePasswordPage`                                 |
 
 ## The five states (every screen)
 
-| State | Trigger | Render |
-| --- | --- | --- |
-| loading | `query.isPending` | a skeleton (`TableSkeleton`, `CardListSkeleton`) or the pattern's `state="loading"` |
-| empty | success with no items | `EmptyState` with an icon, a title and the next step; a different message when a search is active |
-| error | `query.isError` | `PageError` with `errorMessage(error)` and `onRetry={() => void query.refetch()}` |
-| no-access | `isForbidden(error)`, or the user lacks the permission | `NoAccess` |
-| ready | data | the content |
+| State     | Trigger                                                | Render                                                                                            |
+| --------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| loading   | `query.isPending`                                      | a skeleton (`TableSkeleton`, `CardListSkeleton`) or the pattern's `state="loading"`               |
+| empty     | success with no items                                  | `EmptyState` with an icon, a title and the next step; a different message when a search is active |
+| error     | `query.isError`                                        | `PageError` with `errorMessage(error)` and `onRetry={() => void query.refetch()}`                 |
+| no-access | `isForbidden(error)`, or the user lacks the permission | `NoAccess`                                                                                        |
+| ready     | data                                                   | the content                                                                                       |
 
 `ListPage` takes `state` with exactly these five values. For a record that may not exist, treat a 404 as its own `EmptyState` ("not found"), as `ProjectDetailPage` does.
 
@@ -49,7 +49,7 @@ Below, `<name>` is the feature folder, for example `milestones`.
 5. **Permissions.** Wrap buttons and menu items in `<Can permission={ProjectPermission.X} projectRole={project.myRole}>` or `<Can roles={['ORG_ADMIN']}>`; for logic use `useCan()`. `Can` answers "no" until the user is loaded. It only hides things: the API enforces every rule.
 6. **Forms.** `useZodForm(schema)` with a schema from `packages/shared` (add a form-shaped schema there when the form edits text that the API stores as a date or null). Field errors via `FormMessage`; a failed save via `FormError`; drawers get `dirty={form.formState.isDirty}` so closing asks to discard.
 7. **Route and navigation.**
-   - New page: lazy-load it in `src/router.tsx` (`lazy(() => import('@/features/x/XPage').then((m) => ({ default: m.XPage })))`) under `ProtectedRoute` / `AppLayout`; wrap restricted areas in `<RoleGuard roles={[...]} />`. Add the nav item to `NAV_ITEMS` in `components/layout/AppLayout.tsx` (`roles: [...]` hides it from others) and a breadcrumb entry.
+   - New page: lazy-load it in `src/router.tsx` (`lazy(() => import('@/features/x/XPage').then((m) => ({ default: m.XPage })))`) under `ProtectedRoute` / `AppLayout`; wrap restricted areas in `<RoleGuard roles={[...]} />`. Add the module to `MODULES` (rail icon, `roles: [...]` hides it from others) and its pages to `targetsForModule` in `features/shell/navigation.ts`. There are no breadcrumbs: the page title comes from the page pattern's `title` (shown in the top bar) and its description from `info`, which appears behind an ⓘ.
    - New project tab: add an entry to the `tabs` array in `ProjectDetailPage.tsx`. **Update `ProjectDetailPage.test.tsx`**: it asserts the exact tab list and count.
 8. **Tests** (`templates/tests.md`), `*.test.tsx` next to the component, with `renderRoute` and `makeAuth` / `makeUser` from `@/test/render`; mock `@/lib/api-client` and `@/providers/auth-provider` as the templates do. Cover: loading, empty, error with retry, forbidden, the happy path, permission shown / hidden, and each interaction (submit with a validation error, successful submit, server error). Query by role and name.
 9. **Verify.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
@@ -62,7 +62,7 @@ Below, `<name>` is the feature folder, for example `milestones`.
 - [ ] Writes use `useApiMutation`; `errorToast: false` only where the error is shown in place
 - [ ] Buttons and menus that need a permission use `<Can>` / `useCan()`
 - [ ] Forms: shared Zod schema, field errors, `FormError`, `dirty` on drawers
-- [ ] Page lazy-loaded behind the auth / role guard; nav and breadcrumb added; tab list test updated for new tabs
+- [ ] Page lazy-loaded behind the auth / role guard; module and pages added to `features/shell/navigation.ts`; tab list test updated for new tabs
 - [ ] Tokens only, no inline styles or raw colors
 - [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass
 

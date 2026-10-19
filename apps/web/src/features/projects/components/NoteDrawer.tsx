@@ -71,7 +71,6 @@ export function NoteDrawer({ projectId, open, onOpenChange, note }: NoteDrawerPr
         onOpenChange={onOpenChange}
         title={note ? 'Edit note' : 'Add context note'}
         description="Notes are processed like documents and kept with the project."
-        size="xl"
         onSubmit={submit}
         submitLabel={note ? 'Save note' : 'Add note'}
         isPending={mutation.isPending}

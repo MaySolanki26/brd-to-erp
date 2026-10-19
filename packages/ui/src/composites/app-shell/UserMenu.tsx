@@ -1,14 +1,8 @@
+import { useRef, useState } from 'react';
 import { LogOut } from 'lucide-react';
-import { Button } from '../../button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../../dropdown-menu';
-import { UserAvatar } from '../UserAvatar';
+import { cx } from '../../uab/lib/format';
+import { Popover } from '../../uab/primitives/overlay';
+import { Avatar } from '../../uab/primitives/feedback';
 import type { AppShellUser, UserMenuAction } from './types';
 
 interface UserMenuProps {
@@ -17,48 +11,73 @@ interface UserMenuProps {
   onLogout?: () => void;
 }
 
-export function UserMenu({ user, actions, onLogout }: UserMenuProps) {
+/** Account button with the person's name and role, and a menu of account actions. */
+export function UserMenu({ user, actions = [], onLogout }: UserMenuProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
+  const roleText = user.role ? `, ${user.role}` : '';
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
-          <UserAvatar name={user.name} src={user.avatarUrl} className="h-8 w-8 text-md" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col gap-1">
-            <p className="text-xl font-medium leading-none">{user.name}</p>
-            {user.email && (
-              <p className="text-lg leading-none text-muted-foreground">{user.email}</p>
-            )}
-          </div>
-        </DropdownMenuLabel>
-        {actions && actions.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            {actions.map((action) => (
-              <DropdownMenuItem
-                key={action.key}
-                onClick={action.onClick}
-                className={action.destructive ? 'text-destructive' : undefined}
+    <>
+      <button
+        ref={ref}
+        type="button"
+        className="uab-account-btn"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={`Account: ${user.name}${roleText}`}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <Avatar name={user.name} size={26} />
+        <span className="uab-account-text uab-hide-phone">
+          <span className="uab-account-name">{user.name}</span>
+          {user.role && <span className="uab-account-role">{user.role}</span>}
+        </span>
+      </button>
+      <Popover
+        open={open}
+        onClose={() => setOpen(false)}
+        anchor={ref}
+        label="Account"
+        width={260}
+        align="end"
+      >
+        {user.email && <p className="uab-pop-label">{user.email}</p>}
+        <ul className="uab-menu">
+          {actions.map((action) => (
+            <li key={action.key}>
+              <button
+                type="button"
+                className={cx('uab-menu-item', action.destructive && 'uab-is-danger')}
+                onClick={() => {
+                  setOpen(false);
+                  action.onClick();
+                }}
               >
-                {action.icon && <action.icon className="mr-2 h-4 w-4" />}
-                {action.label}
-              </DropdownMenuItem>
-            ))}
-          </>
-        )}
-        {onLogout && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Log out
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+                {action.icon && (
+                  <action.icon size={16} strokeWidth={1.75} aria-hidden="true" focusable={false} />
+                )}
+                <span className="uab-menu-label">{action.label}</span>
+              </button>
+            </li>
+          ))}
+          {onLogout && (
+            <li>
+              <button
+                type="button"
+                className="uab-menu-item"
+                onClick={() => {
+                  setOpen(false);
+                  onLogout();
+                }}
+              >
+                <LogOut size={16} strokeWidth={1.75} aria-hidden="true" focusable={false} />
+                <span className="uab-menu-label">Log out</span>
+              </button>
+            </li>
+          )}
+        </ul>
+      </Popover>
+    </>
   );
 }

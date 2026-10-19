@@ -12,7 +12,7 @@ export function ConflictNotice({ message, refreshing, onRefresh }: ConflictNotic
   return (
     <div
       role="alert"
-      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
+      className="uab-inline-alert uab-tone-warning flex flex-wrap items-center justify-between gap-2"
     >
       <div>
         <p className="font-medium">{message}</p>

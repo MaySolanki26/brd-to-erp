@@ -23,6 +23,10 @@ const TeamPage = lazy(() =>
   import('@/features/team/TeamPage').then((m) => ({ default: m.TeamPage })),
 );
 
+const DesignPage = lazy(() =>
+  import('@/features/design/DesignPage').then((m) => ({ default: m.DesignPage })),
+);
+
 export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
@@ -49,7 +53,10 @@ export const router = createBrowserRouter([
           { path: 'projects/:projectId', element: <ProjectDetailPage /> },
           {
             element: <RoleGuard roles={['ORG_ADMIN']} />,
-            children: [{ path: 'team', element: <TeamPage /> }],
+            children: [
+              { path: 'team', element: <TeamPage /> },
+              { path: 'design', element: <DesignPage /> },
+            ],
           },
           { path: '*', element: <NotFoundPage /> },
         ],

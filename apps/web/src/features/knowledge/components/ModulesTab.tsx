@@ -1,7 +1,7 @@
 import type { ModuleDto } from '@brd/shared';
 import { useModules } from '../hooks/use-knowledge';
 import { useKnowledgeFilters } from '../hooks/use-knowledge-filters';
-import { AuthorCell, DateCell, SourceCell, TitleCell } from './KnowledgeCells';
+import { AuthorCell, DateCell, DescriptionCell, SourceCell, TitleCell } from './KnowledgeCells';
 import { KnowledgeList, StatusCell } from './KnowledgeList';
 
 export function ModulesTab({ projectId }: { projectId: string }) {
@@ -19,19 +19,25 @@ export function ModulesTab({ projectId }: { projectId: string }) {
         {
           id: 'name',
           header: 'Module',
-          cell: (m) => <TitleCell title={`${m.name} (${m.code})`} description={m.description} />,
+          cell: (m) => <TitleCell title={`${m.name} (${m.code})`} />,
+        },
+        {
+          id: 'description',
+          header: 'Description',
+          cell: (m) => <DescriptionCell description={m.description} />,
         },
         { id: 'status', header: 'Status', cell: (m) => <StatusCell row={m} /> },
         {
           id: 'requirements',
           header: 'Requirements',
-          align: 'right',
           cell: (m) => <span>{m.requirementCount}</span>,
         },
         {
           id: 'source',
           header: 'Source',
-          cell: (m) => <SourceCell source={m.source} otherSources={m.otherSources} onOpen={openSource} />,
+          cell: (m) => (
+            <SourceCell source={m.source} otherSources={m.otherSources} onOpen={openSource} />
+          ),
         },
         {
           id: 'createdBy',

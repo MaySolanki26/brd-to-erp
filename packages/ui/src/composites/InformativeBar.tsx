@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Button } from '../button';
+import { useSetPageHeader } from './app-shell/PageHeader';
 
 interface InformativeBarProps {
   title?: ReactNode;
@@ -24,6 +25,14 @@ export function InformativeBar({
   children,
   className,
 }: InformativeBarProps) {
+  // Inside the app shell the title and its description move to the top bar (no title row in the page).
+  const inTopBar = useSetPageHeader(
+    typeof title === 'string' ? title : undefined,
+    typeof info === 'string' ? info : undefined,
+  );
+  const hasContent = Boolean(onBack || badge || children || leading || icon);
+  if (inTopBar && !hasContent) return null;
+
   return (
     <div
       className={cn(
@@ -46,13 +55,13 @@ export function InformativeBar({
       {leading ?? (
         <div className="flex min-w-0 items-center gap-2">
           {icon && <span className="text-muted-foreground flex shrink-0 items-center">{icon}</span>}
-          {title && (
-            <h1 className="text-foreground truncate text-xl font-semibold tracking-tight">
+          {title && !inTopBar && (
+            <h1 className="text-foreground truncate text-fs-primary font-semibold tracking-tight">
               {title}
             </h1>
           )}
           {badge && <span className="shrink-0">{badge}</span>}
-          {info && (
+          {info && !inTopBar && (
             <span className="text-muted-foreground truncate text-lg font-medium">{info}</span>
           )}
         </div>

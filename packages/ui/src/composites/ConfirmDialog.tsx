@@ -1,31 +1,16 @@
 import { useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '../lib/cn';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../alert-dialog';
-import { Input } from '../input';
-import { Label } from '../label';
+import { Button } from '../uab/primitives/Button';
+import { Dialog } from '../uab/primitives/overlay';
 
 type Tone = 'default' | 'destructive' | 'primary';
-
-const TONE_BADGE: Record<'default' | 'destructive', string> = {
-  destructive: 'bg-destructive/10 text-destructive',
-  default: 'bg-primary/10 text-primary',
-};
 
 export interface ConfirmDialogProps {
   open: boolean;
   onOpenChange?: (open: boolean) => void;
   onClose?: () => void;
-  title: ReactNode;
+  title: string;
+  /** What is lost and what is not: visible text, since it is a consequence the person must read. */
   description?: ReactNode;
   footnote?: ReactNode;
   confirmLabel?: string;
@@ -36,12 +21,14 @@ export interface ConfirmDialogProps {
   loading?: boolean;
   isPending?: boolean;
   confirmDisabled?: boolean;
+  /** The person must type this text to enable the confirm button. */
   requireTyped?: string;
   icon?: LucideIcon;
   dismissable?: boolean;
   onConfirm: () => void | Promise<void>;
 }
 
+/** The template confirmation dialog (alert dialog): Cancel and a confirm button, optionally a typed confirmation. */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -58,93 +45,64 @@ export function ConfirmDialog({
   isPending = false,
   confirmDisabled = false,
   requireTyped,
-  icon: Icon,
   dismissable = true,
   onConfirm,
 }: ConfirmDialogProps) {
   const [typed, setTyped] = useState('');
   const busy = loading || isPending;
   const resolvedTone = variant ?? tone ?? 'default';
-  const isDestructive = resolvedTone === 'destructive';
   const canConfirm = !requireTyped || typed === requireTyped;
 
-  const requestChange = (next: boolean) => {
-    if (busy && !next) return;
-    if (!next && !dismissable) return;
-    if (!next) setTyped('');
-    onOpenChange?.(next);
-    if (!next) onClose?.();
+  const close = () => {
+    if (busy || !dismissable) return;
+    setTyped('');
+    onOpenChange?.(false);
+    onClose?.();
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={requestChange}>
-      <AlertDialogContent className="gap-5 border-0 p-5 shadow-sm">
-        <AlertDialogHeader className="space-y-2 text-left">
-          <div className={cn(Icon && 'flex items-start gap-3')}>
-            {Icon && (
-              <span
-                className={cn(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-                  TONE_BADGE[isDestructive ? 'destructive' : 'default'],
-                )}
-              >
-                <Icon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-              </span>
-            )}
-            <div className="space-y-2">
-              <AlertDialogTitle>{title}</AlertDialogTitle>
-              {(description || footnote) && (
-                <div className="space-y-1">
-                  {description && (
-                    <AlertDialogDescription className="text-foreground">
-                      {description}
-                    </AlertDialogDescription>
-                  )}
-                  {footnote && <p className="text-muted-foreground text-lg">{footnote}</p>}
-                </div>
-              )}
-            </div>
-          </div>
-        </AlertDialogHeader>
-
-        {requireTyped && (
-          <div className="space-y-1.5">
-            <Label htmlFor="confirm-typed" className="text-muted-foreground text-lg">
-              Type <code className="text-foreground font-mono">{requireTyped}</code> to confirm
-            </Label>
-            <Input
-              id="confirm-typed"
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              autoComplete="off"
-              autoFocus
-            />
-          </div>
-        )}
-
-        <AlertDialogFooter className="gap-1.5 sm:space-x-0">
-          <AlertDialogCancel className="border-muted-foreground/40 h-7" disabled={busy}>
+    <Dialog
+      open={open}
+      onClose={close}
+      title={title}
+      size="sm"
+      role="alertdialog"
+      footer={
+        <>
+          <Button onClick={close} disabled={busy} data-autofocus>
             {cancelLabel}
-          </AlertDialogCancel>
-          <AlertDialogAction
+          </Button>
+          <Button
+            variant={resolvedTone === 'destructive' ? 'danger' : 'primary'}
             disabled={busy || confirmDisabled || !canConfirm}
-            onClick={(e) => {
-              e.preventDefault();
+            onClick={() => {
               void (async () => {
                 await onConfirm();
                 setTyped('');
               })();
             }}
-            className={cn(
-              'h-7',
-              isDestructive &&
-                'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive',
-            )}
           >
-            {busy ? loadingLabel : (confirmLabel ?? (isDestructive ? 'Delete' : 'Confirm'))}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            {busy ? loadingLabel : (confirmLabel ?? 'Confirm')}
+          </Button>
+        </>
+      }
+    >
+      {description && <div className="uab-confirm-text">{description}</div>}
+      {requireTyped && (
+        <div className="uab-form-field">
+          <label className="uab-field-label" htmlFor="confirm-typed">
+            Type <strong>{requireTyped}</strong> to confirm
+          </label>
+          <input
+            id="confirm-typed"
+            className="uab-input"
+            value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+            autoComplete="off"
+          />
+        </div>
+      )}
+      {footnote && <p className="uab-muted uab-small">{footnote}</p>}
+    </Dialog>
   );
 }

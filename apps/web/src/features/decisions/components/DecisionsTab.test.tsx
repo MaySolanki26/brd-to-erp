@@ -35,7 +35,6 @@ describe('DecisionsTab', () => {
     it('shows loading placeholders first', () => {
       api.get.mockReturnValue(new Promise(() => {}));
       view();
-      expect(screen.getByRole('heading', { name: 'Decisions' })).toBeInTheDocument();
       expect(screen.queryByRole('article')).not.toBeInTheDocument();
     });
 

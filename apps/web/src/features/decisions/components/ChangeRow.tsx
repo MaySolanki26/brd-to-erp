@@ -19,7 +19,7 @@ export function ChangeRow({ change }: { change: DecisionChangeDto }) {
   const descriptionChanged = (change.before.description ?? '') !== (change.after.description ?? '');
 
   return (
-    <li className="space-y-1 rounded-md border border-border p-3 text-sm">
+    <li className="uab-panel flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline">{KIND_LABELS[change.kind]}</Badge>
         <span className="font-medium">{change.title}</span>
@@ -29,7 +29,6 @@ export function ChangeRow({ change }: { change: DecisionChangeDto }) {
         <StatusBadge
           label={STATUS_LABELS[change.before.status]}
           tone={STATUS_TONES[change.before.status]}
-          size="xs"
         />
         {statusChanged ? (
           <>
@@ -37,7 +36,6 @@ export function ChangeRow({ change }: { change: DecisionChangeDto }) {
             <StatusBadge
               label={STATUS_LABELS[change.after.status]}
               tone={STATUS_TONES[change.after.status]}
-              size="xs"
             />
           </>
         ) : (

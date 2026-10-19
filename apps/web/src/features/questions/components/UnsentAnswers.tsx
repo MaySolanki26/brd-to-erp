@@ -1,5 +1,5 @@
 import { Copy, X } from 'lucide-react';
-import { Button, toast } from '@brd/ui';
+import { Button, confirmDelete, toast } from '@brd/ui';
 
 export interface UnsentAnswer {
   questionId: string;
@@ -56,7 +56,14 @@ export function UnsentAnswers({ items, onDiscard }: UnsentAnswersProps) {
                 variant="ghost"
                 size="sm"
                 aria-label={`Discard your text for: ${item.questionText}`}
-                onClick={() => onDiscard(item.questionId)}
+                onClick={() =>
+                  confirmDelete({
+                    title: 'Discard your answer?',
+                    message: 'Your unsent text is lost. The question stays resolved.',
+                    confirmLabel: 'Discard draft',
+                    onConfirm: () => onDiscard(item.questionId),
+                  })
+                }
               >
                 <X className="mr-1 h-3 w-3" />
                 Discard

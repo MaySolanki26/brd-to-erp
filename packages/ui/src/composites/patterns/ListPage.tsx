@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { PageShell, PageShellBody } from '../PageShell';
-import { ActionBar } from '../ActionBar';
+import { useSetPageHeader } from '../app-shell/PageHeader';
 import { InformativeBar } from '../InformativeBar';
 import { PageLoader } from '../PageLoader';
 import { PageError } from '../PageError';
 import { EmptyState } from '../EmptyState';
 import { NoAccess } from '../NoAccess';
+import { ViewBar, type ViewTab } from '../ViewBar';
 
 type ListPageState = 'loading' | 'empty' | 'error' | 'no-access' | 'ready';
 
@@ -15,15 +15,21 @@ export interface ListPageProps {
   /** Shown when `state` is "ready". */
   children: ReactNode;
 
-  // Header: an InformativeBar when `title` is set, otherwise an ActionBar
-  title?: ReactNode;
-  info?: ReactNode;
-  actionBarChildren?: ReactNode;
+  /** Page title in the top bar; `info` is its ⓘ description. */
+  title?: string;
+  info?: string;
+  /** Saved views as underline tabs. Without it, one tab named `viewLabel` (or the title) is shown. */
+  views?: ViewTab[];
+  activeView?: string;
+  onViewChange?: (id: string) => void;
+  viewLabel?: string;
+  /** Export and the primary action, at the right of line 1. */
   actionBarRight?: ReactNode;
+  actionBarChildren?: ReactNode;
 
-  /** Search and filters. Stays visible in every state so filters can be cleared. */
+  /** A custom tools line (search, filters) for lists that do not use DataTable. */
   toolbar?: ReactNode;
-  /** Replaces the default spinner while loading, e.g. a table skeleton. */
+  /** Replaces the default skeleton while loading. */
   loadingFallback?: ReactNode;
   /** Pagination or other content below the list; shown only when ready. */
   footer?: ReactNode;
@@ -48,13 +54,21 @@ export interface ListPageProps {
   className?: string;
 }
 
+/**
+ * The template list page: title in the top bar, line 1 = view tabs + actions, line 2 = tools,
+ * then the table on a white surface that runs edge to edge. Every state is handled here.
+ */
 export function ListPage({
   state,
   children,
   title,
   info,
-  actionBarChildren,
+  views,
+  activeView,
+  onViewChange,
+  viewLabel,
   actionBarRight,
+  actionBarChildren,
   toolbar,
   loadingFallback,
   footer,
@@ -68,42 +82,55 @@ export function ListPage({
   emptyAction,
   noAccessTitle,
   noAccessDescription,
-  className,
 }: ListPageProps) {
+  const inTopBar = useSetPageHeader(title, info);
+  const tabs = views ?? [{ id: 'all', name: viewLabel ?? title ?? 'All' }];
+
   return (
-    <PageShell className={className}>
-      {title ? (
-        <InformativeBar title={title} info={info}>
-          {actionBarRight}
-        </InformativeBar>
-      ) : (
-        (actionBarChildren || actionBarRight) && (
-          <ActionBar bordered right={actionBarRight}>
-            {actionBarChildren}
-          </ActionBar>
-        )
-      )}
-      <PageShellBody padded scroll>
-        {toolbar}
-        {state === 'loading' && (loadingFallback ?? <PageLoader />)}
-        {state === 'error' && (
-          <PageError message={errorMessage} description={errorDescription} onRetry={onRetry} />
+    <div className="uab-page uab-page-resource">
+      <div className="uab-page-main">
+        {!inTopBar && title && <InformativeBar title={title} info={info} />}
+        <ViewBar
+          views={tabs}
+          activeId={activeView ?? tabs[0]?.id ?? 'all'}
+          onSelect={onViewChange ?? (() => undefined)}
+          label={`${title ?? 'List'} views`}
+          actions={
+            actionBarRight || actionBarChildren ? (
+              <>
+                {actionBarChildren}
+                {actionBarRight}
+              </>
+            ) : undefined
+          }
+        />
+        {toolbar && <div className="uab-view-tools uab-view-tools-row">{toolbar}</div>}
+        {state === 'ready' ? (
+          <>
+            {children}
+            {footer}
+          </>
+        ) : (
+          <div className="uab-content-surface">
+            {state === 'loading' && (loadingFallback ?? <PageLoader />)}
+            {state === 'error' && (
+              <PageError message={errorMessage} description={errorDescription} onRetry={onRetry} />
+            )}
+            {state === 'no-access' && (
+              <NoAccess title={noAccessTitle} description={noAccessDescription} />
+            )}
+            {state === 'empty' && (
+              <EmptyState
+                title={emptyTitle}
+                description={emptyDescription}
+                icon={emptyIcon}
+                action={emptyAction}
+              />
+            )}
+          </div>
         )}
-        {state === 'no-access' && (
-          <NoAccess title={noAccessTitle} description={noAccessDescription} />
-        )}
-        {state === 'empty' && (
-          <EmptyState
-            title={emptyTitle}
-            description={emptyDescription}
-            icon={emptyIcon}
-            action={emptyAction}
-          />
-        )}
-        {state === 'ready' && children}
-        {state === 'ready' && footer}
-      </PageShellBody>
+      </div>
       {overlays}
-    </PageShell>
+    </div>
   );
 }

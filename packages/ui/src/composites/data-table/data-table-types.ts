@@ -7,10 +7,16 @@ export interface DataTableColumnDef<TData> {
   id: string;
   header: string;
   cell?: (row: TData) => ReactNode;
+  /** A minimum width in px; spare table width is shared across the data columns. */
   width?: number | string;
+  /** Ignored: every table column is left-aligned, so each value starts under its header. */
   align?: 'left' | 'center' | 'right';
   sortable?: boolean;
   sortKey?: string;
+  /** `date` shows the value as "16 Oct, 2026" with the full value on hover. Default `text`. */
+  kind?: 'text' | 'date';
+  /** False keeps the column out of the Columns menu (a title column, for example). Default true. */
+  canHide?: boolean;
 }
 
 /* ── Sorting ────────────────────────────────────────── */
@@ -60,11 +66,17 @@ export type DataTableFilterValues = Record<string, string>;
 
 export interface RowAction<TData> {
   key: string;
-  label: string;
-  icon?: LucideIcon;
+  /** A fixed label, or one that depends on the row ("Deactivate" or "Reactivate"). */
+  label: string | ((row: TData) => string);
+  /** Icon name from the template icon set, e.g. "eye" or "pencil". */
+  icon?: string;
+  /** Shown as an icon button in the Actions column; the others go into the "More" menu. */
+  quick?: boolean;
   onClick: (row: TData) => void;
   destructive?: boolean;
   hidden?: (row: TData) => boolean;
+  /** Greys the action out with this reason in its tooltip. */
+  disabledReason?: (row: TData) => string | undefined;
 }
 
 /* ── DataTable props ────────────────────────────────── */
@@ -73,6 +85,10 @@ export interface DataTableProps<TData> {
   columns: DataTableColumnDef<TData>[];
   data: TData[];
   getRowId?: (row: TData) => string;
+  /** Accessible name of the table. */
+  ariaLabel?: string;
+  /** Singular and plural nouns for the footer ("1–25 of 55 customers"). Default "item" / "items". */
+  noun?: { one: string; other: string };
 
   // States
   loading?: boolean;
@@ -99,23 +115,30 @@ export interface DataTableProps<TData> {
   filters?: DataTableFilterDef[];
   filterValues?: DataTableFilterValues;
   onFilterChange?: (id: string, value: string) => void;
+  /** Receives every filter at once when the person presses Apply. Without it, `onFilterChange` is called per changed filter. */
+  onApplyFilters?: (values: DataTableFilterValues) => void;
   onClearFilters?: () => void;
+
+  // Columns the person hides in the Columns menu. Controlled, so the page can remember them.
+  hiddenColumns?: string[];
+  onHiddenColumnsChange?: (ids: string[]) => void;
 
   // Selection
   selectable?: boolean;
   selected?: Set<string>;
   onSelectionChange?: (selected: Set<string>) => void;
+  /** Buttons at the right end of the tools line when no rows are selected, e.g. "Add context note". */
+  toolbarActions?: ReactNode;
+  /** Shown at the right end of the tools line while rows are selected, e.g. "Change status" or "Export selected". */
+  bulkActions?: ReactNode;
 
   // Row actions
   rowActions?: RowAction<TData>[];
 
   // Row click
   onRowClick?: (row: TData) => void;
+  /** The row whose details are open (highlighted). */
+  activeRowId?: string;
   /** Extra classes for a row, e.g. `row-attention` to highlight rows that need a look. */
   rowClassName?: (row: TData) => string | undefined;
-
-  // Styling
-  className?: string;
-  stickyHeader?: boolean;
-  compact?: boolean;
 }

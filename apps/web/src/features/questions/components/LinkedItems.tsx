@@ -7,13 +7,7 @@ import { STATUS_LABELS, STATUS_TONES } from '@/features/knowledge/knowledge-labe
 import { KIND_LABELS } from '../question-labels';
 
 /** The items an answer would affect, shown on the question so the person knows what they decide. */
-export function LinkedItems({
-  projectId,
-  items,
-}: {
-  projectId: string;
-  items: LinkedItemDto[];
-}) {
+export function LinkedItems({ projectId, items }: { projectId: string; items: LinkedItemDto[] }) {
   const [openChunkId, setOpenChunkId] = useState<string | null>(null);
   if (items.length === 0) return null;
   return (
@@ -24,11 +18,7 @@ export function LinkedItems({
           <li key={`${item.kind}:${item.id}`} className="flex flex-wrap items-center gap-2 text-sm">
             <Badge variant="outline">{KIND_LABELS[item.kind]}</Badge>
             <span className="font-medium">{item.title}</span>
-            <StatusBadge
-              label={STATUS_LABELS[item.status]}
-              tone={STATUS_TONES[item.status]}
-              size="xs"
-            />
+            <StatusBadge label={STATUS_LABELS[item.status]} tone={STATUS_TONES[item.status]} />
             <SourceLink source={item.source} onOpen={setOpenChunkId} />
           </li>
         ))}

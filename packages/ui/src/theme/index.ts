@@ -6,4 +6,15 @@ export {
   type ThemePreference,
   type ResolvedMode,
 } from './theme-provider';
-export { ThemeToggle } from './theme-toggle';
+export {
+  DEFAULT_PALETTE_ID,
+  PRESET_PALETTES,
+  applyPalette,
+  contrast,
+  derivePalette,
+  findPalette,
+  isHex,
+  type DerivedPalette,
+  type Palette,
+} from './palette';
+export { PHONE, TABLET, useMedia } from '../uab/lib/useMedia';

@@ -1,6 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ErrorBoundary, ThemeProvider, ToastProvider, TooltipProvider } from '@brd/ui';
+import { ConfirmHost, ErrorBoundary, ThemeProvider, ToastProvider } from '@brd/ui';
 import { queryClient } from '@/lib/query-client';
 import { AuthProvider } from '@/providers/auth-provider';
 import { router } from '@/router';
@@ -12,9 +12,8 @@ export function App() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <ToastProvider>
-              <TooltipProvider>
-                <RouterProvider router={router} />
-              </TooltipProvider>
+              <RouterProvider router={router} />
+              <ConfirmHost />
             </ToastProvider>
           </AuthProvider>
         </QueryClientProvider>

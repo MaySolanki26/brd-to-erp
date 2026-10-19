@@ -1,123 +1,88 @@
-import type { ReactNode, FormEvent } from 'react';
-import { cn } from '../../lib/cn';
-import { Button } from '../../button';
-import { PageShell, PageShellBody } from '../PageShell';
+import type { FormEvent, ReactNode } from 'react';
+import { Button } from '../../uab/primitives/Button';
+import { useSetPageHeader } from '../app-shell/PageHeader';
 import { InformativeBar } from '../InformativeBar';
 import { PageLoader } from '../PageLoader';
 import { PageError } from '../PageError';
 import { NoAccess } from '../NoAccess';
 
 type FormPageState = 'loading' | 'error' | 'no-access' | 'ready';
-type FormPageSize = 'sm' | 'md' | 'lg' | 'xl';
-
-const sizeMap: Record<FormPageSize, string> = {
-  sm: 'max-w-lg',
-  md: 'max-w-2xl',
-  lg: 'max-w-4xl',
-  xl: 'max-w-6xl',
-};
 
 export interface FormPageProps {
   state: FormPageState;
   children: ReactNode;
-
-  // Header
-  title?: ReactNode;
+  title?: string;
+  /** The ⓘ description next to the title. */
+  info?: string;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onCancel?: () => void;
   onBack?: () => void;
   badge?: ReactNode;
   headerRight?: ReactNode;
-
-  // Form
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  onCancel?: () => void;
   submitLabel?: string;
   cancelLabel?: string;
   submitting?: boolean;
   submitDisabled?: boolean;
-  size?: FormPageSize;
-
-  // Error
+  /** Kept for compatibility; the form grid decides how many columns fit. */
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   errorMessage?: string;
   errorDescription?: string;
   onRetry?: () => void;
-
-  // NoAccess
   noAccessTitle?: string;
   noAccessDescription?: string;
-
   className?: string;
 }
 
+/** A full-page form: fields flow in the form grid; Cancel and Save sit in a footer at the bottom. */
 export function FormPage({
   state,
   children,
   title,
+  info,
+  onSubmit,
+  onCancel,
   onBack,
   badge,
   headerRight,
-  onSubmit,
-  onCancel,
   submitLabel = 'Save',
   cancelLabel = 'Cancel',
   submitting = false,
   submitDisabled = false,
-  size = 'md',
   errorMessage,
   errorDescription,
   onRetry,
   noAccessTitle,
   noAccessDescription,
-  className,
 }: FormPageProps) {
+  const inTopBar = useSetPageHeader(title, info);
+
   return (
-    <PageShell className={className}>
-      <InformativeBar title={title} onBack={onBack} badge={badge}>
-        {headerRight}
-      </InformativeBar>
-
-      {state === 'loading' && (
-        <PageShellBody scroll>
-          <PageLoader />
-        </PageShellBody>
-      )}
-
-      {state === 'error' && (
-        <PageShellBody scroll>
-          <PageError
-            variant="full"
-            message={errorMessage}
-            description={errorDescription}
-            onRetry={onRetry}
-          />
-        </PageShellBody>
-      )}
-
-      {state === 'no-access' && (
-        <PageShellBody scroll>
-          <NoAccess variant="full" title={noAccessTitle} description={noAccessDescription} />
-        </PageShellBody>
-      )}
-
-      {state === 'ready' && (
-        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
-          <PageShellBody padded scroll>
-            <div className={cn('mx-auto w-full', sizeMap[size])}>
-              {children}
-            </div>
-          </PageShellBody>
-
-          <div className="border-border bg-surface flex shrink-0 items-center justify-end gap-3 border-t px-5 py-3">
-            {onCancel && (
-              <Button type="button" variant="outline" size="sm" onClick={onCancel}>
-                {cancelLabel}
+    <div className="uab-page">
+      <div className="uab-page-main">
+        {!inTopBar && title && (
+          <InformativeBar title={title} onBack={onBack} badge={badge}>
+            {headerRight}
+          </InformativeBar>
+        )}
+        {state === 'loading' && <PageLoader />}
+        {state === 'error' && (
+          <PageError message={errorMessage} description={errorDescription} onRetry={onRetry} />
+        )}
+        {state === 'no-access' && (
+          <NoAccess title={noAccessTitle} description={noAccessDescription} />
+        )}
+        {state === 'ready' && (
+          <form onSubmit={onSubmit} noValidate>
+            <div className="uab-form-grid">{children}</div>
+            <div className="uab-form-actions">
+              {onCancel && <Button onClick={onCancel}>{cancelLabel}</Button>}
+              <Button variant="primary" type="submit" disabled={submitDisabled || submitting}>
+                {submitting ? 'Saving…' : submitLabel}
               </Button>
-            )}
-            <Button type="submit" size="sm" disabled={submitDisabled || submitting}>
-              {submitting ? 'Saving\u2026' : submitLabel}
-            </Button>
-          </div>
-        </form>
-      )}
-    </PageShell>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
   );
 }

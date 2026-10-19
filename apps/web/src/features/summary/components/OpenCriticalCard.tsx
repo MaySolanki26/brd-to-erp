@@ -14,13 +14,13 @@ export function OpenCriticalCard({ projectId, onReview }: OpenCriticalCardProps)
   return (
     <section
       aria-label="Open critical questions"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"
+      className="uab-panel flex flex-wrap items-center justify-between gap-3"
     >
       {counts.isPending && <Skeleton className="h-6 w-56" />}
       {counts.isError && (
-        <p className="text-sm text-muted-foreground">
+        <p className="uab-muted">
           Could not load the question count.{' '}
-          <Button variant="link" className="h-auto p-0" onClick={() => void counts.refetch()}>
+          <Button variant="link" onClick={() => void counts.refetch()}>
             Retry
           </Button>
         </p>
@@ -30,15 +30,15 @@ export function OpenCriticalCard({ projectId, onReview }: OpenCriticalCardProps)
           <div className="flex items-center gap-3">
             <OctagonAlert className="h-6 w-6 text-destructive" aria-hidden />
             <div>
-              <p className="text-2xl font-semibold" data-testid="critical-count">
+              <p className="uab-stat-value" data-testid="critical-count">
                 {counts.data.openCritical}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="uab-muted">
                 open critical question{counts.data.openCritical === 1 ? '' : 's'}
               </p>
             </div>
           </div>
-          <Button size="sm" onClick={onReview}>
+          <Button variant="primary" onClick={onReview}>
             Review critical questions
           </Button>
         </>
@@ -46,7 +46,7 @@ export function OpenCriticalCard({ projectId, onReview }: OpenCriticalCardProps)
       {counts.isSuccess && counts.data.openCritical === 0 && (
         <div className="flex items-center gap-3">
           <CircleCheck className="h-6 w-6 text-success" aria-hidden />
-          <p className="text-sm">No open critical questions.</p>
+          <p>No open critical questions.</p>
         </div>
       )}
     </section>

@@ -8,9 +8,10 @@
  * (--background, --primary, ...) that the Tailwind preset and styles.css read.
  * Components use semantic tokens through Tailwind utilities, never primitives.
  *
- * Type scale note: the Tailwind font sizes are intentionally shifted
- * (text-sm = 11px, text-lg = 13px, text-2xl = 16px). Snippets copied from
- * the Tailwind docs will render at a different size.
+ * Type scale note: the product uses exactly three text sizes (UAB owner rule 8):
+ * primary 18px, secondary 16px, supportive 13px. Every Tailwind text-* size maps to one
+ * of them (text-xs..text-xl = 13px, text-2xl = 16px, text-3xl and up = 18px), so snippets
+ * copied from the Tailwind docs will render at one of these three sizes.
  */
 
 :root {
@@ -33,18 +34,18 @@
   /* ── Semantic colors (light) ───────────────────────── */
   --color-bg: var(--white);
   --color-surface: var(--white);
-  --color-text: 28 29 33;
-  --color-text-muted: 99 106 120;
-  --color-border: var(--gray-200);
-  --color-muted: var(--gray-100);
+  --color-text: 29 29 36;
+  --color-text-muted: 107 107 122;
+  --color-border: 228 228 234;
+  --color-muted: 239 239 243;
   --color-accent: var(--gray-100);
   --color-accent-text: var(--gray-700);
   --color-card: var(--white);
   --color-card-text: var(--gray-700);
-  --color-primary: var(--indigo-600);
+  --color-primary: 91 71 199;
   --color-primary-contrast: var(--white);
-  --color-primary-light: var(--indigo-50);
-  --color-focus-ring: var(--indigo-600);
+  --color-primary-light: 243 240 253;
+  --color-focus-ring: 91 71 199;
 
   --color-danger: 220 38 38;
   --color-danger-contrast: var(--white);
@@ -93,9 +94,9 @@
   --tone-info-bg: 239 246 255;
   --tone-info-fg: 29 78 216;
   --tone-info-border: 191 219 254;
-  --tone-brand-bg: 238 242 255;
-  --tone-brand-fg: 67 56 202;
-  --tone-brand-border: 199 210 254;
+  --tone-brand-bg: 243 240 253;
+  --tone-brand-fg: 74 55 181;
+  --tone-brand-border: 215 208 245;
   --tone-neutral-bg: 249 250 251;
   --tone-neutral-fg: 75 85 99;
   --tone-neutral-border: 229 231 235;
@@ -103,9 +104,30 @@
   /* Component tokens */
   --overlay: 0 0 0;
   --scrollbar-thumb: 0 0 0;
-  --sidebar-bg: var(--color-surface);
-  --table-row-hover: var(--color-muted);
+  --sidebar-bg: 247 247 248;
+  --sidebar-hover: 237 237 240;
+  --table-row-hover: 247 247 248;
+  --grid-header-bg: var(--color-surface);
+  --empty-value-fg: 205 206 208;
   --skeleton: var(--color-muted);
+
+  /* Icon rail (default skin: soft charcoal) */
+  --rail-bg: 36 37 45;
+  --rail-icon: 170 170 183;
+  --rail-selected-bg: 59 53 79;
+  --rail-selected-icon: 207 191 255;
+
+  /* Geometry */
+  --rail-width: 60px;
+  --sidebar-width: 240px;
+  --sidebar-min: 200px;
+  --sidebar-max: 360px;
+  --sidebar-row-h: 30px;
+  --topbar-h: 56px;
+  --drawer-width: 560px;
+  --control-h: 40px;
+  --control-h-compact: 32px;
+  --control-h-touch: 44px;
 
   /* ── Legacy aliases (read by the preset and styles.css) ── */
   --background: var(--color-bg);
@@ -166,20 +188,24 @@
   /* ── Typography ────────────────────────────────────── */
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --text-xxs: 9px;
-  --text-xs: 10px;
-  --text-sm: 11px;
-  --text-md: 12px;
-  --text-lg: 13px;
-  --text-xl: 14px;
-  --text-2xl: 16px;
-  --text-3xl: 18px;
-  --text-4xl: 20px;
-  --text-5xl: 24px;
-  --text-6xl: 30px;
-  --text-7xl: 36px;
-  --text-8xl: 48px;
-  --text-9xl: 96px;
+  /* Three sizes only: primary 18, secondary 16, supportive 13. */
+  --fs-primary: 18px;
+  --fs-secondary: 16px;
+  --fs-supportive: 13px;
+  --text-xxs: var(--fs-supportive);
+  --text-xs: var(--fs-supportive);
+  --text-sm: var(--fs-supportive);
+  --text-md: var(--fs-supportive);
+  --text-lg: var(--fs-supportive);
+  --text-xl: var(--fs-supportive);
+  --text-2xl: var(--fs-secondary);
+  --text-3xl: var(--fs-primary);
+  --text-4xl: var(--fs-primary);
+  --text-5xl: var(--fs-primary);
+  --text-6xl: var(--fs-primary);
+  --text-7xl: var(--fs-primary);
+  --text-8xl: var(--fs-primary);
+  --text-9xl: var(--fs-primary);
   --leading-tight: 1.25;
   --leading-normal: 1.5;
   --leading-relaxed: 1.625;
@@ -203,20 +229,20 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --color-bg: var(--gray-950);
-  --color-surface: var(--gray-900);
-  --color-text: 229 231 235;
-  --color-text-muted: 156 163 175;
-  --color-border: 55 65 81;
-  --color-muted: 31 41 55;
+  --color-bg: 20 20 25;
+  --color-surface: 28 28 35;
+  --color-text: 236 236 241;
+  --color-text-muted: 154 154 170;
+  --color-border: 46 46 56;
+  --color-muted: 36 36 45;
   --color-accent: 31 41 55;
   --color-accent-text: 229 231 235;
-  --color-card: var(--gray-900);
+  --color-card: 28 28 35;
   --color-card-text: 229 231 235;
-  --color-primary: var(--indigo-400);
-  --color-primary-contrast: var(--gray-950);
-  --color-primary-light: var(--indigo-950);
-  --color-focus-ring: var(--indigo-400);
+  --color-primary: 168 149 255;
+  --color-primary-contrast: 20 20 25;
+  --color-primary-light: 46 40 70;
+  --color-focus-ring: 168 149 255;
 
   --color-danger: 248 113 113;
   --color-danger-contrast: var(--gray-950);
@@ -272,6 +298,11 @@
 
   --scrollbar-thumb: 255 255 255;
 
+  --sidebar-bg: 15 21 35;
+  --sidebar-hover: 31 41 55;
+  --table-row-hover: 22 30 46;
+  --empty-value-fg: 70 78 94;
+
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-md: 0 2px 8px rgb(0 0 0 / 0.35);
   --shadow-lg: 0 4px 16px rgb(0 0 0 / 0.4);
@@ -279,6 +310,30 @@
   --shadow-overlay: 0 8px 24px -6px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.45);
   --shadow-pop: 0 4px 16px -2px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
   --shadow-modal: 0 24px 60px -12px rgb(0 0 0 / 0.65), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+}
+
+/* Icon rail skins (set data-rail-skin on <html>; soft charcoal is the default). */
+:root[data-rail-skin='midnightNavy'] {
+  --rail-bg: 28 37 53;
+}
+
+:root[data-rail-skin='graphiteBlack'] {
+  --rail-bg: 21 22 26;
+}
+
+:root[data-rail-skin='softLight'] {
+  --rail-bg: 236 236 241;
+  --rail-icon: 75 85 99;
+  --rail-selected-bg: 221 221 232;
+  --rail-selected-icon: 67 56 202;
+}
+
+/* Touch screens: every compact control grows to the touch size. */
+@media (pointer: coarse) {
+  :root {
+    --control-h: var(--control-h-touch);
+    --control-h-compact: var(--control-h-touch);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

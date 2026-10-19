@@ -27,7 +27,6 @@ export function VersionHistoryDrawer({
       onOpenChange={(open) => !open && onClose()}
       title={document ? `Version history: ${document.title}` : 'Version history'}
       description="Every version ever uploaded for this document, newest first."
-      size="lg"
     >
       {detail.isPending && <PageLoader />}
       {detail.isError && (

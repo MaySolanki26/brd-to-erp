@@ -102,15 +102,11 @@ export function QuestionCard({
   };
 
   return (
-    <article
-      aria-label={question.text}
-      className="space-y-3 rounded-lg border border-border bg-surface p-4"
-    >
+    <article aria-label={question.text} className="uab-panel flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge
           label={PRIORITY_LABELS[question.priority]}
           tone={PRIORITY_TONES[question.priority]}
-          size="xs"
         />
         <Badge variant="outline">{REASON_LABELS[question.reason]}</Badge>
         {!open && <Badge variant="secondary">{QUESTION_STATUS_LABELS[question.status]}</Badge>}
@@ -127,7 +123,7 @@ export function QuestionCard({
       <LinkedItems projectId={projectId} items={question.linkedItems} />
 
       {question.answer && (
-        <div className="rounded-md bg-muted/40 p-3 text-sm">
+        <div className="uab-inline-alert uab-tone-neutral">
           <p className="mb-1 text-xs font-medium text-muted-foreground">
             Answered by {question.answer.answeredBy.name} on{' '}
             {formatDate(question.answer.answeredAt)}
@@ -138,7 +134,7 @@ export function QuestionCard({
       )}
 
       {question.dismissal && (
-        <div className="rounded-md bg-muted/40 p-3 text-sm">
+        <div className="uab-inline-alert uab-tone-neutral">
           <p className="mb-1 text-xs font-medium text-muted-foreground">
             Dismissed on {formatDate(question.dismissal.at)}
           </p>

@@ -90,7 +90,7 @@ describe('SourcesList', () => {
     });
     const row = within(rowOf('Kickoff call'));
     expect(row.getByText('Note')).toBeInTheDocument();
-    expect(row.getByLabelText('No versions')).toHaveTextContent('—');
+    expect(row.getByLabelText('No versions')).toBeInTheDocument();
     expect(row.getByText('Queued')).toBeInTheDocument();
     expect(row.getByText('Could not queue processing.')).toBeInTheDocument();
   });
@@ -108,28 +108,35 @@ describe('SourcesList', () => {
     expect(names[1]).toContain('old.pdf');
   });
 
+  const applyFilter = async (name: string) => {
+    await userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+    await userEvent.click(screen.getByRole('radio', { name }));
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+  };
+
   it('filters by documents or notes and explains an empty result', async () => {
     setup({ documents: [doc()], notes: [] });
-    await userEvent.click(screen.getByRole('button', { name: 'Notes' }));
-    expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute('aria-pressed', 'true');
+    await applyFilter('Notes');
+    expect(screen.getByRole('button', { name: 'Filters, applied' })).toBeInTheDocument();
     expect(screen.getByText('Nothing matches this filter')).toBeInTheDocument();
     expect(screen.queryByText('brd.pdf')).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Documents' }));
+    await applyFilter('Documents');
     expect(screen.getByText('brd.pdf')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'All' }));
+    await applyFilter('All');
     expect(screen.getByText('brd.pdf')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
   });
 
   it('restores the filter from the address, so a shared link shows the same view', () => {
     setup({ documents: [doc()], notes: [note()], initialEntry: '/?sources=notes' });
-    expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Filters, applied' })).toBeInTheDocument();
     expect(screen.queryByText('brd.pdf')).not.toBeInTheDocument();
   });
 
   it('falls back to All for an unknown filter value', () => {
     setup({ documents: [doc()], initialEntry: '/?sources=everything' });
-    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
     expect(screen.getByText('brd.pdf')).toBeInTheDocument();
   });
 
@@ -144,14 +151,7 @@ describe('SourcesList', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Version history for brd.pdf' }));
       expect(onViewVersions).toHaveBeenCalledWith('d1');
-      expect(screen.getByRole('button', { name: /Version history/ })).toHaveTextContent(
-        'Versions (4)',
-      );
-
-      expect(screen.getByRole('link', { name: 'Download brd.pdf' })).toHaveAttribute(
-        'href',
-        '/api/projects/p1/documents/d1/versions/v1/download',
-      );
+      expect(screen.getByRole('button', { name: 'Download brd.pdf' })).toBeInTheDocument();
     });
 
     it('starts a new version and edits a note when the person may add sources', async () => {
@@ -170,7 +170,7 @@ describe('SourcesList', () => {
       expect(screen.queryByRole('button', { name: /Edit note/ })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Reprocess/ })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Version history/ })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Download/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Download/ })).toBeInTheDocument();
     });
 
     it('offers reprocess only for processed or failed documents', () => {

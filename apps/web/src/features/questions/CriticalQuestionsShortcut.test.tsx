@@ -92,7 +92,7 @@ describe('critical questions shortcut', () => {
         '/projects/p1/questions?page=1&pageSize=50&status=OPEN&priority=CRITICAL',
       ),
     );
-    expect(await screen.findByRole('button', { name: 'Reset filters' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Filters, applied' })).toBeInTheDocument();
   });
 
   it('keeps the filter in the address so the view can be shared', async () => {

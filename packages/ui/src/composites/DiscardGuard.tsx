@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { cn } from '../lib/cn';
-import { Button } from '../button';
+import { Button } from '../uab/primitives/Button';
 
 export interface DiscardGuardState {
   requestClose: () => void;
@@ -85,34 +84,25 @@ export function DiscardBar({
   keepLabel = 'Keep editing',
   onKeepEditing,
   onDiscard,
-  size = 'sm',
-  className,
 }: DiscardBarProps) {
   return (
     <>
-      <span
-        role="alert"
-        className={cn(
-          'flex min-w-0 flex-1 items-center gap-2 text-lg text-foreground',
-          className,
-        )}
-      >
-        <AlertTriangle
-          className="h-4 w-4 shrink-0 text-destructive"
-          strokeWidth={1.5}
-          aria-hidden="true"
-        />
-        <span className="truncate">
+      <span role="alert" className="uab-discard-bar">
+        <AlertTriangle size={16} strokeWidth={1.75} aria-hidden="true" focusable={false} />
+        <span className="uab-discard-text">
           {title}
           {description ? (
-            <> <span className="text-muted-foreground">{description}</span></>
+            <>
+              {' '}
+              <span className="uab-muted">{description}</span>
+            </>
           ) : null}
         </span>
       </span>
-      <Button type="button" variant="outline" size={size} autoFocus onClick={onKeepEditing}>
+      <Button data-autofocus onClick={onKeepEditing}>
         {keepLabel}
       </Button>
-      <Button type="button" variant="destructive" size={size} onClick={onDiscard}>
+      <Button variant="danger" onClick={onDiscard}>
         {confirmLabel}
       </Button>
     </>

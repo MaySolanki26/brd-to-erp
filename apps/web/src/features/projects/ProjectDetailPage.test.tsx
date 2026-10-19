@@ -135,7 +135,7 @@ describe('ProjectDetailPage', () => {
     await screen.findByRole('heading', { name: 'Alpha' });
     await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
     expect(await screen.findByText('Mia Analyst')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove Mia Analyst' })).toBeInTheDocument();
   });
 
   it('shows an empty members state', async () => {
@@ -254,9 +254,9 @@ describe('ProjectDetailPage', () => {
     await screen.findByRole('heading', { name: 'Alpha' });
     await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
     expect(await screen.findByText('Olive Owner')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument();
-    expect(screen.getByText('Only owner')).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Role for Olive Owner' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^Remove Olive/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Only owner/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Role for Olive Owner/ })).toBeDisabled();
   });
 
   it('shows the last-owner error from the server next to the table', async () => {
@@ -270,7 +270,9 @@ describe('ProjectDetailPage', () => {
     view();
     await screen.findByRole('heading', { name: 'Alpha' });
     await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
-    await userEvent.click((await screen.findAllByRole('button', { name: 'Remove' }))[0]!);
+    await userEvent.click(
+      (await screen.findAllByRole('button', { name: /^Remove \w+ Owner/ }))[0]!,
+    );
     const dialog = await screen.findByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -294,7 +296,7 @@ describe('ProjectDetailPage', () => {
     view();
     await screen.findByRole('heading', { name: 'Alpha' });
     await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove Mia Analyst' }));
     expect(api.del).not.toHaveBeenCalled();
 
     const dialog = await screen.findByRole('alertdialog');

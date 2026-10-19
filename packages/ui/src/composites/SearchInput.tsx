@@ -3,7 +3,6 @@ import { Search, X } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Input } from '../input';
 import { Button } from '../button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../tooltip';
 
 interface SearchInputProps {
   value: string;
@@ -11,7 +10,8 @@ interface SearchInputProps {
   placeholder?: string;
   className?: string;
   inputClassName?: string;
-  size?: 'sm' | 'default';
+  /** `compact` is the 32px toolbar size (about 220px wide); `default` is the 40px form size. */
+  size?: 'sm' | 'compact' | 'default';
   expandable?: boolean;
   expandedWidthClassName?: string;
   tooltip?: string;
@@ -39,6 +39,7 @@ export function SearchInput({
   onKeyDown,
 }: SearchInputProps) {
   const compact = size === 'sm';
+  const toolbar = size === 'compact';
   const label = ariaLabel ?? placeholder;
   const tooltipLabel = tooltip ?? 'Search';
   const inputRef = useRef<HTMLInputElement>(null);
@@ -129,26 +130,18 @@ export function SearchInput({
             )}
           </>
         ) : (
-          <TooltipProvider>
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={label}
-                  onClick={() => {
-                    setFocused(true);
-                    requestAnimationFrame(() => inputRef.current?.focus());
-                  }}
-                  className="text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center"
-                >
-                  <Search className="h-3.5 w-3.5" strokeWidth={1.5} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" sideOffset={4}>
-                {tooltipLabel}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <button
+            type="button"
+            aria-label={label}
+            data-tooltip={tooltipLabel}
+            onClick={() => {
+              setFocused(true);
+              requestAnimationFrame(() => inputRef.current?.focus());
+            }}
+            className="text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center"
+          >
+            <Search className="h-3.5 w-3.5" strokeWidth={1.5} />
+          </button>
         )}
       </div>
     );
@@ -165,6 +158,7 @@ export function SearchInput({
         aria-hidden
       />
       <Input
+        compact={toolbar}
         type="text"
         value={inner}
         onChange={(e) => setInner(e.target.value)}
@@ -186,7 +180,7 @@ export function SearchInput({
           aria-label="Clear search"
           className={cn(
             'absolute top-1/2 -translate-y-1/2',
-            compact ? 'right-0.5 h-5 w-5' : 'right-1 h-7 w-7',
+            compact ? 'right-0.5 h-5 w-5' : toolbar ? 'right-0.5 h-6 w-6' : 'right-1 h-7 w-7',
           )}
           onClick={() => commitNow('')}
         >

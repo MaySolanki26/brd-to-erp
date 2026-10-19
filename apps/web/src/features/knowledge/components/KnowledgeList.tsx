@@ -17,6 +17,7 @@ import {
   type PagedResult,
 } from '@brd/shared';
 import { errorMessage, isForbidden } from '@/lib/error-message';
+import { useHiddenColumns } from '@/features/shell/hooks/use-hidden-columns';
 import { useDocuments, useNotes } from '@/features/projects/hooks/use-sources';
 import { KNOWLEDGE_PAGE_SIZE, useModuleOptions } from '../hooks/use-knowledge';
 import type { useKnowledgeFilters } from '../hooks/use-knowledge-filters';
@@ -92,6 +93,7 @@ export function KnowledgeList<T extends KnowledgeRow>({
   columns,
 }: KnowledgeListProps<T>) {
   const { filters, update, clear, activeCount } = filterState;
+  const [hiddenColumns, setHiddenColumns] = useHiddenColumns(kind);
   const [openChunkId, setOpenChunkId] = useState<string | null>(null);
   const moduleOptions = useModuleOptions(projectId);
   const sourceFilter = useSourceFilter(projectId);
@@ -115,22 +117,20 @@ export function KnowledgeList<T extends KnowledgeRow>({
     return <NoAccess description={`You do not have access to this project's ${noun}.`} />;
   }
 
-  const changeFilter = (id: string, value: string) => {
-    if (id === 'status') {
-      const status = knowledgeStatusSchema.safeParse(value);
-      update({ status: status.success ? status.data : null });
-    } else if (id === 'module') {
-      update({ moduleId: value || null });
-    } else if (id === 'source') {
-      update({ sourceId: value || null });
-    } else if (id === 'review') {
-      update({ needsReview: value === NEEDS_REVIEW });
-    }
+  // Pressing Apply in the Filters panel sends every filter at once, as one change to the URL.
+  const applyFilters = (values: Record<string, string>) => {
+    const status = knowledgeStatusSchema.safeParse(values.status);
+    update({
+      status: status.success ? status.data : null,
+      moduleId: values.module || null,
+      sourceId: values.source || null,
+      needsReview: values.review === NEEDS_REVIEW,
+    });
   };
 
   const result = query.data;
   return (
-    <div>
+    <>
       <DataTable<T>
         columns={columns(setOpenChunkId)}
         data={result?.items ?? []}
@@ -154,7 +154,9 @@ export function KnowledgeList<T extends KnowledgeRow>({
           source: filters.sourceId ?? '',
           review: filters.needsReview ? NEEDS_REVIEW : '',
         }}
-        onFilterChange={changeFilter}
+        onApplyFilters={applyFilters}
+        hiddenColumns={hiddenColumns}
+        onHiddenColumnsChange={setHiddenColumns}
         onClearFilters={clear}
         rowClassName={(row) => (needsAttention(row) ? 'row-attention' : undefined)}
         emptyIcon={SearchX}
@@ -176,6 +178,6 @@ export function KnowledgeList<T extends KnowledgeRow>({
         chunkId={openChunkId}
         onClose={() => setOpenChunkId(null)}
       />
-    </div>
+    </>
   );
 }

@@ -3,20 +3,16 @@ import { z } from 'zod';
 import type { ContextNoteDto, DocumentDto } from '@brd/shared';
 import {
   Badge,
-  Button,
   ConfirmDialog,
-  EmptyState,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  DataTable,
+  EmptyValue,
+  TruncatedText,
+  type DataTableColumnDef,
+  type RowAction,
 } from '@brd/ui';
 import { FileText } from 'lucide-react';
 import { useUrlState } from '@/hooks/use-url-state';
 import { apiUrl } from '@/lib/api-client';
-import { formatDate } from '../project-labels';
 import { fileKindLabel, formatBytes } from '../source-utils';
 import { SourceStatusBadge } from './SourceStatusBadge';
 
@@ -34,6 +30,8 @@ interface SourcesListProps {
   canAddSource: boolean;
   canReprocess: boolean;
   reprocessing: boolean;
+  /** Buttons at the right end of the tools line, such as "Add context note". */
+  toolbarActions?: React.ReactNode;
   onViewChunks: (documentId: string) => void;
   onViewVersions: (documentId: string) => void;
   onNewVersion: (document: DocumentDto) => void;
@@ -41,158 +39,27 @@ interface SourcesListProps {
   onReprocess: (document: DocumentDto) => void;
 }
 
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'All' },
+const FILTER_OPTIONS = [
   { value: 'documents', label: 'Documents' },
   { value: 'notes', label: 'Notes' },
 ];
+
+const NOUN = { one: 'source', other: 'sources' };
 
 function canRetry(document: DocumentDto): boolean {
   return document.status === 'FAILED' || document.status === 'PROCESSED';
 }
 
-interface DocumentRowProps {
-  projectId: string;
-  document: DocumentDto;
-  canAddSource: boolean;
-  canReprocess: boolean;
-  reprocessing: boolean;
-  onViewChunks: (documentId: string) => void;
-  onViewVersions: (documentId: string) => void;
-  onNewVersion: (document: DocumentDto) => void;
-  onRequestReprocess: (document: DocumentDto) => void;
-}
+const plural = (count: number, word: string): string =>
+  `${String(count)} ${word}${count === 1 ? '' : 's'}`;
 
-function DocumentRow({
-  projectId,
-  document,
-  canAddSource,
-  canReprocess,
-  reprocessing,
-  onViewChunks,
-  onViewVersions,
-  onNewVersion,
-  onRequestReprocess,
-}: DocumentRowProps) {
-  const latest = document.latestVersion;
-  return (
-    <TableRow>
-      <TableCell>
-        <Badge variant="outline">{fileKindLabel(latest.mimeType)}</Badge>
-      </TableCell>
-      <TableCell>
-        <button
-          type="button"
-          className="text-left font-medium hover:underline"
-          onClick={() => onViewChunks(document.id)}
-        >
-          {document.title}
-        </button>
-        <p className="text-xs text-muted-foreground">
-          {formatBytes(latest.sizeBytes)} · {document.chunkCount} chunk
-          {document.chunkCount === 1 ? '' : 's'}
-        </p>
-        {document.failureReason && (
-          <p className="text-xs text-destructive">{document.failureReason}</p>
-        )}
-      </TableCell>
-      <TableCell>v{latest.versionNumber}</TableCell>
-      <TableCell>
-        <SourceStatusBadge status={document.status} />
-      </TableCell>
-      <TableCell>
-        {formatDate(document.createdAt)}
-        <p className="text-xs text-muted-foreground">{document.createdBy.name}</p>
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            aria-label={`Version history for ${document.fileName}`}
-            onClick={() => onViewVersions(document.id)}
-          >
-            Versions ({document.versionCount})
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a
-              href={apiUrl(
-                `/projects/${projectId}/documents/${document.id}/versions/${latest.id}/download`,
-              )}
-              download
-              aria-label={`Download ${document.fileName}`}
-            >
-              Download
-            </a>
-          </Button>
-          {canAddSource && (
-            <Button
-              variant="outline"
-              size="sm"
-              aria-label={`Upload a new version of ${document.fileName}`}
-              onClick={() => onNewVersion(document)}
-            >
-              New version
-            </Button>
-          )}
-          {canReprocess && canRetry(document) && (
-            <Button
-              variant="outline"
-              size="sm"
-              aria-label={`Reprocess ${document.fileName}`}
-              disabled={reprocessing}
-              onClick={() => onRequestReprocess(document)}
-            >
-              Reprocess
-            </Button>
-          )}
-        </div>
-      </TableCell>
-    </TableRow>
+function downloadDocument(projectId: string, document: DocumentDto): void {
+  const link = window.document.createElement('a');
+  link.href = apiUrl(
+    `/projects/${projectId}/documents/${document.id}/versions/${document.latestVersion.id}/download`,
   );
-}
-
-interface NoteRowProps {
-  note: ContextNoteDto;
-  canAddSource: boolean;
-  onEditNote: (note: ContextNoteDto) => void;
-}
-
-function NoteRow({ note, canAddSource, onEditNote }: NoteRowProps) {
-  return (
-    <TableRow>
-      <TableCell>
-        <Badge variant="secondary">Note</Badge>
-      </TableCell>
-      <TableCell>
-        <span className="font-medium">{note.title}</span>
-        <p className="text-xs text-muted-foreground">
-          {note.chunkCount} chunk{note.chunkCount === 1 ? '' : 's'}
-        </p>
-        {note.failureReason && <p className="text-xs text-destructive">{note.failureReason}</p>}
-      </TableCell>
-      <TableCell aria-label="No versions">—</TableCell>
-      <TableCell>
-        <SourceStatusBadge status={note.status} />
-      </TableCell>
-      <TableCell>
-        {formatDate(note.createdAt)}
-        <p className="text-xs text-muted-foreground">{note.createdBy.name}</p>
-      </TableCell>
-      <TableCell className="text-right">
-        {canAddSource && (
-          <Button
-            variant="outline"
-            size="sm"
-            aria-label={`Edit note ${note.title}`}
-            onClick={() => onEditNote(note)}
-          >
-            Edit
-          </Button>
-        )}
-      </TableCell>
-    </TableRow>
-  );
+  link.download = '';
+  link.click();
 }
 
 export function SourcesList({
@@ -202,6 +69,7 @@ export function SourcesList({
   canAddSource,
   canReprocess,
   reprocessing,
+  toolbarActions,
   onViewChunks,
   onViewVersions,
   onNewVersion,
@@ -231,67 +99,161 @@ export function SourcesList({
       .sort((a, b) => b.activity.localeCompare(a.activity));
   }, [documents, notes, filter]);
 
-  return (
-    <div className="space-y-3">
-      <div role="group" aria-label="Filter sources" className="flex gap-1">
-        {FILTERS.map(({ value, label }) => (
-          <Button
-            key={value}
-            size="sm"
-            variant={filter === value ? 'secondary' : 'ghost'}
-            aria-pressed={filter === value}
-            onClick={() => setUrlState({ sources: value })}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
-
-      {rows.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="Nothing matches this filter"
-          description="Try another filter to see more sources."
+  const columns: DataTableColumnDef<Row>[] = [
+    {
+      id: 'type',
+      header: 'Type',
+      width: 90,
+      cell: (row) => (
+        <Badge variant="outline">
+          {row.kind === 'document' ? fileKindLabel(row.document.latestVersion.mimeType) : 'Note'}
+        </Badge>
+      ),
+    },
+    {
+      id: 'name',
+      header: 'Name',
+      width: 300,
+      canHide: false,
+      cell: (row) =>
+        row.kind === 'document' ? (
+          <button type="button" className="uab-link" onClick={() => onViewChunks(row.document.id)}>
+            <TruncatedText text={row.document.title} />
+          </button>
+        ) : (
+          <TruncatedText text={row.note.title} />
+        ),
+    },
+    {
+      id: 'details',
+      header: 'Details',
+      width: 220,
+      cell: (row) => {
+        const failure =
+          row.kind === 'document' ? row.document.failureReason : row.note.failureReason;
+        const summary =
+          row.kind === 'document'
+            ? `${formatBytes(row.document.latestVersion.sizeBytes)} · ${plural(row.document.chunkCount, 'chunk')}`
+            : plural(row.note.chunkCount, 'chunk');
+        return (
+          <div className="min-w-0">
+            <div>{summary}</div>
+            {failure && <TruncatedText text={failure} className="uab-field-error" />}
+          </div>
+        );
+      },
+    },
+    {
+      id: 'version',
+      header: 'Version',
+      width: 90,
+      cell: (row) =>
+        row.kind === 'document' ? (
+          `v${String(row.document.latestVersion.versionNumber)}`
+        ) : (
+          <EmptyValue label="No versions" />
+        ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      width: 140,
+      cell: (row) => (
+        <SourceStatusBadge
+          status={row.kind === 'document' ? row.document.status : row.note.status}
         />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Version</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Uploaded</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) =>
-              row.kind === 'document' ? (
-                <DocumentRow
-                  key={`d-${row.id}`}
-                  projectId={projectId}
-                  document={row.document}
-                  canAddSource={canAddSource}
-                  canReprocess={canReprocess}
-                  reprocessing={reprocessing}
-                  onViewChunks={onViewChunks}
-                  onViewVersions={onViewVersions}
-                  onNewVersion={onNewVersion}
-                  onRequestReprocess={setConfirming}
-                />
-              ) : (
-                <NoteRow
-                  key={`n-${row.id}`}
-                  note={row.note}
-                  canAddSource={canAddSource}
-                  onEditNote={onEditNote}
-                />
-              ),
-            )}
-          </TableBody>
-        </Table>
-      )}
+      ),
+    },
+    {
+      id: 'uploaded',
+      header: 'Uploaded',
+      kind: 'date',
+      width: 140,
+    },
+    {
+      id: 'by',
+      header: 'By',
+      width: 150,
+      cell: (row) =>
+        row.kind === 'document' ? row.document.createdBy.name : row.note.createdBy.name,
+    },
+  ];
+  // Dates come from the row's own record, not a top-level field.
+  const data = rows.map((row) => ({
+    ...row,
+    uploaded: row.kind === 'document' ? row.document.createdAt : row.note.createdAt,
+  }));
+
+  const actions: RowAction<Row>[] = [
+    {
+      key: 'versions',
+      label: (row) =>
+        row.kind === 'document' ? `Version history for ${row.document.fileName}` : 'No versions',
+      icon: 'history',
+      quick: true,
+      hidden: (row) => row.kind !== 'document',
+      onClick: (row) => row.kind === 'document' && onViewVersions(row.document.id),
+    },
+    {
+      key: 'download',
+      label: (row) => (row.kind === 'document' ? `Download ${row.document.fileName}` : 'Download'),
+      icon: 'download',
+      quick: true,
+      hidden: (row) => row.kind !== 'document',
+      onClick: (row) => row.kind === 'document' && downloadDocument(projectId, row.document),
+    },
+    {
+      key: 'edit-note',
+      label: (row) => (row.kind === 'note' ? `Edit note ${row.note.title}` : 'Edit'),
+      icon: 'pencil',
+      quick: true,
+      hidden: (row) => row.kind !== 'note' || !canAddSource,
+      onClick: (row) => row.kind === 'note' && onEditNote(row.note),
+    },
+    {
+      key: 'new-version',
+      label: (row) =>
+        row.kind === 'document'
+          ? `Upload a new version of ${row.document.fileName}`
+          : 'New version',
+      icon: 'upload',
+      quick: true,
+      hidden: (row) => row.kind !== 'document' || !canAddSource,
+      onClick: (row) => row.kind === 'document' && onNewVersion(row.document),
+    },
+    {
+      key: 'reprocess',
+      label: (row) =>
+        row.kind === 'document' ? `Reprocess ${row.document.fileName}` : 'Reprocess',
+      icon: 'reset',
+      quick: true,
+      hidden: (row) => row.kind !== 'document' || !canReprocess || !canRetry(row.document),
+      disabledReason: () => (reprocessing ? 'Working…' : undefined),
+      onClick: (row) => row.kind === 'document' && setConfirming(row.document),
+    },
+  ];
+
+  return (
+    <>
+      <DataTable<(typeof data)[number]>
+        ariaLabel="Sources table"
+        noun={NOUN}
+        columns={columns as DataTableColumnDef<(typeof data)[number]>[]}
+        data={data}
+        getRowId={(row) => `${row.kind}-${row.id}`}
+        filters={[
+          { id: 'sources', label: 'Filter by type', allLabel: 'All', options: FILTER_OPTIONS },
+        ]}
+        filterValues={{ sources: filter === 'all' ? '' : filter }}
+        onApplyFilters={(values) => setUrlState({ sources: (values.sources || 'all') as Filter })}
+        onClearFilters={() => setUrlState({ sources: 'all' })}
+        toolbarActions={toolbarActions}
+        rowActions={actions as RowAction<(typeof data)[number]>[]}
+        emptyIcon={FileText}
+        emptyTitle="Nothing matches this filter"
+        emptyDescription="Try another filter to see more sources."
+        pagination={{ page: 1, pageSize: Math.max(data.length, 1), total: data.length }}
+      />
 
       <ConfirmDialog
         open={confirming !== null}
@@ -305,6 +267,6 @@ export function SourcesList({
           setConfirming(null);
         }}
       />
-    </div>
+    </>
   );
 }

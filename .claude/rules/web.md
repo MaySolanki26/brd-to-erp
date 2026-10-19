@@ -34,3 +34,18 @@
 - Every page and complex component gets a Vitest + Testing Library test.
 - Test user interactions and rendered output, not implementation details.
 - Name test files `*.test.tsx` next to the source file.
+
+## Template rules (UAB owner decisions; full text in `.claude/skills/SKILL.md`, audit in `docs/frontend/template-audit.md`)
+
+- **Source of truth:** the template's own CSS, generated into `packages/ui/src/theme/template.css` with every class prefixed `uab-`. Style with `@brd/ui` components or `uab-*` classes; do not restyle with new Tailwind utilities, and do not copy markup from memory: check the reference app.
+- **Type:** exactly three sizes: primary 18px, secondary 16px, supportive 13px. No other font sizes.
+- **Controls:** buttons, icon buttons, compact inputs and selects are 32px; form inputs and selects 40px. Never set a height on a `Button`; use `size="icon"` and the `compact` prop on `Input`.
+- **Page header:** no breadcrumbs and no title row in the page. The title (and its ⓘ description) is shown in the top bar through the page pattern's `title` and `info`.
+- **Explanatory text** goes in `InfoTip` (ⓘ), not visible sentences. Data, statuses, errors, confirmation consequences and empty-state messages stay visible.
+- **Popups:** no × icon on any dialog or drawer; every popup closes with a footer Cancel. Drawers are one width (560px).
+- **Deleting, removing or discarding** always asks first with `confirmDelete()`; never a one-click delete and never `window.confirm`.
+- **Missing values** use `EmptyValue` ("N/A"); **dates** use `DateText` ("16 Oct, 2026", full value on hover). No raw `toLocaleString` in tables.
+- **Dropdowns:** never a native `<select>`. Use `SelectMenu`, `MultiSelectMenu` and `DatePicker`. Popups are `Dialog`, `Drawer` (through `FormDrawer`), `Popover` and `Menu`; there are no Radix dialog, select or tooltip wrappers any more (tooltips are `data-tooltip`).
+- **Tables:** use `DataTable` (left-aligned columns, dot+text statuses, pinned Actions column, hover-only row checkboxes, frozen pagination). Truncated text reveals itself (`TruncatedText`).
+- **Status** is a dot plus text (`StatusBadge`), never colour alone.
+- **Colour:** semantic tokens only. Users may change the accent colour, sidebar colour and rail skin (`AppearanceMenu`); do not hardcode a colour or assume the default accent.

@@ -3,58 +3,20 @@
   "import": "@brd/ui",
   "theme": {
     "tokens": "packages/ui/src/theme/tokens.css",
-    "modes": [
-      "light",
-      "dark",
-      "system"
-    ],
+    "modes": ["light", "dark", "system"],
     "checks": [
       "pnpm --filter @brd/ui check:contrast",
       "pnpm --filter @brd/ui lint (no hardcoded colors outside src/theme/)"
     ],
-    "typeScale": "Tailwind sizes are shifted: text-sm=11px, text-lg=13px, text-xl=14px, text-2xl=16px."
+    "typeScale": "Exactly three sizes (UAB rule 8): primary 18px (text-3xl and up, text-fs-primary), secondary 16px (text-2xl, text-fs-secondary), supportive 13px (text-xs to text-xl, text-fs-supportive). Phones use 16px in typed fields.",
+    "controls": "Buttons and compact inputs/selects are 32px (h-control-compact); form inputs and selects are 40px (h-control); touch screens use 44px. Never set a height on a Button; use size=icon for icon buttons and the compact prop on Input and SelectTrigger.",
+    "geometry": "Rail 60px (w-rail), sidebar 240px (w-sidebar), top bar 56px (h-topbar), drawer 560px (w-drawer). Tokens: --rail-*, --sidebar-bg, --table-row-hover, --grid-header-bg, --empty-value-fg."
   },
   "primitives": {
-    "accordion": {
-      "summary": "Vertically stacked collapsible sections (Radix).",
-      "props": {
-        "type": "'single' | 'multiple'",
-        "collapsible": "boolean"
-      },
-      "example": "<Accordion type=\"single\" collapsible><AccordionItem value=\"a\"><AccordionTrigger>Title</AccordionTrigger><AccordionContent>Body</AccordionContent></AccordionItem></Accordion>",
-      "exports": [
-        "Accordion",
-        "AccordionItem",
-        "AccordionTrigger",
-        "AccordionContent"
-      ]
-    },
-    "alert-dialog": {
-      "summary": "Blocking confirmation dialog. Prefer ConfirmDialog.",
-      "props": {
-        "open": "boolean",
-        "onOpenChange": "(open: boolean) => void"
-      },
-      "example": "<AlertDialog open={open} onOpenChange={setOpen}><AlertDialogContent>…</AlertDialogContent></AlertDialog>",
-      "exports": [
-        "AlertDialog",
-        "AlertDialogContent",
-        "AlertDialogHeader",
-        "AlertDialogFooter",
-        "AlertDialogTitle",
-        "AlertDialogDescription",
-        "AlertDialogAction",
-        "AlertDialogCancel"
-      ]
-    },
     "avatar": {
       "summary": "Image with initials fallback. Prefer UserAvatar.",
       "example": "<Avatar><AvatarImage src={url} /><AvatarFallback>AB</AvatarFallback></Avatar>",
-      "exports": [
-        "Avatar",
-        "AvatarImage",
-        "AvatarFallback"
-      ]
+      "exports": ["Avatar", "AvatarImage", "AvatarFallback"]
     },
     "badge": {
       "summary": "Small pill label.",
@@ -72,26 +34,10 @@
       },
       "example": "<Button variant=\"outline\" size=\"sm\" onClick={save}>Save</Button>"
     },
-    "calendar": {
-      "summary": "Day picker grid. Prefer DatePicker for forms.",
-      "props": {
-        "mode": "'single' | 'range'",
-        "selected": "Date | DateRange",
-        "onSelect": "(value) => void"
-      },
-      "example": "<Calendar mode=\"single\" selected={date} onSelect={setDate} />"
-    },
     "card": {
       "summary": "Surface container with header, content and footer slots.",
       "example": "<Card><CardHeader><CardTitle>Title</CardTitle></CardHeader><CardContent>Body</CardContent></Card>",
-      "exports": [
-        "Card",
-        "CardHeader",
-        "CardTitle",
-        "CardDescription",
-        "CardContent",
-        "CardFooter"
-      ]
+      "exports": ["Card", "CardHeader", "CardTitle", "CardDescription", "CardContent", "CardFooter"]
     },
     "checkbox": {
       "summary": "Checkbox (Radix).",
@@ -100,62 +46,6 @@
         "onCheckedChange": "(checked) => void"
       },
       "example": "<Checkbox checked={on} onCheckedChange={(v) => setOn(v === true)} />"
-    },
-    "collapsible": {
-      "summary": "Show/hide region.",
-      "props": {
-        "open": "boolean",
-        "onOpenChange": "(open: boolean) => void"
-      },
-      "example": "<Collapsible><CollapsibleTrigger>More</CollapsibleTrigger><CollapsibleContent>…</CollapsibleContent></Collapsible>",
-      "exports": [
-        "Collapsible",
-        "CollapsibleTrigger",
-        "CollapsibleContent"
-      ]
-    },
-    "command": {
-      "summary": "Searchable command list (cmdk).",
-      "example": "<Command><CommandInput /><CommandList><CommandItem>Item</CommandItem></CommandList></Command>",
-      "exports": [
-        "Command",
-        "CommandDialog",
-        "CommandInput",
-        "CommandList",
-        "CommandEmpty",
-        "CommandGroup",
-        "CommandItem",
-        "CommandSeparator",
-        "CommandShortcut"
-      ]
-    },
-    "context-menu": {
-      "summary": "Right-click menu.",
-      "example": "<ContextMenu><ContextMenuTrigger>…</ContextMenuTrigger><ContextMenuContent><ContextMenuItem>Open</ContextMenuItem></ContextMenuContent></ContextMenu>"
-    },
-    "dialog": {
-      "summary": "Modal dialog. Use DialogContent with DialogHeader, DialogBody and DialogFooter.",
-      "props": {
-        "open": "boolean",
-        "onOpenChange": "(open: boolean) => void"
-      },
-      "example": "<Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Title</DialogTitle></DialogHeader><DialogBody>…</DialogBody><DialogFooter>…</DialogFooter></DialogContent></Dialog>",
-      "exports": [
-        "Dialog",
-        "DialogContent",
-        "DialogContentScrollable",
-        "DialogHeader",
-        "DialogBody",
-        "DialogFooter",
-        "DialogTitle",
-        "DialogDescription",
-        "DialogTrigger",
-        "DialogClose"
-      ]
-    },
-    "dropdown-menu": {
-      "summary": "Click menu with items, checkboxes and radio groups.",
-      "example": "<DropdownMenu><DropdownMenuTrigger asChild><Button>Menu</Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={run}>Run</DropdownMenuItem></DropdownMenuContent></DropdownMenu>"
     },
     "form": {
       "summary": "react-hook-form field wiring (label, control, description, message).",
@@ -182,22 +72,6 @@
       },
       "example": "<Label htmlFor=\"name\">Name</Label>"
     },
-    "multi-select": {
-      "summary": "Searchable multi-value select.",
-      "props": {
-        "value": "string[]",
-        "onValueChange": "(value: string[]) => void",
-        "options": "{ value; label; disabled? }[]",
-        "placeholder": "string",
-        "mode": "'badge' | 'count'",
-        "maxBadges": "number"
-      },
-      "example": "<MultiSelect value={ids} onValueChange={setIds} options={options} placeholder=\"Pick members\" />"
-    },
-    "popover": {
-      "summary": "Floating panel anchored to a trigger.",
-      "example": "<Popover><PopoverTrigger asChild><Button>Open</Button></PopoverTrigger><PopoverContent>…</PopoverContent></Popover>"
-    },
     "progress": {
       "summary": "Linear progress bar.",
       "props": {
@@ -213,14 +87,6 @@
       },
       "example": "<RadioGroup value={v} onValueChange={setV}><RadioGroupItem value=\"a\" id=\"a\" /></RadioGroup>"
     },
-    "select": {
-      "summary": "Single-value dropdown. Item values cannot be empty strings.",
-      "props": {
-        "value": "string",
-        "onValueChange": "(value: string) => void"
-      },
-      "example": "<Select value={v} onValueChange={setV}><SelectTrigger><SelectValue placeholder=\"Choose\" /></SelectTrigger><SelectContent><SelectItem value=\"a\">A</SelectItem></SelectContent></Select>"
-    },
     "separator": {
       "summary": "Divider line.",
       "props": {
@@ -228,37 +94,12 @@
       },
       "example": "<Separator />"
     },
-    "sheet": {
-      "summary": "Side panel. Prefer FormDrawer for forms.",
-      "props": {
-        "open": "boolean",
-        "onOpenChange": "(open: boolean) => void"
-      },
-      "example": "<Sheet open={open} onOpenChange={setOpen}><SheetContent>…</SheetContent></Sheet>"
-    },
     "skeleton": {
       "summary": "Loading placeholder block.",
       "props": {
         "className": "string (set size)"
       },
       "example": "<Skeleton className=\"h-4 w-32\" />"
-    },
-    "slider": {
-      "summary": "Range slider.",
-      "props": {
-        "value": "number[]",
-        "onValueChange": "(value: number[]) => void"
-      },
-      "example": "<Slider value={[20]} onValueChange={setV} max={100} />"
-    },
-    "stepper": {
-      "summary": "Horizontal step indicator.",
-      "props": {
-        "steps": "{ key; label }[]",
-        "currentIndex": "number",
-        "completedKeys": "Set<string>"
-      },
-      "example": "<Stepper steps={steps} currentIndex={1} completedKeys={new Set(['a'])} />"
     },
     "switch": {
       "summary": "On/off toggle.",
@@ -271,14 +112,6 @@
     "table": {
       "summary": "Styled HTML table parts. Use DataTable for server-driven tables.",
       "example": "<Table><TableHeader><TableRow><TableHead>Name</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell>A</TableCell></TableRow></TableBody></Table>"
-    },
-    "tabs": {
-      "summary": "Tabs (Radix, role=tab). Use DetailPage for page-level tabs.",
-      "props": {
-        "value": "string",
-        "onValueChange": "(value: string) => void"
-      },
-      "example": "<Tabs value={tab} onValueChange={setTab}><TabsList><TabsTrigger value=\"a\">A</TabsTrigger></TabsList><TabsContent value=\"a\">…</TabsContent></Tabs>"
     },
     "textarea": {
       "summary": "Multi-line input.",
@@ -293,18 +126,7 @@
         "toast.success|error|warning|info": "(title: string, description?: string, duration?: number) => void"
       },
       "example": "toast.error(errorMessage(err))",
-      "exports": [
-        "toast",
-        "ToastProvider",
-        "useToast"
-      ]
-    },
-    "tooltip": {
-      "summary": "Hover hint. Needs TooltipProvider above it.",
-      "props": {
-        "variant (TooltipContent)": "'dark' | 'light'"
-      },
-      "example": "<Tooltip><TooltipTrigger asChild><Button>?</Button></TooltipTrigger><TooltipContent>Help</TooltipContent></Tooltip>"
+      "exports": ["toast", "ToastProvider", "useToast"]
     }
   },
   "composites": {
@@ -316,15 +138,6 @@
         "bordered": "boolean"
       },
       "example": "<ActionBar bordered right={<Button size=\"sm\">New</Button>}>Filters</ActionBar>"
-    },
-    "AvatarGroup": {
-      "summary": "Overlapping avatars with +N overflow.",
-      "props": {
-        "participants": "{ name; src? }[]",
-        "max": "number",
-        "size": "'xs' | 'sm' | 'md'"
-      },
-      "example": "<AvatarGroup participants={members} max={3} />"
     },
     "CardListSkeleton": {
       "summary": "Loading skeleton for card lists.",
@@ -370,25 +183,15 @@
       "example": "<DataTablePagination pagination={{ page, pageSize: 20, total }} onPageChange={setPage} />"
     },
     "DatePicker": {
-      "summary": "Popover date picker.",
+      "summary": "Template date picker: value is 'YYYY-MM-DD' (or with time), calendar popover, Today and Clear in the footer, arrow-key navigation. Exported from the template overlays.",
       "props": {
-        "value": "Date | null",
-        "onChange": "(date: Date) => void",
-        "minDate": "Date",
-        "maxDate": "Date",
-        "allowPast": "boolean",
-        "disabled": "boolean"
+        "value": "string | null",
+        "onChange": "(value: string | null) => void",
+        "label": "string",
+        "withTime": "boolean",
+        "block": "boolean"
       },
-      "example": "<DatePicker value={date} onChange={setDate} />"
-    },
-    "DateRangeControl": {
-      "summary": "Date range chooser with presets.",
-      "props": {
-        "dateFrom": "string (ISO)",
-        "dateTo": "string (ISO)",
-        "onApply": "({ dateFrom, dateTo }) => void"
-      },
-      "example": "<DateRangeControl dateFrom={from} dateTo={to} onApply={setRange} />"
+      "example": "<DatePicker label=\"Due date\" value={due} onChange={setDue} block />"
     },
     "DelayedFallback": {
       "summary": "Renders children after a delay to avoid loader flicker.",
@@ -431,16 +234,8 @@
       },
       "example": "<ErrorBoundary><Page /></ErrorBoundary>"
     },
-    "FilterButton": {
-      "summary": "Outlined filter trigger with active-count badge.",
-      "props": {
-        "activeCount": "number",
-        "label": "string"
-      },
-      "example": "<FilterButton activeCount={2} onClick={open} />"
-    },
     "FormDrawer": {
-      "summary": "Right-side drawer for create/edit forms with submit footer and discard guard.",
+      "summary": "Right-side drawer for create/edit forms: 560px, header as tall as the top bar with the title in 18px and the description behind an ⓘ, footer Cancel plus submit. No × icon. With no onSubmit or footer it shows only Cancel.",
       "props": {
         "open": "boolean",
         "onOpenChange": "(open: boolean) => void",
@@ -454,10 +249,7 @@
         "size": "'sm'|'md'|'lg'|'xl'|'2xl'|'3xl'|'default'|'wide'"
       },
       "example": "<FormDrawer open={open} onOpenChange={setOpen} title=\"New project\" onSubmit={form.handleSubmit(save)} isPending={saving} dirty={form.formState.isDirty}>…fields…</FormDrawer>",
-      "exports": [
-        "FormDrawer",
-        "DrawerShell"
-      ]
+      "exports": ["FormDrawer", "DrawerShell"]
     },
     "FormError": {
       "summary": "Form-level error text under the fields (field errors use FormMessage). Renders nothing when empty; announced to screen readers.",
@@ -475,7 +267,7 @@
       "example": "<InfiniteScrollSentinel enabled={hasNext} onLoadMore={fetchNext} />"
     },
     "InformativeBar": {
-      "summary": "Page title row with back button, badge and right-side actions (children).",
+      "summary": "Back button, badge and right-side actions row. Its title and info text move to the top bar inside the app shell (no title row in the page); outside the shell they render inline.",
       "props": {
         "title": "ReactNode",
         "info": "ReactNode",
@@ -521,10 +313,7 @@
         "PageShell.Body.scroll": "boolean (default true)"
       },
       "example": "<PageShell><InformativeBar title=\"Team\" /><PageShell.Body padded>…</PageShell.Body></PageShell>",
-      "exports": [
-        "PageShell",
-        "PageShellBody"
-      ]
+      "exports": ["PageShell", "PageShellBody"]
     },
     "ProgressRing": {
       "summary": "Circular progress.",
@@ -549,10 +338,7 @@
     "SettingsSection": {
       "summary": "Titled settings group; SettingsField lays out a label/control row.",
       "example": "<SettingsSection title=\"Profile\"><SettingsField label=\"Name\">…</SettingsField></SettingsSection>",
-      "exports": [
-        "SettingsSection",
-        "SettingsField"
-      ]
+      "exports": ["SettingsSection", "SettingsField"]
     },
     "StatCard": {
       "summary": "KPI tile.",
@@ -566,11 +352,11 @@
       "example": "<StatCard icon={FileText} label=\"Sources\" value={12} />"
     },
     "StatusBadge": {
-      "summary": "Colored status pill (icon-free; always include a text label).",
+      "summary": "Status as a coloured dot plus coloured text (no background). Use variant=\"pill\" only for a filled badge. Always include a text label.",
       "props": {
         "label": "string",
-        "tone": "'success'|'warning'|'danger'|'info'|'brand'|'neutral'",
-        "size": "'xs'|'sm'|'md'"
+        "tone": "StatusTone",
+        "variant": "'dot' | 'pill'"
       },
       "example": "<StatusBadge label=\"ACTIVE\" tone=\"success\" />"
     },
@@ -615,69 +401,248 @@
       },
       "example": "<UserAvatar name=\"Ada Lovelace\" />"
     },
-    "ViewToggle": {
-      "summary": "Tabs/expanded toggle.",
+    "InfoTip": {
+      "summary": "ⓘ icon after a title or label that holds the explanation (hover, focus, tap). Use instead of visible description sentences.",
       "props": {
-        "view": "'tabs' | 'expanded'",
-        "onViewChange": "(view) => void"
+        "text": "ReactNode",
+        "label": "string",
+        "side": "'top'|'right'|'bottom'|'left'"
       },
-      "example": "<ViewToggle view={view} onViewChange={setView} />"
+      "example": "<InfoTip text=\"Shown to analysts only\" />"
+    },
+    "EmptyValue": {
+      "summary": "The one way to show a missing value: italic light-grey N/A, accessible name 'Not available'.",
+      "props": {
+        "label": "string"
+      },
+      "example": "{value ?? <EmptyValue />}"
+    },
+    "DateText": {
+      "summary": "Date as '16 Oct, 2026'; full 'Fri, 16 Oct 2026 08:30 AM' in a tooltip. Never use toLocaleString for table dates.",
+      "props": {
+        "value": "string | Date | null | undefined"
+      },
+      "example": "<DateText value={row.createdAt} />"
+    },
+    "OverflowChips": {
+      "summary": "Chips on one line, as many as fit, then a +N chip whose tooltip lists all.",
+      "props": {
+        "items": "string[]",
+        "label": "string",
+        "maxVisible": "number",
+        "tone": "'neutral'|'accent'"
+      },
+      "example": "<OverflowChips items={tags} label=\"tags\" />"
+    },
+    "ConfirmHost": {
+      "summary": "Mount once in App; renders the dialog behind confirmDelete().",
+      "example": "<ConfirmHost />"
+    },
+    "confirmDelete": {
+      "summary": "Opens the shared delete/remove/discard confirmation (Cancel focused, red confirm). Every destructive action calls this; never a one-click delete.",
+      "props": {
+        "title": "string",
+        "message": "string",
+        "confirmLabel": "string",
+        "onConfirm": "() => void | Promise<void>"
+      },
+      "example": "confirmDelete({ title: 'Delete note?', message: 'The note is removed. The document stays.', onConfirm: () => remove.mutate(id) })"
+    },
+    "FormGrid": {
+      "summary": "Fields flow 1→2→3 per row from the container width (min 220px). Use FormGridItem full for long fields.",
+      "props": {
+        "FormGridItem.full": "boolean"
+      },
+      "example": "<FormGrid><FormGridItem><Field/></FormGridItem><FormGridItem full><Notes/></FormGridItem></FormGrid>"
+    },
+    "SelectMenu": {
+      "summary": "The one dropdown: a listbox up to 8 options with type-to-jump, a search panel above that. Optional None choice. 40px in forms, compact 32px in toolbars, tables and footers.",
+      "props": {
+        "value": "string",
+        "onChange": "(value) => void",
+        "options": "SelectMenuOption[]",
+        "label": "string",
+        "compact": "boolean",
+        "allowNone": "boolean",
+        "searchable": "boolean"
+      },
+      "example": "<SelectMenu label=\"Owner\" value={owner} onChange={setOwner} options={people} allowNone />"
+    },
+    "ViewBar": {
+      "summary": "Line 1 of a list page: underline view tabs with a sliding accent line, icon-only \"+\", Unsaved menu, and Export + primary action at the right.",
+      "props": {
+        "views": "ViewTab[]",
+        "activeId": "string",
+        "onSelect": "(id) => void",
+        "onAddView": "() => void",
+        "unsaved": "boolean",
+        "actions": "ReactNode"
+      },
+      "example": "<ViewBar views={views} activeId={id} onSelect={setId} onAddView={add} actions={<Button>New</Button>} />"
+    },
+    "RecordInspector": {
+      "summary": "Record view as a 560px side drawer: title, status and prev/next in the header; Details/Related/Activity/Comments tabs; one comment box; footer Cancel · Edit.",
+      "props": {
+        "open": "boolean",
+        "title": "string",
+        "status": "ReactNode",
+        "tabs": "InspectorTab[]",
+        "onPrevious": "() => void",
+        "onNext": "() => void",
+        "onEdit": "() => void",
+        "comment": "InspectorComment"
+      },
+      "example": "<RecordInspector open={open} onOpenChange={setOpen} title={row.title} tabs={tabs} onEdit={edit} comment={comment} />"
+    },
+    "MultiSelectMenu": {
+      "summary": "Multi-select dropdown with search, Select all and Clear all.",
+      "props": {
+        "values": "string[]",
+        "options": "{ value; label }[]",
+        "onChange": "(values: string[]) => void",
+        "label": "string"
+      },
+      "example": "<MultiSelectMenu label=\"modules\" values={v} onChange={setV} options={opts} block />"
+    },
+    "Dialog": {
+      "summary": "Template modal dialog (focus trap, Esc, footer slot). Use ConfirmHost + confirmDelete for destructive confirmations.",
+      "props": {
+        "open": "boolean",
+        "onClose": "() => void",
+        "title": "string",
+        "description": "string",
+        "footer": "ReactNode",
+        "size": "'sm' | 'md' | 'lg'"
+      },
+      "example": "<Dialog open={open} onClose={close} title=\"Rename\" footer={<Button onClick={close}>Cancel</Button>}>…</Dialog>"
+    },
+    "Popover": {
+      "summary": "Anchored popover that flips near the viewport edge. Anchor is a ref to the trigger.",
+      "props": {
+        "open": "boolean",
+        "onClose": "() => void",
+        "anchor": "RefObject<HTMLElement>",
+        "label": "string",
+        "width": "number"
+      },
+      "example": "<Popover open={open} onClose={close} anchor={ref} label=\"Details\">…</Popover>"
+    },
+    "Menu": {
+      "summary": "Anchored action menu (items with icon, danger, disabledReason).",
+      "props": {
+        "open": "boolean",
+        "onClose": "() => void",
+        "anchor": "RefObject<HTMLElement>",
+        "items": "MenuItem[]",
+        "label": "string"
+      },
+      "example": "<Menu open={open} onClose={close} anchor={ref} items={items} label=\"Row actions\" />"
     }
   },
   "app-shell": {
     "AppShell": {
-      "summary": "Layout frame: sidebar slot + main column. Wrap children with TooltipProvider.",
+      "summary": "Four regions: icon rail | context sidebar | workspace (top bar + page). Provides the page-title context.",
       "props": {
-        "sidebar": "ReactNode",
-        "children": "ReactNode"
+        "rail": "ReactNode",
+        "sidebar": "ReactNode (omit when collapsed)",
+        "topBar": "ReactNode"
       },
-      "example": "<AppShell sidebar={<AppSidebar … />}><AppHeader … /><main>…</main></AppShell>"
+      "example": "<AppShell rail={<IconRail .../>} sidebar={<ContextSidebar .../>} topBar={<TopBar .../>}>{outlet}</AppShell>"
     },
-    "AppSidebar": {
-      "summary": "Collapsible desktop sidebar. Filter `items` by role before passing them.",
+    "IconRail": {
+      "summary": "Global rail: module icons on top (selected = own tint, no bar beside it), global tools below. Rail colour comes from the rail skin.",
       "props": {
-        "items": "NavItem[] ({ key; label; icon; onClick?; href?; badge?; visible?; children? })",
+        "modules": "RailModule[] ({ key, label, icon, onSelect, badge?, visible? })",
         "activeKey": "string",
-        "collapsed": "boolean",
-        "onToggle": "() => void",
         "branding": "ReactNode",
-        "user": "AppShellUser",
-        "onLogout": "() => void"
+        "utilities": "ReactNode"
       },
-      "example": "<AppSidebar items={items} activeKey=\"/projects\" collapsed={collapsed} onToggle={toggle} branding={<AppBrand collapsed={collapsed} />} user={user} onLogout={logout} />"
+      "example": "<IconRail modules={modules} activeKey=\"projects\" branding={<Logo/>} />"
     },
-    "AppSidebarMobile": {
-      "summary": "Drawer version of the sidebar for small screens.",
+    "RailButton": {
+      "summary": "One rail icon button (use for utilities).",
       "props": {
-        "items": "NavItem[]",
-        "activeKey": "string",
+        "label": "string",
+        "active": "boolean",
+        "badge": "number"
+      },
+      "example": "<RailButton label=\"Search\" onClick={open}><Search/></RailButton>"
+    },
+    "ContextSidebar": {
+      "summary": "Module sidebar: 200-360px resizable, light grey, 30px rows, plain section labels, \"Find a page (N)\" search, star favourites that move to a Favorites section, collapse icon at the top.",
+      "props": {
+        "title": "string",
+        "sections": "SidebarSection[]",
+        "activeKey": "string | null",
+        "favorites": "SidebarItem[]",
+        "favoriteKeys": "string[]",
+        "onToggleFavorite": "(key) => void",
+        "width": "number",
+        "onWidthChange": "(width) => void",
+        "onCollapse": "() => void"
+      },
+      "example": "<ContextSidebar title=\"Projects\" sections={sections} activeKey={key} width={w} onWidthChange={setW} onCollapse={collapse} />"
+    },
+    "SidebarContent": {
+      "summary": "The sidebar rows without the frame; used inside MobileNav.",
+      "props": {
+        "title": "string",
+        "sections": "SidebarSection[]",
+        "onNavigate": "() => void"
+      },
+      "example": "<SidebarContent title=\"Projects\" sections={sections} activeKey={key} />"
+    },
+    "MobileNav": {
+      "summary": "Phones: modules and sidebar as one navigation drawer.",
+      "props": {
         "open": "boolean",
-        "onOpenChange": "(open: boolean) => void",
-        "branding": "ReactNode",
-        "user": "AppShellUser",
-        "onLogout": "() => void"
+        "onOpenChange": "(open) => void",
+        "modules": "RailModule[]",
+        "activeModuleKey": "string",
+        "sections": "SidebarSection[]"
       },
-      "example": "<AppSidebarMobile items={items} activeKey={key} open={open} onOpenChange={setOpen} />"
+      "example": "<MobileNav open={open} onOpenChange={setOpen} modules={modules} activeModuleKey=\"projects\" title=\"Projects\" sections={sections} activeKey={key} />"
     },
-    "AppHeader": {
-      "summary": "Top bar with breadcrumbs, actions slot and user menu.",
+    "TopBar": {
+      "summary": "Page title and ⓘ at the left (from the page's InformativeBar/ListPage/DetailPage title), centred search box, tools at the right. No breadcrumbs anywhere.",
       "props": {
-        "breadcrumbs": "BreadcrumbItem[] ({ label; href?; onClick? })",
-        "user": "AppShellUser",
-        "userMenuActions": "UserMenuAction[]",
-        "onLogout": "() => void",
-        "onMobileMenuOpen": "() => void",
-        "actions": "ReactNode"
+        "onSearch": "() => void",
+        "onMenu": "() => void",
+        "onExpandSidebar": "() => void",
+        "right": "ReactNode"
       },
-      "example": "<AppHeader breadcrumbs={[{ label: 'Projects', onClick: goBack }, { label: name }]} user={user} onLogout={logout} actions={<ThemeToggle />} />"
+      "example": "<TopBar onSearch={openPalette} onMenu={openNav} right={<UserMenu .../>} />"
     },
-    "Breadcrumbs": {
-      "summary": "Breadcrumb trail; the last item is the current page.",
+    "useSetPageHeader": {
+      "summary": "Registers the page title and description with the top bar. ListPage, DetailPage, FormPage and InformativeBar call it for you; returns false outside the shell so the title renders inline.",
+      "example": "useSetPageHeader('Projects', 'Projects you can access')"
+    },
+    "CommandPalette": {
+      "summary": "Ctrl/⌘+K search over pages and actions. Pair with useCommandShortcut.",
       "props": {
-        "items": "BreadcrumbItem[]",
-        "maxVisible": "number"
+        "open": "boolean",
+        "onOpenChange": "(open) => void",
+        "groups": "CommandGroupDef[]"
       },
-      "example": "<Breadcrumbs items={[{ label: 'Home' }]} />"
+      "example": "<CommandPalette open={open} onOpenChange={setOpen} groups={groups} />"
+    },
+    "NotificationBell": {
+      "summary": "Bell with unread count and list. Set isSample while the list is not the person's real notifications; it then says so.",
+      "props": {
+        "items": "NotificationEntry[]",
+        "onMarkRead": "(id) => void",
+        "onMarkAllRead": "() => void",
+        "isSample": "boolean"
+      },
+      "example": "<NotificationBell items={items} onMarkRead={mark} onMarkAllRead={markAll} isSample />"
+    },
+    "AppearanceMenu": {
+      "summary": "Theme, accent colour, sidebar colour and rail skin. Colours are corrected until text reaches WCAG AA. The app stores the value and calls applyAppearance.",
+      "props": {
+        "appearance": "Appearance",
+        "onChange": "(appearance) => void"
+      },
+      "example": "<AppearanceMenu appearance={appearance} onChange={setAppearance} />"
     },
     "UserMenu": {
       "summary": "Avatar dropdown with extra actions and logout.",
@@ -691,43 +656,43 @@
   },
   "data-table": {
     "DataTable": {
-      "summary": "Server-driven table: sort, pagination, search, filters, selection, row actions. The page owns all state (prefer URL params). Loading, error and empty states are built in and the toolbar stays visible in each.",
+      "summary": "Server-driven table in the template style: borderless, left-aligned, dot+text statuses, tools line (search, Filters ⌄ with Apply/Clear, Columns ⌄, selection and bulk actions at the right), hover-only row checkboxes, pinned titled Actions column, frozen numbered pagination. Cells show truncated text with a tooltip, dates as DateText and missing values as EmptyValue.",
       "props": {
-        "columns": "DataTableColumnDef<T>[] ({ id; header; cell?; sortable?; sortKey?; width?; align? })",
-        "data": "T[]",
-        "getRowId": "(row) => string",
-        "loading": "boolean",
-        "error": "{ message?; onRetry? } | null",
-        "sort": "{ key; order: 'asc'|'desc' } | null",
-        "onSort": "(sort) => void",
-        "pagination": "{ page; pageSize; total }",
-        "onPageChange": "(page) => void",
-        "onPageSizeChange": "(size) => void",
-        "search": "{ value; onChange; placeholder?; ariaLabel? }",
-        "filters": "{ id; label; allLabel?; options: { value; label }[] }[]",
-        "filterValues": "Record<string, string> ('' = all)",
-        "onFilterChange": "(id, value) => void",
+        "columns": "DataTableColumnDef[] (id, header, cell?, kind?: 'date', canHide?, sortable?, width)",
+        "data": "TData[]",
+        "filters": "DataTableFilterDef[]",
+        "filterValues": "Record<string,string>",
+        "onApplyFilters": "(values) => void",
         "onClearFilters": "() => void",
+        "hiddenColumns": "string[]",
+        "onHiddenColumnsChange": "(ids) => void",
         "selectable": "boolean",
-        "selected": "Set<string>",
-        "onSelectionChange": "(Set<string>) => void",
-        "rowActions": "RowAction<T>[]",
-        "onRowClick": "(row) => void",
-        "emptyTitle": "string",
-        "emptyDescription": "string"
+        "bulkActions": "ReactNode",
+        "rowActions": "RowAction[]",
+        "pagination": "PaginationState",
+        "onPageChange": "(page) => void",
+        "onPageSizeChange": "(size) => void"
       },
-      "example": "<DataTable columns={columns} data={items} getRowId={(r) => r.id} loading={q.isPending} error={q.isError ? { message: errorMessage(q.error), onRetry: q.refetch } : null} sort={sort} onSort={setSort} pagination={{ page, pageSize: 20, total }} onPageChange={setPage} search={{ value: search, onChange: setSearch, placeholder: 'Search' }} filters={filters} filterValues={values} onFilterChange={setFilter} onClearFilters={clear} />"
+      "example": "<DataTable columns={cols} data={rows} filters={filters} filterValues={values} onApplyFilters={apply} pagination={{ page, pageSize: 25, total }} onPageChange={setPage} />"
     },
     "DataTableToolbar": {
-      "summary": "Search + select filters + clear button. Rendered by DataTable; usable alone.",
+      "summary": "The tools line. Rendered by DataTable.",
       "props": {
         "search": "DataTableSearch",
         "filters": "DataTableFilterDef[]",
-        "filterValues": "Record<string, string>",
-        "onFilterChange": "(id, value) => void",
-        "onClearFilters": "() => void"
+        "columns": "ToolbarColumn[]"
       },
-      "example": "<DataTableToolbar filters={filters} filterValues={values} onFilterChange={setFilter} onClearFilters={clear} />"
+      "example": "(used by DataTable)"
+    },
+    "DataTablePagination": {
+      "summary": "Frozen footer: \"1–25 of N items\" left; numbered pages with ellipses and a \"25 / page\" dropdown right.",
+      "props": {
+        "pagination": "PaginationState",
+        "onPageChange": "(page) => void",
+        "onPageSizeChange": "(size) => void",
+        "pageSizeOptions": "number[]"
+      },
+      "example": "<DataTablePagination pagination={{ page, pageSize, total }} onPageChange={setPage} />"
     }
   },
   "patterns": {
@@ -803,9 +768,9 @@
       "summary": "Read/change the theme.",
       "example": "const { preference, resolvedMode, setPreference } = useTheme();"
     },
-    "ThemeToggle": {
-      "summary": "Dropdown to pick Light / Dark / System.",
-      "example": "<AppHeader actions={<ThemeToggle />} … />"
+    "applyAppearance": {
+      "summary": "Writes accent, sidebar colour and rail skin onto <html> (overrides only for non-default choices, text pairs corrected to AA). Also exports ACCENT_PRESETS, SIDEBAR_PRESETS, RAIL_SKINS, DEFAULT_APPEARANCE, contrastRatio.",
+      "example": "applyAppearance(appearance, resolvedMode)"
     }
   },
   "hooks": {

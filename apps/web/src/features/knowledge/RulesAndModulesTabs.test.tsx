@@ -15,6 +15,8 @@ vi.mock('@/lib/api-client', async (importOriginal) => ({
   apiClient: api,
 }));
 
+vi.mock('@/providers/auth-provider', () => ({ useAuth: () => ({ user: { id: 'me' } }) }));
+
 import { ApiClientError } from '@/lib/api-client';
 import { ModulesTab } from './components/ModulesTab';
 import { RulesTab } from './components/RulesTab';
@@ -123,8 +125,9 @@ describe('ModulesTab', () => {
     mockApi({ modules: () => page([moduleItem()]) });
     renderRoute(<ModulesTab projectId="p1" />, route);
     await screen.findByText('Billing (BIL)');
-    expect(screen.queryByRole('combobox', { name: 'Filter by module' })).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Filter by status' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+    expect(screen.queryByRole('button', { name: /^Filter by module/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Filter by status/ })).toBeInTheDocument();
   });
 
   it('highlights a module that needs revalidation', async () => {
@@ -137,7 +140,7 @@ describe('ModulesTab', () => {
     mockApi({ modules: () => page([moduleItem()]) });
     renderRoute(<ModulesTab projectId="p1" />, route);
     await screen.findByText('Billing (BIL)');
-    await userEvent.type(screen.getByRole('textbox', { name: 'Search modules' }), 'bil');
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search modules' }), 'bil');
     await waitFor(() => expect(lastUrl('/projects/p1/modules')).toContain('search=bil'));
   });
 

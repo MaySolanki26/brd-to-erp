@@ -1,3 +1,4 @@
+import { formatDateShort, parseDateValue } from '@brd/ui';
 import type { ProjectRole, ProjectStatus } from '@brd/shared';
 
 export const ROLE_LABELS: Record<ProjectRole, string> = {
@@ -9,6 +10,13 @@ export const ROLE_LABELS: Record<ProjectRole, string> = {
 
 export const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as ProjectRole[];
 
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  DRAFT: 'Draft',
+  ACTIVE: 'Active',
+  COMPLETED: 'Completed',
+  ARCHIVED: 'Archived',
+};
+
 export const STATUS_TONES: Record<ProjectStatus, 'neutral' | 'success' | 'info' | 'warning'> = {
   DRAFT: 'neutral',
   ACTIVE: 'success',
@@ -16,10 +24,8 @@ export const STATUS_TONES: Record<ProjectStatus, 'neutral' | 'success' | 'info' 
   ARCHIVED: 'warning',
 };
 
+/** "16 Oct, 2026" for running text. Tables use the `DateText` component, which adds the full value on hover. */
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  const date = parseDateValue(iso);
+  return date ? formatDateShort(date) : '';
 }

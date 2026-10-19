@@ -77,22 +77,17 @@ export function QuestionsTab({ projectId, canAnswer }: QuestionsTabProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold">Questions</h2>
-        {counts.data && (
-          <p className="text-sm text-muted-foreground">
-            {counts.data.byStatus.OPEN} open
-            {counts.data.openCritical > 0 && ` · ${String(counts.data.openCritical)} critical`}
-          </p>
-        )}
-      </div>
-
+    <div className="uab-page flex flex-col gap-4">
       <QuestionFilters
         filters={filters}
         activeCount={activeCount}
         onChange={change}
         onReset={reset}
+        summary={
+          counts.data
+            ? `${String(counts.data.byStatus.OPEN)} open${counts.data.openCritical > 0 ? ` · ${String(counts.data.openCritical)} critical` : ''}`
+            : undefined
+        }
       />
 
       <UnsentAnswers
